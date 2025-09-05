@@ -1,0 +1,163 @@
+<!-- This is the main HTML file for the game. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Basic setup for the webpage -->
+    <meta charset="UTF-8">
+    <!-- This makes sure the game looks good on mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Tower Defense</title>
+
+    <!-- This script brings in TailwindCSS for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- These lines are for loading custom fonts from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- This is the pixel-art style font used for the game's text -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- These are for the icons used throughout the game (like for towers and buttons) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <!-- This is where we define the game's custom styles -->
+    <style>
+        /* General look and feel for the whole page */
+        body, html {
+            font-family: 'Press Start 2P', cursive; /* Sets the pixel font */
+            background-color: #1a1a1a; /* Dark background */
+            color: #e0e0e0; /* Light text color */
+            overflow: hidden; /* Prevents scrollbars */
+            height: 100%;
+        }
+        /* Style for the game's drawing area (the canvas) */
+        canvas {
+            background-color: #2c2c2c; /* Dark gray for the game area */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); /* A nice green glow */
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            position: absolute;
+        }
+        /* Style for all the UI panels (stats, towers, game over screen) */
+        .game-ui-panel, .game-over-modal, .game-stats-panel {
+            background-color: rgba(26, 26, 26, 0.8); /* See-through dark background */
+            backdrop-filter: blur(5px); /* Blurs what's behind the panel */
+            border: 2px solid rgba(0, 255, 136, 0.4); /* Green border */
+            border-radius: 8px;
+        }
+        /* Style for the clickable buttons */
+        .pixel-button {
+            background-color: #3e3e3e;
+            color: #00ff88;
+            border: 2px solid #00ff88;
+            padding: 10px 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 #00aa5b; /* Gives it a 3D, pressable look */
+            cursor: pointer;
+        }
+        /* What buttons look like when you hover over them */
+        .pixel-button:hover:not(:disabled) {
+            background-color: #4f4f4f;
+            transform: translateY(-2px); /* Lifts the button up a bit */
+            box-shadow: 0 6px 0 #00aa5b;
+        }
+        /* What buttons look like when you're clicking them */
+        .pixel-button:active:not(:disabled) {
+            transform: translateY(2px); /* Pushes the button down */
+            box-shadow: 0 2px 0 #00aa5b;
+        }
+        /* Style for buttons you can't afford or use yet */
+        .pixel-button:disabled {
+            background-color: #2a2a2a;
+            color: #555;
+            border-color: #555;
+            box-shadow: 0 4px 0 #333;
+            cursor: not-allowed;
+        }
+        /* Highlights the tower button you've selected to place */
+        .tower-button.selected {
+            background-color: #00ff88;
+            color: #1a1a1a;
+            box-shadow: 0 4px 0 #00aa5b;
+        }
+        /* Needed to make the newer Google icons work correctly */
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center">
+
+    <!-- This is the main container for the entire game interface. -->
+    <div class="flex flex-col h-full w-full max-w-md mx-auto p-2 sm:p-4 gap-2">
+        
+        <!-- This is the stats bar at the top (Lives, Gold, Wave) -->
+        <div class="game-stats-panel py-1 px-2 flex-shrink-0">
+            <h1 class="text-sm text-center text-green-400">MATERIAL TOWER DEFENSE</h1>
+            <div class="flex justify-around text-xs md:text-sm">
+                <p>LIVES: <span id="lives" class="text-red-500">20</span></p>
+                <p>GOLD: <span id="gold" class="text-yellow-400">100</span></p>
+                <p>WAVE: <span id="wave" class="text-cyan-400">0</span></p>
+            </div>
+        </div>
+
+        <!-- This container holds the actual game canvas -->
+        <div id="canvas-container" class="flex-grow relative w-full min-h-0">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        
+        <!-- This is the control panel at the bottom of the screen -->
+        <div class="game-ui-panel p-4 w-full flex-shrink-0 flex flex-col gap-4">
+             <h2 class="text-xl text-center text-green-400">TOWERS</h2>
+            <!-- Buttons to buy the different towers -->
+            <div class="grid grid-cols-3 gap-2">
+                <button id="buy-pin" class="pixel-button tower-button text-xs sm:text-sm">PIN (25G)</button>
+                <button id="buy-castle" class="pixel-button tower-button text-xs sm:text-sm">CASTLE (75G)</button>
+                <button id="buy-support" class="pixel-button tower-button text-xs sm:text-sm">SUPPORT (60G)</button>
+            </div>
+            
+            <!-- This panel appears when you select a tower you've already placed -->
+            <div id="sell-panel" class="hidden flex flex-col gap-2">
+                <hr class="border-gray-600"/>
+                <h3 class="text-lg text-center text-green-400">SELECTED</h3>
+                <h4 id="selected-tower-info" class="text-center text-yellow-400 text-sm h-4 mb-2"></h4>
+                <!-- Shows the stats of the selected tower -->
+                <div id="tower-stats-panel" class="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs sm:text-sm mb-2">
+                    <p id="stat-damage-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Damage">bolt</span> Dmg: <span id="stat-damage">0</span></p>
+                    <p id="stat-range-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Range">radar</span> Rng: <span id="stat-range">0</span></p>
+                    <p id="stat-speed-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Attack Speed">speed</span> Spd: <span id="stat-speed">0</span>/s</p>
+                    <p id="stat-splash-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Splash Radius">bubble_chart</span> Spl: <span id="stat-splash">0</span></p>
+                    <p id="stat-boost-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Boost">electric_bolt</span> Bst: <span id="stat-boost">0</span>%</p>
+                    <p id="stat-slow-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Slow">hourglass_empty</span> Slw: <span id="stat-slow">0</span>%</p>
+                    <p id="stat-burn-p" class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" title="Burn Damage">local_fire_department</span> Brn: <span id="stat-burn">0/s</span></p>
+                    <p id="stat-special-p" class="flex items-center gap-1 col-span-full justify-center"><span class="material-symbols-outlined text-base align-bottom" title="Special Ability">star</span><span id="stat-special">None</span></p>
+                </div>
+                <button id="toggle-mode" class="pixel-button bg-purple-800 text-yellow-300 border-yellow-300 hidden">MODE: </button>
+                <!-- Button to sell the selected tower -->
+                <button id="sell-tower" class="pixel-button bg-red-800 text-yellow-300 border-yellow-300 shadow-[0_4px_0_#b36d00]">SELL FOR 0G</button>
+            </div>
+
+            <!-- Buttons for starting the next wave and changing game speed -->
+            <div class="flex gap-2 mt-auto">
+                <button id="start-wave" class="pixel-button w-full">START WAVE</button>
+                <button id="speed-toggle" class="pixel-button">x1</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- This is the "Game Over" screen. It's hidden until you lose. -->
+    <div id="game-over-modal" class="hidden absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
+        <div class="game-over-modal text-center p-8">
+            <h2 id="game-over-title" class="text-4xl mb-4">GAME OVER</h2>
+            <p id="game-over-message" class="text-xl mb-6">You survived 0 waves!</p>
+            <button id="restart-game" class="pixel-button text-2xl">RESTART</button>
+        </div>
+    </div>
+
+    <!-- This is the most important part! It loads the JavaScript file that runs all the game logic. -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
