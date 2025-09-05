@@ -112,7 +112,7 @@ function resizeCanvas() {
     // ONLY update the internal resolution and regenerate the path
     // if the actual canvas width has changed. This prevents vertical
     // resizing from breaking the game by resetting the maze.
-    if (lastCanvasWidth === 0) {
+    if (lastCanvasWidth !== newWidth) {
         canvas.width = newWidth;
         canvas.height = newHeight;
 
@@ -274,7 +274,16 @@ function gameLoop() {
 
     for (let i = 0; i < gameSpeed; i++) {
         applyAuraEffects(); // Now handling both boosts and slows
-        towers.forEach(tower => tower.update(enemies, projectiles));
+        
+        const onEnemyDeath = (enemy) => {
+            effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
+            gold += enemy.gold;
+            window.gold = gold;
+            updateUI({ lives, gold, wave });
+            playMoneySound();
+        };
+
+        towers.forEach(tower => tower.update(enemies, projectiles, onEnemyDeath));
         
         projectiles = projectiles.filter(p => p.update(handleProjectileHit, enemies));
         
@@ -366,7 +375,7 @@ function drawPlacementGrid() {
     }
     const mouseGridX = Math.floor(mouse.x / TILE_SIZE);
     const mouseGridY = Math.floor(mouse.y / TILE_SIZE);
-    if (placementGrid[mouseGridY] && placementGrid[mouseGridX] === GRID_EMPTY) {
+    if (placementGrid[mouseGridY] && placementGrid[mouseGridY][mouseGridX] === GRID_EMPTY) {
         ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
         ctx.fillRect(mouseGridX * TILE_SIZE, mouseGridY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         ctx.strokeStyle = 'rgba(0, 255, 136, 0.5)';
@@ -493,8 +502,10 @@ uiElements.upgradeTowerBtn.addEventListener('click', () => {
 uiElements.toggleModeBtn.addEventListener('click', () => {
     if (selectedTower && selectedTower.type === 'ENT') {
         selectedTower.mode = (selectedTower.mode === 'boost') ? 'slow' : 'boost';
-        updateSellPanel(selectedTower);
+    } else if (selectedTower && selectedTower.type === 'ORBIT') {
+        selectedTower.orbitMode = (selectedTower.orbitMode === 'far') ? 'near' : 'far';
     }
+    updateSellPanel(selectedTower);
 });
 
 // New event listener for the infinite gold button
@@ -527,33 +538,56 @@ canvas.addEventListener('click', (e) => {
         const towerToPlaceType = placingTower;
         if (gold < TOWER_TYPES[towerToPlaceType].cost) return;
 
-        let clickedOnTower = towers.find(t => {
+        const clickedOnTower = towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
             return tGridX === gridX && tGridY === gridY;
         });
 
-        if (clickedOnTower) {
+        // Case 1: Click is on an invalid spot (not a tower, not an empty spot) -> CANCEL
+        if (!clickedOnTower && !isValidPlacement(snappedX, snappedY)) {
+            placingTower = null;
+            actionTaken = true; // We performed the "cancel" action
+        }
+        // Case 2: Click is on an existing tower -> TRY MERGE
+        else if (clickedOnTower) {
             let merged = false;
             const originalTowerColor = clickedOnTower.color;
-            const mergingTowerColor = TOWER_TYPES[towerToPlaceType].color;
-            const diminishingFactor = 0.15;
-            const levelModifier = typeof clickedOnTower.level === 'number' ? Math.pow(1 - diminishingFactor, clickedOnTower.level - 1) : 1;
+            
+            const existingTowerLevel = clickedOnTower.level === 'MAX LEVEL' ? 5 : clickedOnTower.level;
+            const placedTowerLevel = 1;
 
+            // This block handles all merge combinations
             if (clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'SUPPORT') {
                 clickedOnTower.type = 'ENT';
                 clickedOnTower.level = 'MAX LEVEL';
                 clickedOnTower.cost += TOWER_TYPES['SUPPORT'].cost;
                 clickedOnTower.updateStats();
-                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.color = TOWER_TYPES.ENT.color;
                 merged = true;
             } else if (clickedOnTower.type === 'PIN' && towerToPlaceType === 'PIN') {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'NAT';
-                clickedOnTower.level = 1;
+                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
                 clickedOnTower.updateStats();
-                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.color = TOWER_TYPES.NAT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES['PIN'].cost;
+                merged = true;
+            } else if (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'CASTLE') {
+                const oldCost = clickedOnTower.cost;
+                // Directly modify the existing tower to become an Orbit tower
+                clickedOnTower.type = 'ORBIT';
+                clickedOnTower.orbitMode = 'far';
+                // Crucially, create new orbiters with a reference to THIS tower instance
+                clickedOnTower.orbiters = [
+                    new Projectile(clickedOnTower, null, 0),
+                    new Projectile(clickedOnTower, null, Math.PI)
+                ];
+                
+                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
+                clickedOnTower.updateStats(); // Recalculate stats for the new tower type and level
+                clickedOnTower.color = TOWER_TYPES.ORBIT.color;
+                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
             } else if (clickedOnTower.type === towerToPlaceType && clickedOnTower.level !== 'MAX LEVEL') {
                 if (clickedOnTower.level < 5) {
@@ -564,42 +598,55 @@ canvas.addEventListener('click', (e) => {
             } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'PIN') || (clickedOnTower.type === 'PIN' && towerToPlaceType === 'SUPPORT')) {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'PIN_HEART';
-                clickedOnTower.level = 1;
+                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
                 clickedOnTower.updateStats();
-                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.color = TOWER_TYPES.PIN_HEART.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
             } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'SUPPORT')) {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'FIREPLACE';
-                clickedOnTower.level = 1;
+                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
                 clickedOnTower.updateStats();
-                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.color = TOWER_TYPES.FIREPLACE.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
             } else if ((clickedOnTower.type === 'PIN' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'PIN')) {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'FORT';
-                clickedOnTower.level = 1;
+                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
                 clickedOnTower.updateStats();
-                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.color = TOWER_TYPES.FORT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
-            } else if ((['FORT', 'PIN_HEART', 'FIREPLACE', 'NAT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
+            } else if ((['FORT', 'PIN_HEART', 'FIREPLACE', 'NAT', 'ORBIT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
                 const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
                 if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
-                    if (towerToPlaceType === 'PIN') {
-                        clickedOnTower.damage += 0.5 * levelModifier;
-                        clickedOnTower.permFireRate *= (1 - (0.05 * levelModifier));
-                    } else if (towerToPlaceType === 'CASTLE') {
-                        clickedOnTower.damage += 2 * levelModifier;
-                        clickedOnTower.range += 10 * levelModifier;
-                        if (clickedOnTower.splashRadius) {
-                            clickedOnTower.splashRadius += 5 * levelModifier;
+                     const diminishingFactor = 0.15;
+                     const levelModifier = typeof clickedOnTower.level === 'number' ? Math.pow(1 - diminishingFactor, clickedOnTower.level - 1) : 1;
+                    
+                    if (clickedOnTower.type === 'ORBIT') {
+                        if (towerToPlaceType === 'PIN') {
+                            clickedOnTower.damage += 2 * levelModifier; // More significant damage boost
+                        } else if (towerToPlaceType === 'CASTLE') {
+                            clickedOnTower.damage += 1 * levelModifier; // Slight damage boost
+                            clickedOnTower.projectileSize += 1; // Increase projectile size
+                        }
+                    } else { // Generic logic for other hybrids
+                        if (towerToPlaceType === 'PIN') {
+                            clickedOnTower.damage += 0.5 * levelModifier;
+                            clickedOnTower.permFireRate *= (1 - (0.05 * levelModifier));
+                        } else if (towerToPlaceType === 'CASTLE') {
+                            clickedOnTower.damage += 2 * levelModifier;
+                            if (clickedOnTower.splashRadius) {
+                                clickedOnTower.splashRadius += 5 * levelModifier;
+                            }
                         }
                     }
+
                     clickedOnTower.level++;
                     clickedOnTower.cost += mergingTowerStats.cost;
+                    clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
                     merged = true;
                 }
             }
@@ -613,20 +660,24 @@ canvas.addEventListener('click', (e) => {
                 window.gold = gold;
                 placingTower = null;
                 actionTaken = true;
-            }
-        } else {
-            if (isValidPlacement(snappedX, snappedY)) {
-                towers.push(new Tower(snappedX, snappedY, placingTower));
-                if (placingTower === 'SUPPORT' && !hasPlacedFirstSupport) {
-                    announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180));
-                    hasPlacedFirstSupport = true;
-                }
-                placementGrid[gridY][gridX] = GRID_TOWER;
-                gold -= TOWER_TYPES[placingTower].cost;
-                window.gold = gold;
+            } else {
+                // Merge failed (e.g., max level), so we cancel placement mode
+                // and will fall through to select the tower instead.
                 placingTower = null;
-                actionTaken = true;
             }
+        }
+        // Case 3: Click is on a valid empty spot -> PLACE
+        else { 
+            towers.push(new Tower(snappedX, snappedY, placingTower));
+            if (placingTower === 'SUPPORT' && !hasPlacedFirstSupport) {
+                announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180));
+                hasPlacedFirstSupport = true;
+            }
+            placementGrid[gridY][gridX] = GRID_TOWER;
+            gold -= TOWER_TYPES[placingTower].cost;
+            window.gold = gold;
+            placingTower = null;
+            actionTaken = true;
         }
 
         if (!placingTower) {
@@ -650,13 +701,30 @@ canvas.addEventListener('click', (e) => {
 
 canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Scale mouse coordinates to match canvas resolution
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    mouse.x = mouseX * scaleX;
+    mouse.y = mouseY * scaleY;
 });
 
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
-    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+    const mouseX = evt.clientX - rect.left;
+    const mouseY = evt.clientY - rect.top;
+
+    // Scale mouse coordinates to match canvas resolution
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return { 
+        x: mouseX * scaleX, 
+        y: mouseY * scaleY
+    };
 }
 
 // This function initializes or resets the game to its starting state.

@@ -125,6 +125,15 @@ class Tower {
         this.updateStats(); // Set initial stats based on its type.
         this.cooldown = 0; // Timer for when it can shoot next.
         this.target = null; // The enemy it's currently aiming at.
+        
+        if (type === 'ORBIT') {
+            this.orbitMode = 'far';
+            // Create two persistent projectiles (orbiters)
+            this.orbiters = [
+                new Projectile(this, null, 0),
+                new Projectile(this, null, Math.PI) // 180 degrees apart
+            ];
+        }
     }
     // Updates the tower's stats when it's created, leveled up, or merged.
     updateStats() {
@@ -142,13 +151,16 @@ class Tower {
         }
 
         this.cost = baseStats.cost * levelForCalc;
-        this.range = baseStats.range * (1 + (levelForCalc - 1) * 0.1);
+        this.range = baseStats.range;
         this.damage = baseStats.damage * (1 + (levelForCalc - 1) * 0.5);
         this.permFireRate = baseStats.fireRate * Math.pow(0.9, levelForCalc - 1);
         this.fireRate = this.permFireRate;
         this.color = this.color || baseStats.color; // Preserve blended color
         this.projectileSpeed = baseStats.projectileSpeed;
-        this.projectileSize = baseStats.projectileSize;
+        // Only reset projectileSize if it hasn't been custom set by an upgrade
+        if (!this.projectileSize) {
+            this.projectileSize = baseStats.projectileSize;
+        }
         this.projectileColor = baseStats.projectileColor;
         this.splashRadius = baseStats.splashRadius;
         if (this.type === 'SUPPORT') {
@@ -161,7 +173,10 @@ class Tower {
     }
     // Draws the tower on the screen.
     draw(ctx) {
-        const iconSize = 28 + (this.level === 'MAX LEVEL' ? 4 : this.level * 2);
+        // Make the tower grow visually with each level, including MAX LEVEL
+        const visualLevel = this.level === 'MAX LEVEL' ? 6 : this.level;
+        const iconSize = 28 + (visualLevel * 2);
+        
         ctx.fillStyle = this.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -194,6 +209,10 @@ class Tower {
                     ctx.fillStyle = '#0891b2';
                 }
                 break;
+            case 'ORBIT':
+                icon = 'orbit';
+                iconFamily = "'Material Symbols Outlined'";
+                break;
         }
         
         ctx.font = `${iconSize}px ${iconFamily}`;
@@ -216,9 +235,17 @@ class Tower {
         
         ctx.fillText(icon, 0, 0);
         ctx.restore();
+
+        // Also draw the orbiters if this is an ORBIT tower
+        if (this.type === 'ORBIT') {
+            this.orbiters.forEach(orbiter => orbiter.draw(ctx));
+        }
     }
     // Draws the circle indicating the tower's range when it's selected.
     drawRange(ctx) {
+        // Orbit tower does not display a range circle.
+        if (this.type === 'ORBIT') return;
+
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -241,16 +268,37 @@ class Tower {
         ctx.fill();
         ctx.restore();
     }
-    // Finds the closest enemy to target.
+    // Finds an enemy to target based on tower type.
     findTarget(enemies) {
-        if (this.target && this.target.health > 0 && this.isInRange(this.target)) return;
+        // Sniper logic: Always find the highest health target in range.
+        if (this.type === 'NAT') {
+            let highestHealthEnemy = null;
+            let maxHealth = -1;
+            for (const enemy of enemies) {
+                if (this.isInRange(enemy) && enemy.health > maxHealth) {
+                    highestHealthEnemy = enemy;
+                    maxHealth = enemy.health;
+                }
+            }
+            this.target = highestHealthEnemy;
+            return; // Exit after sniper logic is complete.
+        }
+
+        // Default logic for all other towers (closest enemy).
+        // First, check if the current target is still valid to avoid re-targeting every frame.
+        if (this.target && this.target.health > 0 && this.isInRange(this.target)) {
+            return;
+        }
+
+        // If no valid target, find the closest new one.
         this.target = null;
         let closestDist = Infinity;
         for (const enemy of enemies) {
-            // Forts and Castles cannot target flying enemies.
-            if (enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT')) {
+            // Check for tower-specific restrictions against flying units.
+            if (enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT')) {
                 continue; // Skip this enemy.
             }
+
             const dist = Math.hypot(this.x - enemy.x, this.y - enemy.y);
             if (dist <= this.range && dist < closestDist) {
                 this.target = enemy;
@@ -263,9 +311,33 @@ class Tower {
         return Math.hypot(this.x - enemy.x, this.y - enemy.y) <= this.range;
     }
     // Updates the tower's state every frame (like finding a target and shooting).
-    update(enemies, projectiles) {
+    update(enemies, projectiles, onEnemyDeath) {
         if (this.type === 'SUPPORT' || this.type === 'ENT') {
             return; // Support and Ent towers don't attack.
+        }
+        
+        if (this.type === 'ORBIT') {
+            this.orbiters.forEach(orbiter => {
+                orbiter.update();
+                enemies.forEach(enemy => {
+                    // This ground-based projectile cannot hit flying enemies
+                    if (enemy.type.isFlying) return;
+
+                    // Use the tower's current projectileSize for collision, not the base one.
+                    const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
+                    if (dist < enemy.size + this.projectileSize) {
+                        if (!orbiter.hitEnemies.has(enemy)) {
+                            const finalDamage = this.damage * this.damageMultiplier;
+                            if (enemy.takeDamage(finalDamage)) {
+                                onEnemyDeath(enemy);
+                            }
+                             orbiter.hitEnemies.add(enemy);
+                             orbiter.hitCooldown = 15; // Cooldown before it can hit the same enemy
+                        }
+                    }
+                });
+            });
+            return;
         }
 
         this.findTarget(enemies);
@@ -284,37 +356,55 @@ class Tower {
 
 // This is the blueprint for a projectile (like an arrow or cannonball).
 class Projectile {
-    constructor(owner, target) {
+    constructor(owner, target, startAngle = 0) {
         this.owner = owner; // The tower that shot it.
         this.x = owner.x;
         this.y = owner.y;
         this.target = target; // The enemy it's flying towards.
+        
+        if (this.owner.type === 'ORBIT') {
+            this.angle = startAngle;
+            this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
+            this.hitEnemies = new Set();
+            this.hitCooldown = 0;
+        }
     }
     // Draws the projectile on the screen.
     draw(ctx) {
         let iconFamily = 'Material Icons';
         let icon;
         let rotation = 0;
-        const dx = this.target.x - this.x;
-        const dy = this.target.y - this.y;
-        const angle = Math.atan2(dy, dx);
+        
+        // Target might be null, so check before using.
+        if (this.target) {
+            const dx = this.target.x - this.x;
+            const dy = this.target.y - this.y;
+            const angle = Math.atan2(dy, dx);
+            rotation = angle;
+        }
 
         if (this.owner.type === 'PIN') {
             icon = 'chevron_right';
-            rotation = angle;
         } else if (this.owner.type === 'PIN_HEART') {
             icon = 'arrow_shape_up_stack_2';
             iconFamily = "'Material Symbols Outlined'";
-            rotation = angle + Math.PI / 2;
+            rotation += Math.PI / 2;
         } else if (this.owner.type === 'NAT') {
             icon = 'arrow_forward'; // Use an icon that points right by default
             iconFamily = "'Material Symbols Outlined'";
-            rotation = angle; // No offset needed, aligns directly with the target angle
+        } else if (this.owner.type === 'ORBIT') {
+            icon = 'circle';
+            iconFamily = "'Material Symbols Outlined'";
         }
         
         if (icon) {
             // Draws projectiles that are icons.
-            ctx.font = `24px ${iconFamily}`;
+            let fontSize = 24;
+            if (this.owner.type === 'ORBIT') {
+                 // Use the tower's current projectileSize, not the base one.
+                fontSize = this.owner.projectileSize * 3;
+            }
+            ctx.font = `${fontSize}px ${iconFamily}`;
             ctx.fillStyle = this.owner.projectileColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -333,6 +423,27 @@ class Projectile {
     }
     // Updates the projectile's state every frame (moving it).
     update(onHit, enemies) {
+        if (this.owner.type === 'ORBIT') {
+            // Update angle for orbital movement.
+            this.angle += this.owner.projectileSpeed / 30; 
+            
+            // Adjust orbit radius based on tower's current mode
+            this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
+            
+            // Recalculate position based on the owner's center and the orbit.
+            this.x = this.owner.x + Math.cos(this.angle) * this.orbitRadius;
+            this.y = this.owner.y + Math.sin(this.angle) * this.orbitRadius;
+
+            // Cooldown logic for hitting enemies
+            if (this.hitCooldown > 0) {
+                this.hitCooldown--;
+            } else {
+                this.hitEnemies.clear();
+            }
+            
+            return true; // Orbiters are persistent and managed by the tower.
+        }
+        
         // If the target is gone, and this is a PIN_HEART projectile, find a new target.
         if ((!this.target || this.target.health <= 0) && this.owner.type === 'PIN_HEART') {
             let closestEnemy = null;
@@ -454,3 +565,4 @@ class TextAnnouncement {
 
 // This line makes all the classes in this file available to other files that need them.
 export { Enemy, Tower, Projectile, Effect, TextAnnouncement };
+

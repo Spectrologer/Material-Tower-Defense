@@ -68,7 +68,16 @@ export function updateSellPanel(selectedTower) {
             uiElements.upgradeTowerBtn.classList.add('hidden');
         }
 
-        const isAuraTower = selectedTower.type === 'SUPPORT' || selectedTower.type === 'ENT';
+        // Hide toggle button by default, show it for specific towers
+        uiElements.toggleModeBtn.classList.add('hidden');
+        if (['ENT', 'ORBIT'].includes(selectedTower.type)) {
+            uiElements.toggleModeBtn.classList.remove('hidden');
+            if (selectedTower.type === 'ENT') {
+                uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
+            } else if (selectedTower.type === 'ORBIT') {
+                uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
+            }
+        }
 
         // Hide all optional stats by default
         document.getElementById('stat-damage-p').classList.add('hidden');
@@ -78,11 +87,14 @@ export function updateSellPanel(selectedTower) {
         document.getElementById('stat-slow-p').classList.add('hidden');
         document.getElementById('stat-burn-p').classList.add('hidden');
         document.getElementById('stat-special-p').classList.add('hidden');
-        uiElements.toggleModeBtn.classList.add('hidden');
 
-        // Show common stats
-        document.getElementById('stat-range-p').classList.remove('hidden');
-        document.getElementById('stat-range').textContent = Math.round(selectedTower.range);
+        // Show common stats, but hide range for ORBIT tower
+        if (selectedTower.type !== 'ORBIT') {
+            document.getElementById('stat-range-p').classList.remove('hidden');
+            document.getElementById('stat-range').textContent = Math.round(selectedTower.range);
+        } else {
+            document.getElementById('stat-range-p').classList.add('hidden');
+        }
 
         // Show special if it exists
         if (baseStats.special) {
@@ -91,10 +103,8 @@ export function updateSellPanel(selectedTower) {
         }
 
         // Show stats based on tower type
-        if (isAuraTower) {
+        if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT') {
             if (selectedTower.type === 'ENT') {
-                 uiElements.toggleModeBtn.classList.remove('hidden');
-                 uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
                  if (selectedTower.mode === 'boost') {
                     document.getElementById('stat-boost-p').classList.remove('hidden');
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
@@ -113,7 +123,12 @@ export function updateSellPanel(selectedTower) {
             document.getElementById('stat-damage-p').classList.remove('hidden');
             document.getElementById('stat-speed-p').classList.remove('hidden');
             document.getElementById('stat-damage').textContent = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
-            document.getElementById('stat-speed').textContent = (60 / selectedTower.fireRate).toFixed(2);
+            // For ORBIT tower, fire rate isn't applicable, so we hide it.
+            if (selectedTower.type !== 'ORBIT') {
+                document.getElementById('stat-speed').textContent = (60 / selectedTower.fireRate).toFixed(2);
+            } else {
+                 document.getElementById('stat-speed-p').classList.add('hidden');
+            }
             
             if (selectedTower.splashRadius > 0) {
                 document.getElementById('stat-splash-p').classList.remove('hidden');
