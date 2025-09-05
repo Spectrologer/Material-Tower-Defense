@@ -81,7 +81,10 @@ class Enemy {
             }
         }
         // If the enemy has no health, it should be removed from the game.
-        if(this.health <= 0) return false;
+        if(this.health <= 0) {
+            onDeath();
+            return false;
+        }
 
         // This section handles moving the enemy along the path.
         if (this.pathIndex >= this.path.length - 1) {
@@ -126,8 +129,9 @@ class Tower {
     // Updates the tower's stats when it's created, leveled up, or merged.
     updateStats() {
         const baseStats = TOWER_TYPES[this.type];
+        const levelForCalc = this.level === 'MAX LEVEL' ? 5 : this.level;
+
         if (this.type === 'ENT') {
-            // Ent has a boost and slow stat, not affected by its level since it can't be leveled up.
             this.level = 'MAX LEVEL';
             this.cost = baseStats.cost;
             this.range = baseStats.range;
@@ -137,27 +141,27 @@ class Tower {
             return;
         }
 
-        this.cost = baseStats.cost * this.level;
-        this.range = baseStats.range * (1 + (this.level - 1) * 0.1);
-        this.damage = baseStats.damage * (1 + (this.level - 1) * 0.5);
-        this.permFireRate = baseStats.fireRate * Math.pow(0.9, this.level - 1); // The base fire rate.
-        this.fireRate = this.permFireRate; // The current fire rate, which can be buffed.
-        this.color = baseStats.color;
+        this.cost = baseStats.cost * levelForCalc;
+        this.range = baseStats.range * (1 + (levelForCalc - 1) * 0.1);
+        this.damage = baseStats.damage * (1 + (levelForCalc - 1) * 0.5);
+        this.permFireRate = baseStats.fireRate * Math.pow(0.9, levelForCalc - 1);
+        this.fireRate = this.permFireRate;
+        this.color = this.color || baseStats.color; // Preserve blended color
         this.projectileSpeed = baseStats.projectileSpeed;
         this.projectileSize = baseStats.projectileSize;
         this.projectileColor = baseStats.projectileColor;
         this.splashRadius = baseStats.splashRadius;
         if (this.type === 'SUPPORT') {
-            this.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, this.level - 1);
+            this.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, levelForCalc - 1);
         }
         if (this.type === 'FIREPLACE') {
-            this.burnDps = baseStats.burnDps * (1 + (this.level - 1) * 0.5);
+            this.burnDps = baseStats.burnDps * (1 + (levelForCalc - 1) * 0.5);
             this.burnDuration = baseStats.burnDuration;
         }
     }
     // Draws the tower on the screen.
     draw(ctx) {
-        const iconSize = 28 + (this.level === 'MAX LEVEL' ? 4 : this.level * 4);
+        const iconSize = 28 + (this.level === 'MAX LEVEL' ? 4 : this.level * 2);
         ctx.fillStyle = this.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -182,8 +186,13 @@ class Tower {
                 iconFamily = "'Material Symbols Outlined'";
                 break;
             case 'ENT':
-                icon = 'ENT'; // Changed from 'forest' to 'ENT'
+                icon = 'psychology';
                 iconFamily = "'Material Symbols Outlined'";
+                if (this.mode === 'boost') {
+                    ctx.fillStyle = '#65a30d';
+                } else {
+                    ctx.fillStyle = '#0891b2';
+                }
                 break;
         }
         
@@ -323,8 +332,28 @@ class Projectile {
         }
     }
     // Updates the projectile's state every frame (moving it).
-    update(onHit) {
-        if (!this.target || this.target.health <= 0) return false; // Remove if target is gone.
+    update(onHit, enemies) {
+        // If the target is gone, and this is a PIN_HEART projectile, find a new target.
+        if ((!this.target || this.target.health <= 0) && this.owner.type === 'PIN_HEART') {
+            let closestEnemy = null;
+            let minDistance = Infinity;
+
+            for (const enemy of enemies) {
+                // Check if the enemy is within the original tower's range.
+                const distToTower = Math.hypot(this.owner.x - enemy.x, this.owner.y - enemy.y);
+                if (distToTower <= this.owner.range) {
+                    const distToProjectile = Math.hypot(this.x - enemy.x, this.y - enemy.y);
+                    if (distToProjectile < minDistance) {
+                        minDistance = distToProjectile;
+                        closestEnemy = enemy;
+                    }
+                }
+            }
+            this.target = closestEnemy; // Assign the new target, or null if none found.
+        }
+
+        if (!this.target || this.target.health <= 0) return false; // Remove if target is still gone.
+        
         const dx = this.target.x - this.x;
         const dy = this.target.y - this.y;
         const distance = Math.hypot(dx, dy);
@@ -353,9 +382,16 @@ class Effect {
     }
     // Draws the effect, making it grow and fade out.
     draw(ctx) {
-        const progress = 1 - (this.life / this.maxLife);
-        const currentSize = this.size * progress;
-        const opacity = 1 - progress;
+        // Updated logic to make money icons larger and fade slower.
+        let progress = 1 - (this.life / this.maxLife);
+        let currentSize = this.size * progress;
+        let opacity = 1 - progress;
+        
+        // This is the new logic for the money effect.
+        if (this.icon === 'attach_money') {
+            currentSize = this.size + (5 * progress); // Makes the icon grow bigger.
+            opacity = 1 - progress * 0.5; // Makes it fade out more slowly.
+        }
 
         ctx.font = `${currentSize}px 'Material Symbols Outlined'`;
         ctx.fillStyle = this.color;
@@ -403,7 +439,15 @@ class TextAnnouncement {
         // A little shadow makes the text easier to read.
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 5;
-        ctx.fillText(this.text, this.x, this.y);
+        
+        const lines = this.text.split('\n');
+        const lineHeight = 20;
+        const startY = this.y - ((lines.length - 1) * lineHeight) / 2;
+
+        lines.forEach((line, index) => {
+            ctx.fillText(line, this.x, startY + (index * lineHeight));
+        });
+        
         ctx.restore();
     }
 }

@@ -16,7 +16,13 @@ export const uiElements = {
     sellTowerBtn: document.getElementById('sell-tower'),
     toggleModeBtn: document.getElementById('toggle-mode'),
     speedToggleBtn: document.getElementById('speed-toggle'),
-    selectedTowerInfoEl: document.getElementById('selected-tower-info')
+    selectedTowerInfoEl: document.getElementById('selected-tower-info'),
+    soundToggleBtn: document.getElementById('sound-toggle-btn'),
+    upgradeTowerBtn: document.getElementById('upgrade-tower'),
+    // New elements for showing/hiding UI sections
+    towerButtons: document.getElementById('tower-buttons'),
+    gameControls: document.getElementById('game-controls'),
+    towersTitle: document.getElementById('towers-title')
 };
 
 export function updateUI(state) {
@@ -30,11 +36,38 @@ export function updateUI(state) {
 
 export function updateSellPanel(selectedTower) {
     if (selectedTower) {
+        // Hide general controls and show sell panel
+        uiElements.towerButtons.classList.add('hidden');
+        uiElements.gameControls.classList.add('hidden');
+        uiElements.towersTitle.classList.add('hidden');
+        uiElements.sellPanel.classList.remove('hidden');
+
         const sellValue = Math.floor(selectedTower.cost * 0.5);
-        uiElements.selectedTowerInfoEl.textContent = `${selectedTower.type.replace('_', ' ')} LVL ${selectedTower.level}`;
+        
+        let levelText;
+        if (selectedTower.level === 'MAX LEVEL') {
+            levelText = '<span class="material-icons">star</span> MAX LEVEL';
+        } else {
+            levelText = `LVL ${selectedTower.level}`;
+        }
+
+        uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
         uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
 
+        // Check if the tower can be upgraded
         const baseStats = TOWER_TYPES[selectedTower.type];
+        const canUpgrade = ['PIN', 'CASTLE'].includes(selectedTower.type);
+        const isMaxLevel = selectedTower.level === 5 || selectedTower.level === 'MAX LEVEL';
+        const upgradeCost = baseStats.cost;
+
+        if (canUpgrade && !isMaxLevel) {
+            uiElements.upgradeTowerBtn.classList.remove('hidden');
+            uiElements.upgradeTowerBtn.textContent = `UPGRADE FOR ${upgradeCost}G`;
+            uiElements.upgradeTowerBtn.disabled = window.gold < upgradeCost;
+        } else {
+            uiElements.upgradeTowerBtn.classList.add('hidden');
+        }
+
         const isAuraTower = selectedTower.type === 'SUPPORT' || selectedTower.type === 'ENT';
 
         // Hide all optional stats by default
@@ -79,7 +112,7 @@ export function updateSellPanel(selectedTower) {
         } else { // Attacking towers
             document.getElementById('stat-damage-p').classList.remove('hidden');
             document.getElementById('stat-speed-p').classList.remove('hidden');
-            document.getElementById('stat-damage').textContent = selectedTower.damage.toFixed(1);
+            document.getElementById('stat-damage').textContent = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
             document.getElementById('stat-speed').textContent = (60 / selectedTower.fireRate).toFixed(2);
             
             if (selectedTower.splashRadius > 0) {
@@ -92,10 +125,13 @@ export function updateSellPanel(selectedTower) {
             }
         }
 
-        uiElements.sellPanel.classList.remove('hidden');
     } else {
-        uiElements.selectedTowerInfoEl.textContent = '';
+        // Show general controls and hide sell panel
+        uiElements.towerButtons.classList.remove('hidden');
+        uiElements.gameControls.classList.remove('hidden');
+        uiElements.towersTitle.classList.remove('hidden');
         uiElements.sellPanel.classList.add('hidden');
+        uiElements.selectedTowerInfoEl.textContent = '';
     }
 }
 

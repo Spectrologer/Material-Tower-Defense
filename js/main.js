@@ -11,12 +11,55 @@ import { uiElements, updateUI, updateSellPanel, triggerGameOver } from './ui-man
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Helper function to blend two hex colors.
+function blendColors(colorA, colorB) {
+    const [rA, gA, bA] = colorA.match(/\w\w/g).map((c) => parseInt(c, 16));
+    const [rB, gB, bB] = colorB.match(/\w\w/g).map((c) => parseInt(c, 16));
+    const r = Math.round(rA * 0.5 + rB * 0.5).toString(16).padStart(2, '0');
+    const g = Math.round(gA * 0.5 + gB * 0.5).toString(16).padStart(2, '0');
+    const b = Math.round(bA * 0.5 + bB * 0.5).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+}
+
 // A variable to hold the canvas's width and height.
 let canvasWidth, canvasHeight;
 let lastCanvasWidth = 0; // Used to track canvas resizing.
+// The new AudioContext for generating sound.
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let isSoundEnabled = true;
+
+function playMoneySound() {
+    // Only play the sound if it is enabled.
+    if (!isSoundEnabled) return;
+
+    // Create an oscillator for a simple tone.
+    const oscillator = audioContext.createOscillator();
+    // Create a gain node to control the volume and create a fade-out effect.
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A simple "ding" tone (A5).
+
+    // Connect the nodes: oscillator -> gain -> speakers.
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Set the initial volume to a low value and increase it quickly.
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 0.01); // Made the sound slightly softer.
+
+    // Schedule a smooth fade-out.
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+
+    // Start the sound and stop it shortly after.
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
 
 // Game State: These variables keep track of everything happening in the game.
 let lives, gold, wave;
+// Make gold a global property on the window object so ui-manager can access it.
+window.gold = 0;
 let enemies = [];
 let towers = [];
 let projectiles = [];
@@ -35,7 +78,8 @@ let animationFrameId; // Used to control the game's animation loop.
 let mouse = { x: 0, y: 0 }; // Keeps track of the mouse position.
 let selectedTower = null;
 let gameSpeed = 1;
-
+// New variable to track clicks on the debug button
+let debugClickCount = 0;
 
 // This function resizes the canvas to fit the screen, especially for mobile.
 function resizeCanvas() {
@@ -150,43 +194,37 @@ function applyAuraEffects() {
             tower.damageMultiplier = 1; // Reset damage multiplier
         }
     });
-
+    
     enemies.forEach(enemy => {
         enemy.slowMultiplier = 1;
     });
 
-    // Apply speed boosts from Support towers.
-    const supportTowers = towers.filter(t => t.type === 'SUPPORT');
-    const attackingTowers = towers.filter(t => t.type !== 'SUPPORT' && t.type !== 'ENT');
-    supportTowers.forEach(supportTower => {
-        attackingTowers.forEach(attackTower => {
-            const dist = Math.hypot(supportTower.x - attackTower.x, supportTower.y - attackTower.y);
-            if (dist <= supportTower.range) {
-                attackTower.fireRate *= supportTower.attackSpeedBoost; 
+    // Apply effects from aura towers.
+    towers.forEach(auraTower => {
+        if (auraTower.type === 'SUPPORT' || auraTower.type === 'ENT') {
+            towers.forEach(targetTower => {
+                if (targetTower.type !== 'SUPPORT' && targetTower.type !== 'ENT') {
+                    const dist = Math.hypot(auraTower.x - targetTower.x, auraTower.y - targetTower.y);
+                    if (dist <= auraTower.range) {
+                        if (auraTower.type === 'SUPPORT') {
+                            targetTower.fireRate *= auraTower.attackSpeedBoost; 
+                        } else if (auraTower.type === 'ENT' && auraTower.mode === 'boost') {
+                            targetTower.fireRate *= auraTower.attackSpeedBoost;
+                            targetTower.damageMultiplier = Math.max(targetTower.damageMultiplier, auraTower.damageBoost);
+                        }
+                    }
+                }
+            });
+            // Also apply slow effects to enemies if the ENT tower is in slow mode
+            if (auraTower.type === 'ENT' && auraTower.mode === 'slow') {
+                 enemies.forEach(enemy => {
+                    const dist = Math.hypot(auraTower.x - enemy.x, auraTower.y - enemy.y);
+                    if (dist <= auraTower.range) {
+                        // Apply the strongest slow effect, non-stacking.
+                        enemy.slowMultiplier = Math.min(enemy.slowMultiplier, auraTower.enemySlow);
+                    }
+                });
             }
-        });
-    });
-
-    // Apply effects from Ent towers.
-    const entTowers = towers.filter(t => t.type === 'ENT');
-    entTowers.forEach(entTower => {
-        if (entTower.mode === 'boost') {
-             attackingTowers.forEach(attackTower => {
-                const dist = Math.hypot(entTower.x - attackTower.x, entTower.y - attackTower.y);
-                if (dist <= entTower.range) {
-                    // Corrected logic: We want to multiply the fire rate by the boost value, not set it with Math.min().
-                    attackTower.fireRate *= entTower.attackSpeedBoost;
-                    attackTower.damageMultiplier = Math.max(attackTower.damageMultiplier, entTower.damageBoost);
-                }
-            });
-        } else if (entTower.mode === 'slow') {
-            enemies.forEach(enemy => {
-                const dist = Math.hypot(entTower.x - enemy.x, entTower.y - enemy.y);
-                if (dist <= entTower.range) {
-                    // Apply the strongest slow effect, non-stacking.
-                    enemy.slowMultiplier = Math.min(enemy.slowMultiplier, entTower.enemySlow);
-                }
-            });
         }
     });
 }
@@ -201,6 +239,8 @@ function handleProjectileHit(projectile) {
         enemies.forEach(enemy => {
             if (Math.hypot(projectile.target.x - enemy.x, projectile.target.y - enemy.y) <= projectile.owner.splashRadius) {
                 if (enemy.takeDamage(finalDamage)) {
+                     // Add gold drop effect
+                     effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
                      gold += enemy.gold;
                 }
                 enemy.applyBurn(projectile.owner.burnDps, projectile.owner.burnDuration);
@@ -211,15 +251,20 @@ function handleProjectileHit(projectile) {
         enemies.forEach(enemy => {
             if (Math.hypot(projectile.target.x - enemy.x, projectile.target.y - enemy.y) <= projectile.owner.splashRadius) {
                 if (enemy.takeDamage(finalDamage)) {
+                    // Add gold drop effect
+                    effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
                     gold += enemy.gold;
                 }
             }
         });
     } else {
          if (projectile.target.takeDamage(finalDamage)) {
+            // Add gold drop effect
+            effects.push(new Effect(projectile.target.x, projectile.y, 'attach_money', projectile.target.gold * 5 + 10, '#FFD700', 30));
             gold += projectile.target.gold;
          }
     }
+    window.gold = gold; // Sync the global gold variable
     updateUI({ lives, gold, wave });
 }
 
@@ -231,7 +276,7 @@ function gameLoop() {
         applyAuraEffects(); // Now handling both boosts and slows
         towers.forEach(tower => tower.update(enemies, projectiles));
         
-        projectiles = projectiles.filter(p => p.update(handleProjectileHit));
+        projectiles = projectiles.filter(p => p.update(handleProjectileHit, enemies));
         
         enemies = enemies.filter(enemy => enemy.update(
             () => { // This happens when an enemy reaches the end of the path.
@@ -242,7 +287,10 @@ function gameLoop() {
                     triggerGameOver(false, wave);
                 }
             },
-            () => {} 
+            () => { // New onDeath callback to handle enemy death.
+                // Play the money sound when an enemy dies.
+                playMoneySound();
+            } 
         ));
         
         effects = effects.filter(effect => effect.update());
@@ -254,6 +302,7 @@ function gameLoop() {
             waveInProgress = false;
             uiElements.startWaveBtn.disabled = false;
             gold += 25 + wave * 2;
+            window.gold = gold;
             updateUI({ lives, gold, wave });
         }
     }
@@ -397,6 +446,16 @@ uiElements.speedToggleBtn.addEventListener('click', () => {
     uiElements.speedToggleBtn.textContent = `x${gameSpeed}`;
 });
 
+uiElements.soundToggleBtn.addEventListener('click', () => {
+    isSoundEnabled = !isSoundEnabled;
+    const soundIcon = document.getElementById('sound-icon');
+    if (isSoundEnabled) {
+        soundIcon.textContent = 'volume_up';
+    } else {
+        soundIcon.textContent = 'volume_off';
+    }
+});
+
 uiElements.sellTowerBtn.addEventListener('click', () => {
     if (selectedTower) {
         const gridX = Math.floor(selectedTower.x / TILE_SIZE);
@@ -404,10 +463,30 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
         placementGrid[gridY][gridX] = GRID_EMPTY;
 
         gold += Math.floor(selectedTower.cost * 0.5);
+        window.gold = gold; // Sync global gold
         towers = towers.filter(t => t !== selectedTower);
         selectedTower = null;
         updateUI({ lives, gold, wave });
         updateSellPanel(null);
+    }
+});
+
+uiElements.upgradeTowerBtn.addEventListener('click', () => {
+    if (selectedTower) {
+        const upgradeCost = TOWER_TYPES[selectedTower.type].cost;
+        if (gold >= upgradeCost) {
+            gold -= upgradeCost;
+            window.gold = gold;
+            if (selectedTower.level < 5) {
+                 selectedTower.level++;
+            }
+            if (selectedTower.level === 5) {
+                selectedTower.level = 'MAX LEVEL';
+            }
+            selectedTower.updateStats();
+            updateUI({ lives, gold, wave });
+            updateSellPanel(selectedTower);
+        }
     }
 });
 
@@ -418,12 +497,31 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
     }
 });
 
+// New event listener for the infinite gold button
+uiElements.infiniteGoldBtn = document.getElementById('infinite-gold');
+if (uiElements.infiniteGoldBtn) {
+    uiElements.infiniteGoldBtn.addEventListener('click', () => {
+        debugClickCount++;
+        if (debugClickCount >= 2) {
+            gold = 99999;
+            window.gold = gold;
+            debugClickCount = 0;
+            uiElements.infiniteGoldBtn.textContent = "DEBUG";
+        } else {
+            uiElements.infiniteGoldBtn.textContent = "CLICK AGAIN";
+        }
+        updateUI({ lives, gold, wave });
+    });
+}
+
 canvas.addEventListener('click', (e) => {
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
     const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
     const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
+
+    let actionTaken = false;
 
     if (placingTower) {
         const towerToPlaceType = placingTower;
@@ -435,112 +533,120 @@ canvas.addEventListener('click', (e) => {
             return tGridX === gridX && tGridY === gridY;
         });
 
-        // This is the logic for merging towers together.
-        if (clickedOnTower && clickedOnTower.level !== 'MAX LEVEL') {
+        if (clickedOnTower) {
             let merged = false;
-            // The rate at which bonuses decrease. A higher value means faster falloff.
-            const diminishingFactor = 0.15; 
-            const levelModifier = Math.pow(1 - diminishingFactor, clickedOnTower.level - 1);
+            const originalTowerColor = clickedOnTower.color;
+            const mergingTowerColor = TOWER_TYPES[towerToPlaceType].color;
+            const diminishingFactor = 0.15;
+            const levelModifier = typeof clickedOnTower.level === 'number' ? Math.pow(1 - diminishingFactor, clickedOnTower.level - 1) : 1;
 
             if (clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'SUPPORT') {
                 clickedOnTower.type = 'ENT';
                 clickedOnTower.level = 'MAX LEVEL';
-                clickedOnTower.cost = TOWER_TYPES['SUPPORT'].cost + TOWER_TYPES['SUPPORT'].cost;
+                clickedOnTower.cost += TOWER_TYPES['SUPPORT'].cost;
                 clickedOnTower.updateStats();
+                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
                 merged = true;
             } else if (clickedOnTower.type === 'PIN' && towerToPlaceType === 'PIN') {
-                 clickedOnTower.type = 'NAT';
-                 clickedOnTower.level = 1;
-                 clickedOnTower.cost += TOWER_TYPES['PIN'].cost;
-                 clickedOnTower.updateStats();
-                 merged = true;
-            } else if (clickedOnTower.type === towerToPlaceType) {
-                clickedOnTower.level++;
+                const oldCost = clickedOnTower.cost;
+                clickedOnTower.type = 'NAT';
+                clickedOnTower.level = 1;
                 clickedOnTower.updateStats();
+                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.cost = oldCost + TOWER_TYPES['PIN'].cost;
                 merged = true;
+            } else if (clickedOnTower.type === towerToPlaceType && clickedOnTower.level !== 'MAX LEVEL') {
+                if (clickedOnTower.level < 5) {
+                    clickedOnTower.level++;
+                    clickedOnTower.updateStats();
+                    merged = true;
+                }
             } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'PIN') || (clickedOnTower.type === 'PIN' && towerToPlaceType === 'SUPPORT')) {
+                const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'PIN_HEART';
                 clickedOnTower.level = 1;
-                clickedOnTower.cost = TOWER_TYPES['SUPPORT'].cost + TOWER_TYPES['PIN'].cost;
                 clickedOnTower.updateStats();
+                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
             } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'SUPPORT')) {
+                const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'FIREPLACE';
                 clickedOnTower.level = 1;
-                clickedOnTower.cost = TOWER_TYPES['SUPPORT'].cost + TOWER_TYPES['CASTLE'].cost;
                 clickedOnTower.updateStats();
+                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
             } else if ((clickedOnTower.type === 'PIN' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'PIN')) {
+                const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'FORT';
                 clickedOnTower.level = 1;
-                clickedOnTower.cost += TOWER_TYPES[towerToPlaceType].cost;
                 clickedOnTower.updateStats();
+                clickedOnTower.color = blendColors(originalTowerColor, mergingTowerColor);
+                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
-            } else if ((clickedOnTower.type === 'FORT' || clickedOnTower.type === 'PIN_HEART' || clickedOnTower.type === 'FIREPLACE' || clickedOnTower.type === 'NAT') && (towerToPlaceType === 'PIN' || towerToPlaceType === 'CASTLE')) {
+            } else if ((['FORT', 'PIN_HEART', 'FIREPLACE', 'NAT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
                 const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
-                if (towerToPlaceType === 'PIN') {
-                    clickedOnTower.damage += 0.5 * levelModifier;
-                    clickedOnTower.permFireRate *= (1 - (0.05 * levelModifier)); // 5% speed boost with falloff
-                } else if (towerToPlaceType === 'CASTLE') {
-                    clickedOnTower.damage += 2 * levelModifier;
-                    clickedOnTower.range += 10 * levelModifier;
-                    if (clickedOnTower.splashRadius) {
-                        clickedOnTower.splashRadius += 5 * levelModifier;
+                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                    if (towerToPlaceType === 'PIN') {
+                        clickedOnTower.damage += 0.5 * levelModifier;
+                        clickedOnTower.permFireRate *= (1 - (0.05 * levelModifier));
+                    } else if (towerToPlaceType === 'CASTLE') {
+                        clickedOnTower.damage += 2 * levelModifier;
+                        clickedOnTower.range += 10 * levelModifier;
+                        if (clickedOnTower.splashRadius) {
+                            clickedOnTower.splashRadius += 5 * levelModifier;
+                        }
                     }
+                    clickedOnTower.level++;
+                    clickedOnTower.cost += mergingTowerStats.cost;
+                    merged = true;
                 }
-                clickedOnTower.cost += mergingTowerStats.cost;
-                updateSellPanel(clickedOnTower);
-                merged = true;
-            } else if ((clickedOnTower.type === 'SUPPORT' || clickedOnTower.type === 'ENT') && (towerToPlaceType === 'PIN' || towerToPlaceType === 'CASTLE')) {
-                 const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
-                if (towerToPlaceType === 'PIN') {
-                   clickedOnTower.range += 10 * levelModifier;
-                   clickedOnTower.attackSpeedBoost *= (1 - (0.02 * levelModifier)); // 2% better boost with falloff
-                } else if (towerToPlaceType === 'CASTLE') {
-                    clickedOnTower.range += 25 * levelModifier;
-                    clickedOnTower.attackSpeedBoost *= (1 - (0.05 * levelModifier)); // 5% better boost with falloff
-                }
-                clickedOnTower.cost += mergingTowerStats.cost;
-                clickedOnTower.updateStats();
-                updateSellPanel(clickedOnTower);
-                merged = true;
+            }
+            
+            if (clickedOnTower.level === 5) {
+                clickedOnTower.level = 'MAX LEVEL';
             }
 
             if (merged) {
                 gold -= TOWER_TYPES[towerToPlaceType].cost;
-                placingTower = null; 
+                window.gold = gold;
+                placingTower = null;
+                actionTaken = true;
             }
-        } else { // This is for placing a new tower on an empty spot.
+        } else {
             if (isValidPlacement(snappedX, snappedY)) {
                 towers.push(new Tower(snappedX, snappedY, placingTower));
-                
-                // Check for the first support tower placement.
                 if (placingTower === 'SUPPORT' && !hasPlacedFirstSupport) {
-                    announcements.push(new TextAnnouncement("Support Agent is online.", canvasWidth / 2, 50, 180));
+                    announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180));
                     hasPlacedFirstSupport = true;
                 }
-
                 placementGrid[gridY][gridX] = GRID_TOWER;
                 gold -= TOWER_TYPES[placingTower].cost;
+                window.gold = gold;
                 placingTower = null;
+                actionTaken = true;
             }
         }
 
-        if (!placingTower) { // Resets the UI after you place or merge a tower.
+        if (!placingTower) {
             updateUI({ lives, gold, wave });
             uiElements.buyPinBtn.classList.remove('selected');
             uiElements.buyCastleBtn.classList.remove('selected');
             uiElements.buySupportBtn.classList.remove('selected');
         }
-    } else { // This handles selecting a tower that's already on the map.
+    }
+
+    if (!actionTaken) {
         selectedTower = towers.find(t => {
-             const tGridX = Math.floor(t.x / TILE_SIZE);
-             const tGridY = Math.floor(t.y / TILE_SIZE);
-             return tGridX === gridX && tGridY === gridY;
+            const tGridX = Math.floor(t.x / TILE_SIZE);
+            const tGridY = Math.floor(t.y / TILE_SIZE);
+            return tGridX === gridX && tGridY === gridY;
         }) || null;
         updateSellPanel(selectedTower);
     }
 });
+
 
 canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
@@ -557,6 +663,7 @@ function getMousePos(canvas, evt) {
 function init() {
     lives = 20;
     gold = 100;
+    window.gold = gold; // Sync the global gold variable
     wave = 0;
     enemies = [];
     towers = [];
