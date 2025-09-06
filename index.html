@@ -32,6 +32,15 @@
             color: #e0e0e0; /* Light text color */
             overflow: hidden; /* Prevents scrollbars */
             height: 100%;
+            /* This is the new rule to prevent text highlighting */
+            user-select: none;
+            -webkit-user-select: none; /* For WebKit browsers */
+            -moz-user-select: none; /* For Mozilla browsers */
+            -ms-user-select: none; /* For Internet Explorer/Edge */
+        }
+        /* New rule to change cursor when dragging */
+        body.is-dragging {
+            cursor: grabbing !important;
         }
         /* Style for the game's drawing area (the canvas) */
         canvas {
@@ -39,6 +48,7 @@
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); /* A nice green glow */
             border: 2px solid rgba(0, 255, 136, 0.4);
             position: absolute;
+            cursor: grab; /* Default cursor for grabbing on the canvas */
         }
         /* Style for all the UI panels (stats, towers, game over screen) */
         .game-ui-panel, .game-over-modal, .game-stats-panel {
@@ -113,6 +123,29 @@
             transform: translateY(2px);
             box-shadow: 2px 0 #991b1b;
         }
+        /* Custom tooltip styling */
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #00ff88;
+            border: 2px solid #00ff88;
+            padding: 8px;
+            font-size: 14px;
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none; /* Prevents the tooltip from blocking mouse events */
+        }
+        .bottom-controls {
+            background-color: rgba(26, 26, 26, 0.4);
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(0, 255, 136, 0.2);
+            padding: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center">
@@ -122,7 +155,7 @@
         
         <!-- This is the stats bar at the top (Lives, Gold, Wave) -->
         <div class="game-stats-panel py-1 px-2 flex-shrink-0 relative">
-            <h1 class="text-sm text-center text-green-400">ICONIC TOWER DEFENSE</h1>
+            <h1 class="text-sm text-center text-green-400">ICONIC TD</h1>
             <div class="flex justify-between items-center text-xs md:text-sm">
                 <div class="flex flex-1 justify-center items-center gap-x-4 md:gap-x-6">
                     <p class="flex items-center gap-1"><span class="material-symbols-outlined text-red-500 text-base md:text-lg">favorite</span> <span id="lives" class="text-red-500">20</span></p>
@@ -153,21 +186,15 @@
         
         <!-- This is the control panel at the bottom of the screen -->
         <div class="game-ui-panel p-4 w-full flex-shrink-0 flex flex-col gap-4">
-            <div class="flex justify-between items-center">
-                 <h2 id="towers-title" class="text-xl text-green-400">TOWERS</h2>
-                 <!-- This new section is for special upgrades like the Cloud -->
-                <div id="upgrade-buttons">
-                    <button id="unlock-cloud" class="pixel-button flex items-center justify-center !p-2 text-xs">
-                        <span class="material-symbols-outlined !text-lg">cloud</span>
-                        <span class="ml-1">(100G)</span>
-                    </button>
+            
+            <div id="tower-buttons-group">
+                <h2 id="towers-title" class="text-xl text-green-400">TOWERS</h2>
+                <!-- Buttons to buy the different towers -->
+                <div id="tower-buttons" class="grid grid-cols-3 gap-2 mt-2">
+                    <button id="buy-pin" class="pixel-button tower-button text-xs sm:text-sm">PIN (25G)</button>
+                    <button id="buy-castle" class="pixel-button tower-button text-xs sm:text-sm">CASTLE (75G)</button>
+                    <button id="buy-support" class="pixel-button tower-button text-xs sm:text-sm">SUPPORT (60G)</button>
                 </div>
-            </div>
-            <!-- Buttons to buy the different towers -->
-            <div id="tower-buttons" class="grid grid-cols-3 gap-2">
-                <button id="buy-pin" class="pixel-button tower-button text-xs sm:text-sm">PIN (25G)</button>
-                <button id="buy-castle" class="pixel-button tower-button text-xs sm:text-sm">CASTLE (75G)</button>
-                <button id="buy-support" class="pixel-button tower-button text-xs sm:text-sm">SUPPORT (60G)</button>
             </div>
             
             <!-- This panel appears when you select a tower you've already placed -->
@@ -202,9 +229,12 @@
 
             <!-- Buttons for starting the next wave, changing game speed, and the new debug button -->
             <div id="game-controls" class="flex gap-2 mt-auto">
-                <button id="infinite-gold" class="pixel-button w-1/3">DEBUG</button>
-                <button id="start-wave" class="pixel-button w-1/3">START WAVE</button>
-                <button id="speed-toggle" class="pixel-button w-1/3">x1</button>
+                <button id="start-wave" class="pixel-button flex-auto">START WAVE</button>
+                <button id="speed-toggle" class="pixel-button flex-auto">x1</button>
+                <button id="cloud-button" class="pixel-button flex-auto flex items-center justify-center !p-2 text-xs">
+                    <span id="cloud-icon" class="material-symbols-outlined !text-lg">cloud</span>
+                    <span id="cloud-text" class="ml-1">(100G)</span>
+                </button>
             </div>
         </div>
     </div>
@@ -215,6 +245,34 @@
             <h2 id="game-over-title" class="text-4xl mb-4">GAME OVER</h2>
             <p id="game-over-message" class="text-xl mb-6">You survived 0 waves!</p>
             <button id="restart-game" class="pixel-button text-2xl">RESTART</button>
+        </div>
+    </div>
+    
+    <!-- New Merge Confirmation Modal -->
+    <div id="merge-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-30">
+        <div class="game-ui-panel text-center p-6 w-11/12 max-w-sm">
+            <h3 class="text-lg sm:text-xl text-green-400 mb-4">CONFIRM MERGE</h3>
+            <div class="flex items-center justify-center gap-4 text-white text-sm sm:text-base">
+                <div class="flex flex-col items-center">
+                    <div id="merge-from-tower-icon-container" class="w-12 h-12 flex items-center justify-center text-3xl"></div>
+                    <span id="merge-from-tower-name" class="mt-1"></span>
+                </div>
+                <span class="material-symbols-outlined text-2xl text-yellow-400">add</span>
+                <div class="flex flex-col items-center">
+                    <div id="merge-to-tower-icon-container" class="w-12 h-12 flex items-center justify-center text-3xl"></div>
+                    <span id="merge-to-tower-name" class="mt-1"></span>
+                </div>
+                <span class="material-symbols-outlined text-2xl text-green-400">arrow_right_alt</span>
+                <div class="flex flex-col items-center">
+                    <div id="merge-result-tower-icon-container" class="w-12 h-12 flex items-center justify-center text-3xl"></div>
+                    <span id="merge-result-tower-name" class="mt-1"></span>
+                </div>
+            </div>
+            <div id="merge-cost-info" class="text-center text-yellow-400 text-sm my-4"></div>
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <button id="confirm-merge-btn" class="pixel-button bg-green-700 text-white border-green-500 shadow-[0_4px_0_#15803d]">CONFIRM</button>
+                <button id="cancel-merge-btn" class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c]">CANCEL</button>
+            </div>
         </div>
     </div>
 

@@ -10,6 +10,7 @@ import { uiElements, updateUI, updateSellPanel, triggerGameOver } from './ui-man
 // Setting up the drawing area (the canvas).
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const tooltipElement = document.getElementById('tooltip');
 
 // Helper function to blend two hex colors.
 function blendColors(colorA, colorB) {
@@ -57,8 +58,6 @@ function playMoneySound() {
 
 // Game State: These variables keep track of everything happening in the game.
 let lives, gold, wave;
-// Make gold a global property on the window object so ui-manager can access it.
-window.gold = 0;
 let enemies = [];
 let towers = [];
 let projectiles = [];
@@ -77,8 +76,6 @@ let animationFrameId; // Used to control the game's animation loop.
 let mouse = { x: 0, y: 0 }; // Keeps track of the mouse position.
 let selectedTower = null;
 let gameSpeed = 1;
-// New variable to track clicks on the debug button
-let debugClickCount = 0;
 // New variables for the Cloud Inventory feature
 let isCloudUnlocked = false;
 let cloudInventory = [];
@@ -90,6 +87,19 @@ let draggedCanvasTowerOriginalGridPos = {x: -1, y: -1}; // Stores the original p
 let mergeTooltip = { show: false, x: 0, y: 0, info: null };
 let longPressTimer = null;
 const LONG_PRESS_DURATION = 500; // 500 milliseconds for a long press
+
+// Global console function to add gold
+window.addGold = (amount) => {
+    const parsedAmount = parseInt(amount, 10);
+    if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        gold += parsedAmount;
+        updateUI({ lives, gold, wave, isCloudUnlocked });
+        announcements.push(new TextAnnouncement(`+${parsedAmount}G`, canvasWidth / 2, 80, 180, undefined, canvasWidth));
+        console.log(`Added ${parsedAmount} gold.`);
+    } else {
+        console.error("Invalid amount. Please provide a positive number.");
+    }
+};
 
 // This function scales the canvas display size to fit its container.
 function resizeCanvas() {
@@ -375,7 +385,6 @@ function handleProjectileHit(projectile, hitEnemy) {
             awardGold(targetEnemy);
          }
     }
-    window.gold = gold; // Sync the global gold variable
     updateUI({ lives, gold, wave, isCloudUnlocked });
 }
 
@@ -434,7 +443,6 @@ function gameLoop() {
                 }, 1500);
             }
 
-            window.gold = gold;
             updateUI({ lives, gold, wave, isCloudUnlocked });
         }
     }
@@ -492,14 +500,19 @@ function drawPlacementGrid() {
     const cols = Math.floor(canvasWidth / TILE_SIZE);
     const rows = Math.floor(canvasHeight / TILE_SIZE);
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-            if (placementGrid[y] && placementGrid[y][x] === GRID_EMPTY) {
-                ctx.beginPath();
-                ctx.arc(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 2, 0, Math.PI * 2);
-                ctx.fill();
+            const gridType = placementGrid[y][x];
+            // Draw a semi-transparent square to denote the tile.
+            if (gridType === GRID_EMPTY) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             }
+            // Draw a more defined border for empty spots and path to distinguish them
+            ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
     }
     const mouseGridX = Math.floor(mouse.x / TILE_SIZE);
@@ -517,8 +530,8 @@ function drawPlacementGrid() {
 function drawPath() {
     ctx.strokeStyle = '#555';
     ctx.lineWidth = TILE_SIZE;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
     ctx.beginPath();
     if (path.length > 0) {
          ctx.moveTo(0, path[0].y);
@@ -918,14 +931,19 @@ uiElements.soundToggleBtn.addEventListener('click', () => {
     }
 });
 
-uiElements.unlockCloudBtn.addEventListener('click', () => {
-    if (gold >= 100 && !isCloudUnlocked) {
-        gold -= 100;
-        isCloudUnlocked = true;
-        uiElements.cloudInventoryPanel.classList.remove('hidden');
-        updateUI({ lives, gold, wave, isCloudUnlocked });
-        // Recalculate canvas size after the layout has changed
-        resizeCanvas(); 
+uiElements.cloudButton.addEventListener('click', () => {
+    if (!isCloudUnlocked) {
+        if (gold >= 100) {
+            gold -= 100;
+            isCloudUnlocked = true;
+            uiElements.cloudInventoryPanel.classList.remove('hidden');
+            uiElements.cloudButton.disabled = false;
+            updateUI({ lives, gold, wave, isCloudUnlocked });
+            resizeCanvas();
+        }
+    } else {
+        uiElements.cloudInventoryPanel.classList.toggle('hidden');
+        resizeCanvas();
     }
 });
 
@@ -937,7 +955,6 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
         placementGrid[gridY][gridX] = GRID_EMPTY;
 
         gold += Math.floor(selectedTower.cost * 0.5);
-        window.gold = gold; // Sync global gold
         towers = towers.filter(t => t.id !== selectedTower.id);
         selectedTower = null;
         updateUI({ lives, gold, wave, isCloudUnlocked });
@@ -970,23 +987,6 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
     }
     updateSellPanel(selectedTower, isCloudUnlocked);
 });
-
-// New event listener for the infinite gold button
-uiElements.infiniteGoldBtn = document.getElementById('infinite-gold');
-if (uiElements.infiniteGoldBtn) {
-    uiElements.infiniteGoldBtn.addEventListener('click', () => {
-        debugClickCount++;
-        if (debugClickCount >= 2) {
-            gold = 99999;
-            window.gold = gold;
-            debugClickCount = 0;
-            uiElements.infiniteGoldBtn.textContent = "DEBUG";
-        } else {
-            uiElements.infiniteGoldBtn.textContent = "CLICK AGAIN";
-        }
-        updateUI({ lives, gold, wave, isCloudUnlocked });
-    });
-}
 
 canvas.addEventListener('click', (e) => {
     const mousePos = getMousePos(canvas, e);
@@ -1038,7 +1038,6 @@ canvas.addEventListener('click', (e) => {
                 const costOfPlacingTower = TOWER_TYPES[towerToPlaceType].cost;
                 if (performMerge(clickedOnTower, towerToPlaceType, costOfPlacingTower)) {
                     gold -= costOfPlacingTower;
-                    window.gold = gold;
                     placingTower = null;
                     actionTaken = true;
                     updateSellPanel(clickedOnTower, isCloudUnlocked); // Update panel to show new stats
@@ -1057,7 +1056,6 @@ canvas.addEventListener('click', (e) => {
                 }
                 placementGrid[gridY][gridX] = GRID_TOWER;
                 gold -= TOWER_TYPES[placingTower].cost;
-                window.gold = gold;
                 placingTower = null;
                 actionTaken = true;
             }
@@ -1155,8 +1153,11 @@ canvas.addEventListener('dragleave', () => {
     placingTower = null; // Clear preview when dragging off canvas
 });
 
-// This listener enables dragging a tower from the game canvas.
+// New dragstart listener on the canvas for dragging towers from the field.
 canvas.addEventListener('dragstart', (e) => {
+    // New: Add a class to the body to change the cursor
+    document.body.classList.add('is-dragging');
+
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
@@ -1176,7 +1177,6 @@ canvas.addEventListener('dragstart', (e) => {
     if (towerToDrag) {
         draggedCanvasTower = towerToDrag;
         draggedCanvasTowerOriginalGridPos = {x: gridX, y: gridY};
-        // Use a dataTransfer object to communicate the source and tower ID
         e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'canvas', towerId: towerToDrag.id }));
         
         // This is a common pattern to create a simple drag image from the canvas context
@@ -1198,10 +1198,17 @@ canvas.addEventListener('dragstart', (e) => {
     } else {
         // Prevent drag operation if no tower is selected.
         e.preventDefault();
+        // New: Remove the class if the drag is prevented
+        document.body.classList.remove('is-dragging');
     }
 });
 
-// This listener handles dropping a tower onto the cloud inventory panel.
+// New: Add dragend listener to remove the class from the body
+canvas.addEventListener('dragend', () => {
+    document.body.classList.remove('is-dragging');
+});
+
+// New drop listener for the cloud inventory panel
 uiElements.cloudInventoryPanel.addEventListener('dragover', e => {
     e.preventDefault(); // This is crucial to allow a drop
 });
@@ -1383,7 +1390,6 @@ function getMousePos(canvas, evt) {
 function init() {
     lives = 20;
     gold = 100;
-    window.gold = gold; // Sync the global gold variable
     wave = 0;
     enemies = [];
     towers = [];
