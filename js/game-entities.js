@@ -120,8 +120,11 @@ class Tower {
         this.y = y;
         this.type = type;
         this.level = 1;
+        this.damageLevel = 1; // Separate level for damage calculation
         this.mode = 'boost'; // 'boost' or 'slow'
         this.damageMultiplier = 1; // New property to handle non-stacking damage boosts.
+        this.projectileCount = 1;
+        this.damageMultiplierFromMerge = 1; // Handles damage buffs from merges.
         this.updateStats(); // Set initial stats based on its type.
         this.cooldown = 0; // Timer for when it can shoot next.
         this.target = null; // The enemy it's currently aiming at.
@@ -139,6 +142,7 @@ class Tower {
     updateStats() {
         const baseStats = TOWER_TYPES[this.type];
         const levelForCalc = this.level === 'MAX LEVEL' ? 5 : this.level;
+        const damageLevelForCalc = this.damageLevel === 'MAX LEVEL' ? 5 : this.damageLevel;
 
         if (this.type === 'ENT') {
             this.level = 'MAX LEVEL';
@@ -152,7 +156,7 @@ class Tower {
 
         this.cost = baseStats.cost * levelForCalc;
         this.range = baseStats.range;
-        this.damage = baseStats.damage * (1 + (levelForCalc - 1) * 0.5);
+        this.damage = baseStats.damage * (1 + (damageLevelForCalc - 1) * 0.5) * this.damageMultiplierFromMerge;
         this.permFireRate = baseStats.fireRate * Math.pow(0.9, levelForCalc - 1);
         this.fireRate = this.permFireRate;
         this.color = this.color || baseStats.color; // Preserve blended color
@@ -295,7 +299,7 @@ class Tower {
         let closestDist = Infinity;
         for (const enemy of enemies) {
             // Check for tower-specific restrictions against flying units.
-            if (enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT')) {
+            if (enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT' || this.type === 'FIREPLACE')) {
                 continue; // Skip this enemy.
             }
 
@@ -350,7 +354,30 @@ class Tower {
     }
     // Creates a new projectile when the tower shoots.
     shoot(projectiles) {
-        projectiles.push(new Projectile(this, this.target));
+        if (this.projectileCount > 1 && this.target) {
+            const angleToTarget = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+            const spreadAngle = Math.PI / 24; // 7.5 degrees
+
+            // Central projectile always aims true
+            projectiles.push(new Projectile(this, this.target));
+
+            // Additional projectiles
+            for (let i = 1; i < this.projectileCount; i++) {
+                const side = (i % 2 === 0) ? -1 : 1;
+                const magnitude = Math.ceil(i / 2);
+                const offsetAngle = angleToTarget + (spreadAngle * magnitude * side);
+
+                // A fake target to give the projectile a direction
+                const fakeTarget = {
+                    x: this.x + Math.cos(offsetAngle) * (this.range + 50),
+                    y: this.y + Math.sin(offsetAngle) * (this.range + 50),
+                    health: Infinity // Make it unkillable
+                };
+                projectiles.push(new Projectile(this, fakeTarget));
+            }
+        } else {
+            projectiles.push(new Projectile(this, this.target));
+        }
     }
 }
 
@@ -443,6 +470,22 @@ class Projectile {
             
             return true; // Orbiters are persistent and managed by the tower.
         }
+
+        // For projectiles with "fake" targets (like spreadshots), we do a collision check.
+        if (this.target && typeof this.target.takeDamage !== 'function') {
+            for (const enemy of enemies) {
+                // Specific tower types cannot hit flying enemies
+                if (enemy.type.isFlying && (this.owner.type === 'CASTLE' || this.owner.type === 'FORT' || this.owner.type === 'FIREPLACE')) {
+                    continue; 
+                }
+
+                const dist = Math.hypot(this.x - enemy.x, this.y - enemy.y);
+                if (dist < enemy.size) {
+                    onHit(this, enemy); // We hit a real enemy, pass it to the handler
+                    return false; // Remove the projectile
+                }
+            }
+        }
         
         // If the target is gone, and this is a PIN_HEART projectile, find a new target.
         if ((!this.target || this.target.health <= 0) && this.owner.type === 'PIN_HEART') {
@@ -516,18 +559,19 @@ class Effect {
 
 // This is the new blueprint for the text announcements that appear at the top of the screen.
 class TextAnnouncement {
-    constructor(text, x, y, duration) {
+    constructor(text, x, y, duration, color = '#00ff88', maxWidth = Infinity) {
         this.text = text;
         this.x = x;
         this.y = y;
         this.life = duration; // How long the announcement stays on screen (in frames).
         this.maxLife = duration;
+        this.color = color;
+        this.maxWidth = maxWidth;
     }
 
     // Updates the announcement's state each frame.
     update() {
         this.life--;
-        this.y -= 0.25; // Makes the text float upwards more slowly.
         return this.life > 0; // Tells the main loop to remove it when its life is over.
     }
 
@@ -543,16 +587,41 @@ class TextAnnouncement {
 
         ctx.save();
         ctx.globalAlpha = opacity;
-        ctx.fillStyle = '#00ff88'; // Green text to match the UI theme.
-        ctx.font = "16px 'Press Start 2P'";
+        ctx.fillStyle = this.color;
+        
+        let fontSize = 16;
+        ctx.font = `${fontSize}px 'Press Start 2P'`;
+
+        const lines = this.text.split('\n');
+        
+        let longestLine = '';
+        let maxLineWidth = 0;
+
+        // Find the longest line so we can scale the font if needed.
+        for (const line of lines) {
+            const currentLineWidth = ctx.measureText(line).width;
+            if (currentLineWidth > maxLineWidth) {
+                maxLineWidth = currentLineWidth;
+                longestLine = line;
+            }
+        }
+
+        const safeMaxWidth = this.maxWidth * 0.9; // Use 90% of the canvas width for a safe margin.
+        
+        // If the longest line is wider than our safe area, we scale the font size down.
+        if (maxLineWidth > safeMaxWidth) {
+            const ratio = safeMaxWidth / maxLineWidth;
+            fontSize *= ratio;
+            ctx.font = `${fontSize}px 'Press Start 2P'`;
+        }
+        
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         // A little shadow makes the text easier to read.
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 5;
         
-        const lines = this.text.split('\n');
-        const lineHeight = 20;
+        const lineHeight = fontSize * 1.25; // Line height should be relative to the new font size.
         const startY = this.y - ((lines.length - 1) * lineHeight) / 2;
 
         lines.forEach((line, index) => {
@@ -565,4 +634,3 @@ class TextAnnouncement {
 
 // This line makes all the classes in this file available to other files that need them.
 export { Enemy, Tower, Projectile, Effect, TextAnnouncement };
-

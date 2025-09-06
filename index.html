@@ -113,10 +113,10 @@
         <div class="game-stats-panel py-1 px-2 flex-shrink-0 relative">
             <h1 class="text-sm text-center text-green-400">MATERIAL TOWER DEFENSE</h1>
             <div class="flex justify-between items-center text-xs md:text-sm">
-                <div class="flex flex-1 justify-around">
-                    <p>LIVES: <span id="lives" class="text-red-500">20</span></p>
-                    <p>GOLD: <span id="gold" class="text-yellow-400">100</span></p>
-                    <p>WAVE: <span id="wave" class="text-cyan-400">0</span></p>
+                <div class="flex flex-1 justify-center items-center gap-x-4 md:gap-x-6">
+                    <p class="flex items-center gap-1"><span class="material-symbols-outlined text-red-500 text-base md:text-lg">favorite</span> <span id="lives" class="text-red-500">20</span></p>
+                    <p class="flex items-center gap-1"><span class="material-symbols-outlined text-yellow-400 text-base md:text-lg">paid</span> <span id="gold" class="text-yellow-400">100</span></p>
+                    <p class="flex items-center gap-1 text-cyan-400">WAVE: <span id="wave" class="text-cyan-400">0</span></p>
                 </div>
                 <!-- Container for the sound toggle button -->
                 <button id="sound-toggle-btn" class="text-xs px-2 py-1">
@@ -151,6 +151,7 @@
                     <p id="stat-range-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Range">radar</span> Rng: <span id="stat-range">0</span></p>
                     <p id="stat-speed-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Attack Speed">speed</span> Spd: <span id="stat-speed">0</span>/s</p>
                     <p id="stat-splash-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Splash Radius">bubble_chart</span> Spl: <span id="stat-splash">0</span></p>
+                    <p id="stat-projectiles-p" class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" title="Projectiles">multiple_stop</span> Proj: <span id="stat-projectiles">0</span></p>
                     <p id="stat-boost-p" class="flex items-center gap-1"><span class="material-icons text-base align-bottom" title="Boost">electric_bolt</span> Bst: <span id="stat-boost">0</span>%</p>
                     <p id="stat-slow-p" class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" title="Slow">hourglass_empty</span> Slw: <span id="stat-slow">0</span>%</p>
                     <p id="stat-burn-p" class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" title="Burn Damage">local_fire_department</span> Brn: <span id="stat-burn">0/s</span></p>

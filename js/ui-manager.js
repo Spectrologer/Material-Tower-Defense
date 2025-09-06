@@ -87,6 +87,7 @@ export function updateSellPanel(selectedTower) {
         document.getElementById('stat-slow-p').classList.add('hidden');
         document.getElementById('stat-burn-p').classList.add('hidden');
         document.getElementById('stat-special-p').classList.add('hidden');
+        document.getElementById('stat-projectiles-p').classList.add('hidden');
 
         // Show common stats, but hide range for ORBIT tower
         if (selectedTower.type !== 'ORBIT') {
@@ -103,6 +104,11 @@ export function updateSellPanel(selectedTower) {
         }
 
         // Show stats based on tower type
+        if (selectedTower.type === 'NAT') {
+            document.getElementById('stat-projectiles-p').classList.remove('hidden');
+            document.getElementById('stat-projectiles').textContent = selectedTower.projectileCount || 1;
+        }
+        
         if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT') {
             if (selectedTower.type === 'ENT') {
                  if (selectedTower.mode === 'boost') {
@@ -157,6 +163,6 @@ export function triggerGameOver(isWin, wave) {
         uiElements.gameOverMessage.textContent = `You conquered all ${wave} waves!`;
     } else {
         uiElements.gameOverTitle.textContent = "GAME OVER";
-        uiElements.gameOverMessage.textContent = `You survived ${wave -1} waves.`;
+        uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }

@@ -129,15 +129,16 @@ function resizeCanvas() {
 
 // This function creates a new wave of enemies.
 function spawnWave() {
-    wave++;
+    // wave variable now represents completed waves. The next wave is wave + 1.
     waveInProgress = true;
-    updateUI({ lives, gold, wave });
+    updateUI({ lives, gold, wave: wave + 1 }); // Show the user the wave they are starting
     uiElements.startWaveBtn.disabled = true;
 
-    // This logic creates special "swarm" waves every 4th wave.
-    const isSwarmWave = wave > 0 && wave % 4 === 0;
+    // All calculations should be based on the wave that is about to start.
+    const nextWave = wave + 1;
+    const isSwarmWave = nextWave > 0 && nextWave % 4 === 0;
 
-    const enemyCount = isSwarmWave ? 15 + wave * 5 : 5 + wave * 3;
+    const enemyCount = isSwarmWave ? 15 + nextWave * 5 : 5 + nextWave * 3;
     const spawnRate = isSwarmWave ? 150 : 500; // Swarm enemies spawn much faster.
     
     let spawned = 0;
@@ -154,11 +155,11 @@ function spawnWave() {
         } else {
             // On normal waves, spawn a random mix of enemies.
             const rand = Math.random();
-            if (wave >= 4 && rand < 0.2) { // 20% chance for Flying from wave 4
+            if (nextWave >= 4 && rand < 0.2) { // 20% chance for Flying from wave 4
                 enemyType = ENEMY_TYPES.FLYING;
-            } else if (wave >= 6 && rand < 0.4) { // 20% chance for Heavy from wave 6 (rand is 0.2-0.4)
+            } else if (nextWave >= 6 && rand < 0.4) { // 20% chance for Heavy from wave 6 (rand is 0.2-0.4)
                 enemyType = ENEMY_TYPES.HEAVY;
-            } else if (wave >= 3 && rand < 0.7) { // 30% chance for Fast from wave 3 (rand is 0.4-0.7)
+            } else if (nextWave >= 3 && rand < 0.7) { // 30% chance for Fast from wave 3 (rand is 0.4-0.7)
                 enemyType = ENEMY_TYPES.FAST;
             } else { // 30% chance for Normal (or 100% on wave 1-2)
                 enemyType = ENEMY_TYPES.NORMAL;
@@ -172,12 +173,12 @@ function spawnWave() {
             introducedEnemies.add(enemyTypeName); // ...add it to our set of seen enemies...
             // ...and create a new announcement that will last for 3 seconds (180 frames).
             const displayName = enemyType.icon.replace(/_/g, ' '); // Makes names like 'bug_report' look like 'bug report'.
-            announcements.push(new TextAnnouncement(`New Enemy: ${displayName}`, canvasWidth / 2, 50, 180));
+            announcements.push(new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 180, undefined, canvasWidth));
         }
         
-        const healthMultiplier = 1 + (wave - 1) * 0.15;
+        const healthMultiplier = 1 + (nextWave - 1) * 0.15;
         // Swarm enemies get less of a health boost in later waves to keep them weak.
-        const finalHealth = isSwarmWave ? enemyType.health * (1 + (wave - 1) * 0.05) : enemyType.health * healthMultiplier;
+        const finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : enemyType.health * healthMultiplier;
         const finalEnemyType = {...enemyType, health: Math.ceil(finalHealth)};
 
         enemies.push(new Enemy(finalEnemyType, path));
@@ -230,38 +231,52 @@ function applyAuraEffects() {
 }
 
 // This function is called when a projectile hits an enemy.
-function handleProjectileHit(projectile) {
+function handleProjectileHit(projectile, hitEnemy) {
+    const targetEnemy = hitEnemy || projectile.target;
+
+    // If the target isn't a valid enemy (e.g., a fake target for spreadshot), do nothing.
+    // This projectile will just expire without hitting anything.
+    if (!targetEnemy || typeof targetEnemy.takeDamage !== 'function') {
+        return;
+    }
+    
     // Calculate final damage with multipliers
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier;
 
     if (projectile.owner.type === 'FIREPLACE') {
-        effects.push(new Effect(projectile.target.x, projectile.target.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
+        effects.push(new Effect(targetEnemy.x, targetEnemy.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
         enemies.forEach(enemy => {
-            if (Math.hypot(projectile.target.x - enemy.x, projectile.target.y - enemy.y) <= projectile.owner.splashRadius) {
-                if (enemy.takeDamage(finalDamage)) {
-                     // Add gold drop effect
-                     effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
-                     gold += enemy.gold;
+            if (Math.hypot(targetEnemy.x - enemy.x, targetEnemy.y - enemy.y) <= projectile.owner.splashRadius) {
+                // The direct target always takes damage. Others take splash if not immune.
+                if (enemy === targetEnemy || !enemy.type.splashImmune) {
+                    if (enemy.takeDamage(finalDamage)) {
+                         // Add gold drop effect
+                         effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
+                         gold += enemy.gold;
+                    }
+                    enemy.applyBurn(projectile.owner.burnDps, projectile.owner.burnDuration);
                 }
-                enemy.applyBurn(projectile.owner.burnDps, projectile.owner.burnDuration);
             }
         });
     } else if (projectile.owner.splashRadius > 0) {
-        effects.push(new Effect(projectile.target.x, projectile.target.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
+        effects.push(new Effect(targetEnemy.x, targetEnemy.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
         enemies.forEach(enemy => {
-            if (Math.hypot(projectile.target.x - enemy.x, projectile.target.y - enemy.y) <= projectile.owner.splashRadius) {
-                if (enemy.takeDamage(finalDamage)) {
-                    // Add gold drop effect
-                    effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
-                    gold += enemy.gold;
+            if (Math.hypot(targetEnemy.x - enemy.x, targetEnemy.y - enemy.y) <= projectile.owner.splashRadius) {
+                 // The direct target always takes damage. Others take splash if not immune.
+                 if (enemy === targetEnemy || !enemy.type.splashImmune) {
+                    if (enemy.takeDamage(finalDamage)) {
+                        // Add gold drop effect
+                        effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
+                        gold += enemy.gold;
+                    }
                 }
             }
         });
     } else {
-         if (projectile.target.takeDamage(finalDamage)) {
+         if (targetEnemy.takeDamage(finalDamage)) {
             // Add gold drop effect
-            effects.push(new Effect(projectile.target.x, projectile.y, 'attach_money', projectile.target.gold * 5 + 10, '#FFD700', 30));
-            gold += projectile.target.gold;
+            effects.push(new Effect(targetEnemy.x, projectile.y, 'attach_money', targetEnemy.gold * 5 + 10, '#FFD700', 30));
+            gold += targetEnemy.gold;
          }
     }
     window.gold = gold; // Sync the global gold variable
@@ -309,10 +324,34 @@ function gameLoop() {
         // Checks if the wave is over.
         if(waveInProgress && enemies.length === 0){
             waveInProgress = false;
+            wave++; // The wave is now officially complete, so we increment the counter.
             uiElements.startWaveBtn.disabled = false;
-            gold += 25 + wave * 2;
+            
+            // Calculate and add interest on unspent gold (starting after wave 1 is complete)
+            // This now runs after wave 2 is completed (when wave becomes 2)
+            if (wave > 1) {
+                const interestEarned = Math.floor(gold * 0.05);
+                if (interestEarned > 0) {
+                    gold += interestEarned;
+                    // Announce the interest earned
+                    announcements.push(new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 180, undefined, canvasWidth));
+                }
+            }
+
+            // Add a smaller flat bonus for completing the wave
+            const waveBonus = 10 + wave;
+            gold += waveBonus;
+            
+            // Add a warning for the next wave if it contains flying enemies for the first time
+            // This now correctly warns at the end of wave 3 for the upcoming wave 4.
+            if (wave === 3) {
+                setTimeout(() => {
+                    announcements.push(new TextAnnouncement("Warning:\nFlying enemies incoming!", canvasWidth / 2, canvasHeight / 2, 300, '#ff4d4d', canvasWidth)); // Longer duration
+                }, 1500); // 1.5 second delay
+            }
+
             window.gold = gold;
-            updateUI({ lives, gold, wave });
+            updateUI({ lives, gold, wave }); // The UI now shows the number of completed waves.
         }
     }
     
@@ -553,14 +592,14 @@ canvas.addEventListener('click', (e) => {
         else if (clickedOnTower) {
             let merged = false;
             const originalTowerColor = clickedOnTower.color;
-            
+            // Capture the level of the tower on the grid before any changes.
             const existingTowerLevel = clickedOnTower.level === 'MAX LEVEL' ? 5 : clickedOnTower.level;
-            const placedTowerLevel = 1;
-
+            
             // This block handles all merge combinations
             if (clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'SUPPORT') {
                 clickedOnTower.type = 'ENT';
                 clickedOnTower.level = 'MAX LEVEL';
+                clickedOnTower.damageLevel = 'MAX LEVEL';
                 clickedOnTower.cost += TOWER_TYPES['SUPPORT'].cost;
                 clickedOnTower.updateStats();
                 clickedOnTower.color = TOWER_TYPES.ENT.color;
@@ -568,7 +607,10 @@ canvas.addEventListener('click', (e) => {
             } else if (clickedOnTower.type === 'PIN' && towerToPlaceType === 'PIN') {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'NAT';
-                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
+                clickedOnTower.level = existingTowerLevel; 
+                clickedOnTower.damageLevel = existingTowerLevel;
+                clickedOnTower.projectileCount = 1; // Initialize projectile count for new NAT
+                clickedOnTower.damageMultiplierFromMerge = 1; // Initialize damage multiplier
                 clickedOnTower.updateStats();
                 clickedOnTower.color = TOWER_TYPES.NAT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES['PIN'].cost;
@@ -584,7 +626,8 @@ canvas.addEventListener('click', (e) => {
                     new Projectile(clickedOnTower, null, Math.PI)
                 ];
                 
-                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
+                clickedOnTower.level = existingTowerLevel; 
+                clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats(); // Recalculate stats for the new tower type and level
                 clickedOnTower.color = TOWER_TYPES.ORBIT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
@@ -592,13 +635,15 @@ canvas.addEventListener('click', (e) => {
             } else if (clickedOnTower.type === towerToPlaceType && clickedOnTower.level !== 'MAX LEVEL') {
                 if (clickedOnTower.level < 5) {
                     clickedOnTower.level++;
+                    if(clickedOnTower.damageLevel) clickedOnTower.damageLevel++;
                     clickedOnTower.updateStats();
                     merged = true;
                 }
             } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'PIN') || (clickedOnTower.type === 'PIN' && towerToPlaceType === 'SUPPORT')) {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'PIN_HEART';
-                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
+                clickedOnTower.level = existingTowerLevel;
+                clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats();
                 clickedOnTower.color = TOWER_TYPES.PIN_HEART.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
@@ -606,7 +651,8 @@ canvas.addEventListener('click', (e) => {
             } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'SUPPORT')) {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'FIREPLACE';
-                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
+                clickedOnTower.level = existingTowerLevel; 
+                clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats();
                 clickedOnTower.color = TOWER_TYPES.FIREPLACE.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
@@ -614,12 +660,55 @@ canvas.addEventListener('click', (e) => {
             } else if ((clickedOnTower.type === 'PIN' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'PIN')) {
                 const oldCost = clickedOnTower.cost;
                 clickedOnTower.type = 'FORT';
-                clickedOnTower.level = Math.min(existingTowerLevel + placedTowerLevel, 5);
+                clickedOnTower.level = existingTowerLevel; 
+                clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats();
                 clickedOnTower.color = TOWER_TYPES.FORT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
-            } else if ((['FORT', 'PIN_HEART', 'FIREPLACE', 'NAT', 'ORBIT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
+            } else if (clickedOnTower.type === 'NAT' && towerToPlaceType === 'CASTLE') { // Specific logic for NAT + CASTLE merge
+                const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                    
+                    if (!clickedOnTower.projectileCount) clickedOnTower.projectileCount = 1;
+                    
+                    clickedOnTower.level++; // Only increase visual/cost level
+                    clickedOnTower.projectileCount++;
+                    
+                    clickedOnTower.updateStats();
+                    clickedOnTower.cost += mergingTowerStats.cost;
+                    clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.CASTLE.color);
+                    merged = true;
+                }
+            } else if (clickedOnTower.type === 'NAT' && towerToPlaceType === 'PIN') { // Specific logic for NAT + PIN merge
+                const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                    
+                    if (clickedOnTower.damageMultiplierFromMerge === undefined) clickedOnTower.damageMultiplierFromMerge = 1;
+                    
+                    clickedOnTower.level++;
+                    clickedOnTower.damageLevel++; // Increase both levels for damage scaling
+                    clickedOnTower.damageMultiplierFromMerge *= 1.25; // 25% more damage
+                    
+                    clickedOnTower.updateStats();
+                    clickedOnTower.cost += mergingTowerStats.cost;
+                    clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.PIN.color);
+                    merged = true;
+                }
+            } else if (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'NAT') {
+                 // This logic path is currently unreachable because you can't select NAT to place.
+                const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                    clickedOnTower.type = 'NAT';
+                    clickedOnTower.level = 1; // New hybrid towers start at level 1
+                    clickedOnTower.damageLevel = 1;
+                    clickedOnTower.projectileCount = 2; // Becomes a NAT with an extra projectile
+                    clickedOnTower.updateStats();
+                    clickedOnTower.cost += mergingTowerStats.cost;
+                    clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.NAT.color);
+                    merged = true;
+                }
+            } else if ((['FORT', 'PIN_HEART', 'FIREPLACE', 'ORBIT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
                 const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
                 if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
                      const diminishingFactor = 0.15;
@@ -645,6 +734,7 @@ canvas.addEventListener('click', (e) => {
                     }
 
                     clickedOnTower.level++;
+                    if(clickedOnTower.damageLevel) clickedOnTower.damageLevel++;
                     clickedOnTower.cost += mergingTowerStats.cost;
                     clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
                     merged = true;
@@ -653,6 +743,7 @@ canvas.addEventListener('click', (e) => {
             
             if (clickedOnTower.level === 5) {
                 clickedOnTower.level = 'MAX LEVEL';
+                if(clickedOnTower.damageLevel) clickedOnTower.damageLevel = 'MAX LEVEL';
             }
 
             if (merged) {
@@ -660,6 +751,7 @@ canvas.addEventListener('click', (e) => {
                 window.gold = gold;
                 placingTower = null;
                 actionTaken = true;
+                updateSellPanel(clickedOnTower); // Update panel to show new stats
             } else {
                 // Merge failed (e.g., max level), so we cancel placement mode
                 // and will fall through to select the tower instead.
@@ -670,7 +762,7 @@ canvas.addEventListener('click', (e) => {
         else { 
             towers.push(new Tower(snappedX, snappedY, placingTower));
             if (placingTower === 'SUPPORT' && !hasPlacedFirstSupport) {
-                announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180));
+                announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180, undefined, canvasWidth));
                 hasPlacedFirstSupport = true;
             }
             placementGrid[gridY][gridX] = GRID_TOWER;
