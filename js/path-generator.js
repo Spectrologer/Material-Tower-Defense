@@ -1,4 +1,4 @@
-import { TILE_SIZE, GRID_EMPTY, GRID_PATH } from './constants.js';
+import { TILE_SIZE, GRID_EMPTY, GRID_PATH, GRID_COLS, GRID_ROWS } from './constants.js';
 
 // Define a single, fixed layout generator for a portrait view.
 const generateFixedPortraitLayout = (cols, rows) => {
@@ -20,9 +20,9 @@ const generateFixedPortraitLayout = (cols, rows) => {
     return p;
 };
 
-export function generatePath(canvasWidth, canvasHeight) {
-    const cols = Math.floor(canvasWidth / TILE_SIZE);
-    const rows = Math.floor(canvasHeight / TILE_SIZE);
+export function generatePath() {
+    const cols = GRID_COLS;
+    const rows = GRID_ROWS;
     
     let path = [];
     let placementGrid = Array(rows).fill(null).map(() => Array(cols).fill(GRID_EMPTY));

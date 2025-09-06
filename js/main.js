@@ -1,7 +1,7 @@
 // This file is the "brain" of the game. It sets everything up and runs the main game loop.
 
 // Imports: Pulling in all the different parts of the game from other files.
-import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER } from './constants.js';
+import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { generatePath } from './path-generator.js';
 // We now import the new TextAnnouncement class as well.
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
@@ -23,7 +23,6 @@ function blendColors(colorA, colorB) {
 
 // A variable to hold the canvas's width and height.
 let canvasWidth, canvasHeight;
-let lastCanvasWidth = 0; // Used to track canvas resizing.
 // The new AudioContext for generating sound.
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let isSoundEnabled = true;
@@ -81,11 +80,13 @@ let gameSpeed = 1;
 // New variable to track clicks on the debug button
 let debugClickCount = 0;
 
-// This function resizes the canvas to fit the screen, especially for mobile.
+// This function scales the canvas display size to fit its container.
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
     if (!container) return;
-    const aspectRatio = 9 / 16; // Portrait aspect ratio
+    
+    // The canvas's internal aspect ratio is now fixed by our constants.
+    const aspectRatio = canvas.width / canvas.height;
 
     const availableWidth = container.clientWidth;
     const availableHeight = container.clientHeight;
@@ -100,32 +101,15 @@ function resizeCanvas() {
         newWidth = newHeight * aspectRatio;
     }
 
-    // Set the display size of the canvas
+    // Set the CSS display size of the canvas
     canvas.style.width = `${newWidth}px`;
     canvas.style.height = `${newHeight}px`;
 
     // Center the canvas within the container
     canvas.style.left = `${(availableWidth - newWidth) / 2}px`;
     canvas.style.top = `${(availableHeight - newHeight) / 2}px`;
-
-
-    // ONLY update the internal resolution and regenerate the path
-    // if the actual canvas width has changed. This prevents vertical
-    // resizing from breaking the game by resetting the maze.
-    if (lastCanvasWidth !== newWidth) {
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-
-        canvasWidth = canvas.width;
-        canvasHeight = canvas.height;
-        lastCanvasWidth = canvasWidth; // Store the new width
-
-        // Generates the maze path based on the new canvas size.
-        const pathData = generatePath(canvasWidth, canvasHeight);
-        path = pathData.path;
-        placementGrid = pathData.placementGrid;
-    }
 }
+
 
 // This function creates a new wave of enemies.
 function spawnWave() {
@@ -519,25 +503,6 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
     }
 });
 
-uiElements.upgradeTowerBtn.addEventListener('click', () => {
-    if (selectedTower) {
-        const upgradeCost = TOWER_TYPES[selectedTower.type].cost;
-        if (gold >= upgradeCost) {
-            gold -= upgradeCost;
-            window.gold = gold;
-            if (selectedTower.level < 5) {
-                 selectedTower.level++;
-            }
-            if (selectedTower.level === 5) {
-                selectedTower.level = 'MAX LEVEL';
-            }
-            selectedTower.updateStats();
-            updateUI({ lives, gold, wave });
-            updateSellPanel(selectedTower);
-        }
-    }
-});
-
 uiElements.toggleModeBtn.addEventListener('click', () => {
     if (selectedTower && selectedTower.type === 'ENT') {
         selectedTower.mode = (selectedTower.mode === 'boost') ? 'slow' : 'boost';
@@ -838,7 +803,6 @@ function init() {
     gameOver = false;
     selectedTower = null;
     gameSpeed = 1;
-    lastCanvasWidth = 0; // Force path regeneration on new game
     uiElements.speedToggleBtn.textContent = 'x1';
     
     uiElements.buyPinBtn.classList.remove('selected');
@@ -850,7 +814,21 @@ function init() {
     updateUI({ lives, gold, wave });
     updateSellPanel(null);
     
-    resizeCanvas(); 
+    // Set the fixed, internal resolution of the game canvas.
+    // This will NOT change, ensuring the grid size is always the same.
+    canvas.width = GRID_COLS * TILE_SIZE;
+    canvas.height = GRID_ROWS * TILE_SIZE;
+    canvasWidth = canvas.width;
+    canvasHeight = canvas.height;
+
+    // Generate the game path and grid based on the fixed dimensions.
+    const pathData = generatePath(); // No longer needs width/height arguments.
+    path = pathData.path;
+    placementGrid = pathData.placementGrid;
+    
+    // Call resizeCanvas to scale the canvas element to fit the window.
+    resizeCanvas();
+    
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     gameLoop();
 }
@@ -863,3 +841,4 @@ window.addEventListener('resize', resizeCanvas);
 document.fonts.ready.then(() => {
     init(); // Start the game!
 });
+

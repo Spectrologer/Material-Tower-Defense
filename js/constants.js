@@ -1,3 +1,5 @@
+export const GRID_COLS = 11;
+export const GRID_ROWS = 18;
 export const TILE_SIZE = 40;
 export const GRID_EMPTY = 0;
 export const GRID_PATH = 1;
@@ -24,4 +26,3 @@ export const ENEMY_TYPES = {
     SWARM: { speed: 3.0, health: 4, color: '#00e6e6', size: 10, gold: 1, icon: 'bug_report', iconFamily: 'Material Icons' },
     FLYING: { speed: 2.0, health: 15, color: '#9a67ea', size: 16, gold: 2, icon: 'helicopter', iconFamily: "'Material Symbols Outlined'", isFlying: true, splashImmune: true }
 };
-

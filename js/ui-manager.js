@@ -54,19 +54,8 @@ export function updateSellPanel(selectedTower) {
         uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
         uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
 
-        // Check if the tower can be upgraded
-        const baseStats = TOWER_TYPES[selectedTower.type];
-        const canUpgrade = ['PIN', 'CASTLE'].includes(selectedTower.type);
-        const isMaxLevel = selectedTower.level === 5 || selectedTower.level === 'MAX LEVEL';
-        const upgradeCost = baseStats.cost;
-
-        if (canUpgrade && !isMaxLevel) {
-            uiElements.upgradeTowerBtn.classList.remove('hidden');
-            uiElements.upgradeTowerBtn.textContent = `UPGRADE FOR ${upgradeCost}G`;
-            uiElements.upgradeTowerBtn.disabled = window.gold < upgradeCost;
-        } else {
-            uiElements.upgradeTowerBtn.classList.add('hidden');
-        }
+        // Upgrading is now done via merging, so the upgrade button is always hidden.
+        uiElements.upgradeTowerBtn.classList.add('hidden');
 
         // Hide toggle button by default, show it for specific towers
         uiElements.toggleModeBtn.classList.add('hidden');
@@ -98,6 +87,7 @@ export function updateSellPanel(selectedTower) {
         }
 
         // Show special if it exists
+        const baseStats = TOWER_TYPES[selectedTower.type];
         if (baseStats.special) {
             document.getElementById('stat-special-p').classList.remove('hidden');
             document.getElementById('stat-special').textContent = baseStats.special;
