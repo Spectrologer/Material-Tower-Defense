@@ -79,11 +79,18 @@ let selectedTower = null;
 let gameSpeed = 1;
 // New variable to track clicks on the debug button
 let debugClickCount = 0;
+// New variables for the Cloud Inventory feature
+let isCloudUnlocked = false;
+let cloudInventory = [];
+let placingFromCloud = null; // Stores the tower object being placed from the cloud
 
 // This function scales the canvas display size to fit its container.
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
     if (!container) return;
+    
+    // GUARD CLAUSE: If canvas resolution hasn't been set yet, don't try to resize.
+    if (!canvas.width || !canvas.height) return;
     
     // The canvas's internal aspect ratio is now fixed by our constants.
     const aspectRatio = canvas.width / canvas.height;
@@ -110,12 +117,75 @@ function resizeCanvas() {
     canvas.style.top = `${(availableHeight - newHeight) / 2}px`;
 }
 
+// Gets the correct icon string and the class needed to display it.
+function getTowerIconInfo(type) {
+    let icon;
+    let className = 'material-icons'; // Default to the standard icon set
+    switch (type) {
+        case 'PIN': icon = 'location_pin'; break;
+        case 'CASTLE': icon = 'castle'; break;
+        case 'FORT': icon = 'fort'; break;
+        case 'SUPPORT': icon = 'support_agent'; break;
+        case 'PIN_HEART': 
+            icon = 'map_pin_heart'; 
+            className = "material-symbols-outlined";
+            break;
+        case 'FIREPLACE':
+            icon = 'fireplace';
+            className = "material-symbols-outlined";
+            break;
+        case 'NAT':
+            icon = 'nat';
+            className = "material-symbols-outlined";
+            break;
+        case 'ENT':
+            icon = 'psychology';
+            className = "material-symbols-outlined";
+            break;
+        case 'ORBIT':
+            icon = 'orbit';
+            className = "material-symbols-outlined";
+            break;
+        default:
+            icon = 'help'; // Default icon for unknown types
+            break;
+    }
+    return { icon, className };
+}
+
+// Renders the towers currently stored in the cloud inventory.
+function renderCloudInventory() {
+    uiElements.cloudInventorySlots.innerHTML = '';
+    cloudInventory.forEach(tower => {
+        const towerIconInfo = getTowerIconInfo(tower.type);
+        const isSelected = placingFromCloud === tower;
+
+        const towerRep = document.createElement('button');
+        // Add a 'selected' class if this tower is being placed.
+        towerRep.className = `pixel-button p-1 w-full h-14 flex flex-col items-center justify-center relative ${isSelected ? 'selected' : ''}`;
+        
+        // Use the tower's blended color for its button background.
+        const towerColor = (tower.type === 'ENT' && tower.mode === 'slow') ? '#0891b2' : tower.color;
+        towerRep.style.backgroundColor = towerColor;
+        towerRep.style.borderColor = towerColor;
+        
+        const levelDisplay = tower.level === 'MAX LEVEL' ? 'MAX' : tower.level;
+
+        towerRep.innerHTML = `
+            <span class="${towerIconInfo.className}" style="font-size: 28px; color: #1a1a1a; font-variation-settings: 'FILL' 1;">${towerIconInfo.icon}</span>
+            <span class="absolute bottom-0 right-1 text-xs font-bold text-black" style="text-shadow: 0 0 2px white, 0 0 2px white;">${levelDisplay}</span>
+        `;
+        
+        towerRep.addEventListener('click', () => handleCloudTowerClick(tower));
+        uiElements.cloudInventorySlots.appendChild(towerRep);
+    });
+}
 
 // This function creates a new wave of enemies.
 function spawnWave() {
     // wave variable now represents completed waves. The next wave is wave + 1.
     waveInProgress = true;
-    updateUI({ lives, gold, wave: wave + 1 }); // Show the user the wave they are starting
+    updateUI({ lives, gold, wave: wave + 1, isCloudUnlocked }); // Show the user the wave they are starting
     uiElements.startWaveBtn.disabled = true;
 
     // All calculations should be based on the wave that is about to start.
@@ -264,7 +334,7 @@ function handleProjectileHit(projectile, hitEnemy) {
          }
     }
     window.gold = gold; // Sync the global gold variable
-    updateUI({ lives, gold, wave });
+    updateUI({ lives, gold, wave, isCloudUnlocked });
 }
 
 // The main loop that runs continuously to update and draw the game.
@@ -278,7 +348,7 @@ function gameLoop() {
             effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
             gold += enemy.gold;
             window.gold = gold;
-            updateUI({ lives, gold, wave });
+            updateUI({ lives, gold, wave, isCloudUnlocked });
             playMoneySound();
         };
 
@@ -289,7 +359,7 @@ function gameLoop() {
         enemies = enemies.filter(enemy => enemy.update(
             () => { // This happens when an enemy reaches the end of the path.
                 lives--;
-                updateUI({ lives, gold, wave });
+                updateUI({ lives, gold, wave, isCloudUnlocked });
                 if (lives <= 0) {
                     gameOver = true;
                     triggerGameOver(false, wave);
@@ -335,7 +405,7 @@ function gameLoop() {
             }
 
             window.gold = gold;
-            updateUI({ lives, gold, wave }); // The UI now shows the number of completed waves.
+            updateUI({ lives, gold, wave, isCloudUnlocked }); // The UI now shows the number of completed waves.
         }
     }
     
@@ -368,6 +438,13 @@ function gameLoop() {
         const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
 
         const tempTower = new Tower(snappedX, snappedY, placingTower);
+        // If placing from cloud, use the actual tower's properties for the preview
+        if (placingFromCloud) {
+            Object.assign(tempTower, placingFromCloud);
+            tempTower.x = snappedX;
+            tempTower.y = snappedY;
+        }
+
         tempTower.draw(ctx);
         tempTower.drawRange(ctx);
         if (!isValidPlacement(snappedX, snappedY)) {
@@ -457,13 +534,33 @@ function isValidPlacement(x, y) {
 function selectTowerToPlace(towerType) {
     const cost = TOWER_TYPES[towerType].cost;
     if (gold >= cost) {
+        // Cancel any cloud placement if a new tower is selected.
+        if (placingFromCloud) {
+            placingFromCloud = null;
+            renderCloudInventory();
+        }
         placingTower = (placingTower === towerType) ? null : towerType;
         selectedTower = null;
-        updateSellPanel(null);
+        updateSellPanel(null, isCloudUnlocked);
         uiElements.buyPinBtn.classList.toggle('selected', placingTower === 'PIN');
         uiElements.buyCastleBtn.classList.toggle('selected', placingTower === 'CASTLE');
         uiElements.buySupportBtn.classList.toggle('selected', placingTower === 'SUPPORT');
     }
+}
+
+// Handles clicking a tower in the cloud inventory to start placing it.
+function handleCloudTowerClick(towerToPlace) {
+    if (placingTower) { // If already placing something, cancel it first.
+        placingTower = null;
+        placingFromCloud = null;
+        // Deselect buy buttons if any were active
+        document.querySelectorAll('.tower-button.selected').forEach(btn => btn.classList.remove('selected'));
+    }
+    placingFromCloud = towerToPlace;
+    placingTower = towerToPlace.type; // Used for the visual preview
+    selectedTower = null;
+    updateSellPanel(null, isCloudUnlocked);
+    renderCloudInventory(); // Re-render to show which tower is selected
 }
 
 // Event Listeners: These watch for clicks and other user actions.
@@ -488,6 +585,18 @@ uiElements.soundToggleBtn.addEventListener('click', () => {
     }
 });
 
+uiElements.unlockCloudBtn.addEventListener('click', () => {
+    if (gold >= 100 && !isCloudUnlocked) {
+        gold -= 100;
+        isCloudUnlocked = true;
+        uiElements.cloudInventoryPanel.classList.remove('hidden');
+        updateUI({ lives, gold, wave, isCloudUnlocked });
+        // Recalculate canvas size after the layout has changed
+        resizeCanvas(); 
+    }
+});
+
+// Listener for the "Sell" button in the selected tower panel.
 uiElements.sellTowerBtn.addEventListener('click', () => {
     if (selectedTower) {
         const gridX = Math.floor(selectedTower.x / TILE_SIZE);
@@ -498,10 +607,27 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
         window.gold = gold; // Sync global gold
         towers = towers.filter(t => t !== selectedTower);
         selectedTower = null;
-        updateUI({ lives, gold, wave });
-        updateSellPanel(null);
+        updateUI({ lives, gold, wave, isCloudUnlocked });
+        updateSellPanel(null, isCloudUnlocked);
     }
 });
+
+// Listener for the "Move to Cloud" button in the selected tower panel.
+uiElements.moveToCloudBtn.addEventListener('click', () => {
+    if (selectedTower) {
+        const gridX = Math.floor(selectedTower.x / TILE_SIZE);
+        const gridY = Math.floor(selectedTower.y / TILE_SIZE);
+        placementGrid[gridY][gridX] = GRID_EMPTY;
+
+        cloudInventory.push(selectedTower);
+        towers = towers.filter(t => t !== selectedTower);
+        renderCloudInventory();
+
+        selectedTower = null;
+        updateSellPanel(null, isCloudUnlocked);
+    }
+});
+
 
 uiElements.toggleModeBtn.addEventListener('click', () => {
     if (selectedTower && selectedTower.type === 'ENT') {
@@ -509,7 +635,7 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
     } else if (selectedTower && selectedTower.type === 'ORBIT') {
         selectedTower.orbitMode = (selectedTower.orbitMode === 'far') ? 'near' : 'far';
     }
-    updateSellPanel(selectedTower);
+    updateSellPanel(selectedTower, isCloudUnlocked);
 });
 
 // New event listener for the infinite gold button
@@ -525,7 +651,7 @@ if (uiElements.infiniteGoldBtn) {
         } else {
             uiElements.infiniteGoldBtn.textContent = "CLICK AGAIN";
         }
-        updateUI({ lives, gold, wave });
+        updateUI({ lives, gold, wave, isCloudUnlocked });
     });
 }
 
@@ -539,241 +665,264 @@ canvas.addEventListener('click', (e) => {
     let actionTaken = false;
 
     if (placingTower) {
-        const towerToPlaceType = placingTower;
-        if (gold < TOWER_TYPES[towerToPlaceType].cost) return;
-
-        const clickedOnTower = towers.find(t => {
-            const tGridX = Math.floor(t.x / TILE_SIZE);
-            const tGridY = Math.floor(t.y / TILE_SIZE);
-            return tGridX === gridX && tGridY === gridY;
-        });
-
-        // Case 1: Click is on an invalid spot (not a tower, not an empty spot) -> CANCEL
-        if (!clickedOnTower && !isValidPlacement(snappedX, snappedY)) {
-            placingTower = null;
-            actionTaken = true; // We performed the "cancel" action
-        }
-        // Case 2: Click is on an existing tower -> TRY MERGE
-        else if (clickedOnTower) {
-            let merged = false;
-            const originalTowerColor = clickedOnTower.color;
-            // Capture the level of the tower on the grid before any changes.
-            const existingTowerLevel = clickedOnTower.level === 'MAX LEVEL' ? 5 : clickedOnTower.level;
-            
-            // This block handles all merge combinations
-            if (clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'SUPPORT') {
-                clickedOnTower.type = 'ENT';
-                clickedOnTower.level = 'MAX LEVEL';
-                clickedOnTower.damageLevel = 'MAX LEVEL';
-                clickedOnTower.cost += TOWER_TYPES['SUPPORT'].cost;
-                clickedOnTower.updateStats();
-                clickedOnTower.color = TOWER_TYPES.ENT.color;
-                merged = true;
-            } else if (clickedOnTower.type === 'PIN' && towerToPlaceType === 'PIN') {
-                const oldCost = clickedOnTower.cost;
-                clickedOnTower.type = 'NAT';
-                clickedOnTower.level = existingTowerLevel; 
-                clickedOnTower.damageLevel = existingTowerLevel;
-                clickedOnTower.projectileCount = 1; // Initialize projectile count for new NAT
-                clickedOnTower.damageMultiplierFromMerge = 1; // Initialize damage multiplier
-                clickedOnTower.updateStats();
-                clickedOnTower.splashRadius = TOWER_TYPES.NAT.splashRadius;
-                clickedOnTower.color = TOWER_TYPES.NAT.color;
-                clickedOnTower.cost = oldCost + TOWER_TYPES['PIN'].cost;
-                merged = true;
-            } else if (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'CASTLE') {
-                const oldCost = clickedOnTower.cost;
-                // Directly modify the existing tower to become an Orbit tower
-                clickedOnTower.type = 'ORBIT';
-                clickedOnTower.orbitMode = 'far';
-                // Crucially, create new orbiters with a reference to THIS tower instance
-                clickedOnTower.orbiters = [
-                    new Projectile(clickedOnTower, null, 0),
-                    new Projectile(clickedOnTower, null, Math.PI)
-                ];
+        if (placingFromCloud) {
+            // Logic for placing a tower FROM the cloud inventory
+            if (isValidPlacement(snappedX, snappedY)) {
+                placingFromCloud.x = snappedX;
+                placingFromCloud.y = snappedY;
+                towers.push(placingFromCloud);
+                cloudInventory = cloudInventory.filter(t => t !== placingFromCloud);
+                placementGrid[gridY][gridX] = GRID_TOWER;
                 
-                clickedOnTower.level = existingTowerLevel; 
-                clickedOnTower.damageLevel = existingTowerLevel;
-                clickedOnTower.updateStats(); // Recalculate stats for the new tower type and level
-                clickedOnTower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
-                clickedOnTower.color = TOWER_TYPES.ORBIT.color;
-                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
-                merged = true;
-            } else if (clickedOnTower.type === towerToPlaceType && clickedOnTower.level !== 'MAX LEVEL') {
-                if (clickedOnTower.level < 5) {
-                    clickedOnTower.level++;
-                    if(clickedOnTower.damageLevel) clickedOnTower.damageLevel++;
+                actionTaken = true;
+                renderCloudInventory();
+            } else {
+                // Clicked on an invalid spot, so cancel placement
+                actionTaken = true; // Still counts as an action to prevent selecting a tower underneath
+            }
+            placingTower = null;
+            placingFromCloud = null;
+            renderCloudInventory(); // Redraw to remove selection highlight
+            
+        } else {
+             // This is the original logic for buying and merging a NEW tower
+            const towerToPlaceType = placingTower;
+            if (gold < TOWER_TYPES[towerToPlaceType].cost) return;
+
+            const clickedOnTower = towers.find(t => {
+                const tGridX = Math.floor(t.x / TILE_SIZE);
+                const tGridY = Math.floor(t.y / TILE_SIZE);
+                return tGridX === gridX && tGridY === gridY;
+            });
+
+            // Case 1: Click is on an invalid spot (not a tower, not an empty spot) -> CANCEL
+            if (!clickedOnTower && !isValidPlacement(snappedX, snappedY)) {
+                placingTower = null;
+                actionTaken = true; // We performed the "cancel" action
+            }
+            // Case 2: Click is on an existing tower -> TRY MERGE
+            else if (clickedOnTower) {
+                let merged = false;
+                const originalTowerColor = clickedOnTower.color;
+                // Capture the level of the tower on the grid before any changes.
+                const existingTowerLevel = clickedOnTower.level === 'MAX LEVEL' ? 5 : clickedOnTower.level;
+                
+                // This block handles all merge combinations
+                if (clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'SUPPORT') {
+                    clickedOnTower.type = 'ENT';
+                    clickedOnTower.level = 'MAX LEVEL';
+                    clickedOnTower.damageLevel = 'MAX LEVEL';
+                    clickedOnTower.cost += TOWER_TYPES['SUPPORT'].cost;
                     clickedOnTower.updateStats();
+                    clickedOnTower.color = TOWER_TYPES.ENT.color;
                     merged = true;
-                }
-            } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'PIN') || (clickedOnTower.type === 'PIN' && towerToPlaceType === 'SUPPORT')) {
-                const oldCost = clickedOnTower.cost;
-                clickedOnTower.type = 'PIN_HEART';
-                clickedOnTower.level = existingTowerLevel;
-                clickedOnTower.damageLevel = existingTowerLevel;
-                clickedOnTower.updateStats();
-                clickedOnTower.splashRadius = TOWER_TYPES.PIN_HEART.splashRadius;
-                clickedOnTower.color = TOWER_TYPES.PIN_HEART.color;
-                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
-                merged = true;
-            } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'SUPPORT')) {
-                const oldCost = clickedOnTower.cost;
-                clickedOnTower.type = 'FIREPLACE';
-                clickedOnTower.level = existingTowerLevel; 
-                clickedOnTower.damageLevel = existingTowerLevel;
-                clickedOnTower.updateStats();
-                // Explicitly set/reset stats for the new Fireplace tower
-                clickedOnTower.damage = TOWER_TYPES.FIREPLACE.damage;
-                clickedOnTower.splashRadius = TOWER_TYPES.FIREPLACE.splashRadius;
-                clickedOnTower.burnDps = TOWER_TYPES.FIREPLACE.burnDps;
-                clickedOnTower.burnDuration = TOWER_TYPES.FIREPLACE.burnDuration;
-                clickedOnTower.color = TOWER_TYPES.FIREPLACE.color;
-                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
-                merged = true;
-            } else if ((clickedOnTower.type === 'PIN' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'PIN')) {
-                const oldCost = clickedOnTower.cost;
-                clickedOnTower.type = 'FORT';
-                clickedOnTower.level = existingTowerLevel; 
-                clickedOnTower.damageLevel = existingTowerLevel;
-                clickedOnTower.updateStats();
-                clickedOnTower.splashRadius = TOWER_TYPES.FORT.splashRadius;
-                clickedOnTower.color = TOWER_TYPES.FORT.color;
-                clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
-                merged = true;
-            } else if (clickedOnTower.type === 'NAT' && towerToPlaceType === 'CASTLE') { // Specific logic for NAT + CASTLE merge
-                const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
-                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
-                    
-                    if (!clickedOnTower.projectileCount) clickedOnTower.projectileCount = 1;
-                    
-                    clickedOnTower.level++; // Only increase visual/cost level
-                    clickedOnTower.projectileCount++;
-                    
-                    clickedOnTower.updateStats();
-                    clickedOnTower.cost += mergingTowerStats.cost;
-                    clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.CASTLE.color);
-                    merged = true;
-                }
-            } else if (clickedOnTower.type === 'NAT' && towerToPlaceType === 'PIN') { // Specific logic for NAT + PIN merge
-                const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
-                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
-                    
-                    if (clickedOnTower.damageMultiplierFromMerge === undefined) clickedOnTower.damageMultiplierFromMerge = 1;
-                    
-                    clickedOnTower.level++;
-                    clickedOnTower.damageLevel++; // Increase both levels for damage scaling
-                    clickedOnTower.damageMultiplierFromMerge *= 1.25; // 25% more damage
-                    
-                    clickedOnTower.updateStats();
-                    clickedOnTower.cost += mergingTowerStats.cost;
-                    clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.PIN.color);
-                    merged = true;
-                }
-            } else if (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'NAT') {
-                 // This logic path is currently unreachable because you can't select NAT to place.
-                const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
-                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                } else if (clickedOnTower.type === 'PIN' && towerToPlaceType === 'PIN') {
+                    const oldCost = clickedOnTower.cost;
                     clickedOnTower.type = 'NAT';
-                    clickedOnTower.level = 1; // New hybrid towers start at level 1
-                    clickedOnTower.damageLevel = 1;
-                    clickedOnTower.projectileCount = 2; // Becomes a NAT with an extra projectile
+                    clickedOnTower.level = existingTowerLevel; 
+                    clickedOnTower.damageLevel = existingTowerLevel;
+                    clickedOnTower.projectileCount = 1; // Initialize projectile count for new NAT
+                    clickedOnTower.damageMultiplierFromMerge = 1; // Initialize damage multiplier
                     clickedOnTower.updateStats();
                     clickedOnTower.splashRadius = TOWER_TYPES.NAT.splashRadius;
-                    clickedOnTower.cost += mergingTowerStats.cost;
-                    clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.NAT.color);
+                    clickedOnTower.color = TOWER_TYPES.NAT.color;
+                    clickedOnTower.cost = oldCost + TOWER_TYPES['PIN'].cost;
                     merged = true;
-                }
-            } else if ((['FORT', 'PIN_HEART', 'ORBIT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
-                const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
-                if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
-                     const diminishingFactor = 0.15;
-                     const levelModifier = typeof clickedOnTower.level === 'number' ? Math.pow(1 - diminishingFactor, clickedOnTower.level - 1) : 1;
+                } else if (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'CASTLE') {
+                    const oldCost = clickedOnTower.cost;
+                    // Directly modify the existing tower to become an Orbit tower
+                    clickedOnTower.type = 'ORBIT';
+                    clickedOnTower.orbitMode = 'far';
+                    // Crucially, create new orbiters with a reference to THIS tower instance
+                    clickedOnTower.orbiters = [
+                        new Projectile(clickedOnTower, null, 0),
+                        new Projectile(clickedOnTower, null, Math.PI)
+                    ];
                     
-                    if (clickedOnTower.type === 'ORBIT') {
-                        if (towerToPlaceType === 'PIN') {
-                            clickedOnTower.damage += 2 * levelModifier; // More significant damage boost
-                        } else if (towerToPlaceType === 'CASTLE') {
-                            clickedOnTower.damage += 1 * levelModifier; // Slight damage boost
-                            clickedOnTower.projectileSize += 1; // Increase projectile size
-                        }
-                    } else { // Generic logic for other hybrids
-                        if (towerToPlaceType === 'PIN') {
-                            clickedOnTower.damage += 0.5 * levelModifier;
-                            clickedOnTower.permFireRate *= (1 - (0.05 * levelModifier));
-                        } else if (towerToPlaceType === 'CASTLE') {
-                            clickedOnTower.damage += 2 * levelModifier;
-                            if (clickedOnTower.splashRadius) {
-                                clickedOnTower.splashRadius += 5 * levelModifier;
+                    clickedOnTower.level = existingTowerLevel; 
+                    clickedOnTower.damageLevel = existingTowerLevel;
+                    clickedOnTower.updateStats(); // Recalculate stats for the new tower type and level
+                    clickedOnTower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
+                    clickedOnTower.color = TOWER_TYPES.ORBIT.color;
+                    clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
+                    merged = true;
+                } else if (clickedOnTower.type === towerToPlaceType && clickedOnTower.level !== 'MAX LEVEL') {
+                    if (clickedOnTower.level < 5) {
+                        clickedOnTower.level++;
+                        if(clickedOnTower.damageLevel) clickedOnTower.damageLevel++;
+                        clickedOnTower.updateStats();
+                        merged = true;
+                    }
+                } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'PIN') || (clickedOnTower.type === 'PIN' && towerToPlaceType === 'SUPPORT')) {
+                    const oldCost = clickedOnTower.cost;
+                    clickedOnTower.type = 'PIN_HEART';
+                    clickedOnTower.level = existingTowerLevel;
+                    clickedOnTower.damageLevel = existingTowerLevel;
+                    clickedOnTower.updateStats();
+                    clickedOnTower.splashRadius = TOWER_TYPES.PIN_HEART.splashRadius;
+                    clickedOnTower.color = TOWER_TYPES.PIN_HEART.color;
+                    clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
+                    merged = true;
+                } else if ((clickedOnTower.type === 'SUPPORT' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'SUPPORT')) {
+                    const oldCost = clickedOnTower.cost;
+                    clickedOnTower.type = 'FIREPLACE';
+                    clickedOnTower.level = existingTowerLevel; 
+                    clickedOnTower.damageLevel = existingTowerLevel;
+                    clickedOnTower.updateStats();
+                    // Explicitly set/reset stats for the new Fireplace tower
+                    clickedOnTower.damage = TOWER_TYPES.FIREPLACE.damage;
+                    clickedOnTower.splashRadius = TOWER_TYPES.FIREPLACE.splashRadius;
+                    clickedOnTower.burnDps = TOWER_TYPES.FIREPLACE.burnDps;
+                    clickedOnTower.burnDuration = TOWER_TYPES.FIREPLACE.burnDuration;
+                    clickedOnTower.color = TOWER_TYPES.FIREPLACE.color;
+                    clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
+                    merged = true;
+                } else if ((clickedOnTower.type === 'PIN' && towerToPlaceType === 'CASTLE') || (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'PIN')) {
+                    const oldCost = clickedOnTower.cost;
+                    clickedOnTower.type = 'FORT';
+                    clickedOnTower.level = existingTowerLevel; 
+                    clickedOnTower.damageLevel = existingTowerLevel;
+                    clickedOnTower.updateStats();
+                    clickedOnTower.splashRadius = TOWER_TYPES.FORT.splashRadius;
+                    clickedOnTower.color = TOWER_TYPES.FORT.color;
+                    clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
+                    merged = true;
+                } else if (clickedOnTower.type === 'NAT' && towerToPlaceType === 'CASTLE') { // Specific logic for NAT + CASTLE merge
+                    const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                    if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                        
+                        if (!clickedOnTower.projectileCount) clickedOnTower.projectileCount = 1;
+                        
+                        clickedOnTower.level++; // Only increase visual/cost level
+                        clickedOnTower.projectileCount++;
+                        
+                        clickedOnTower.updateStats();
+                        clickedOnTower.cost += mergingTowerStats.cost;
+                        clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.CASTLE.color);
+                        merged = true;
+                    }
+                } else if (clickedOnTower.type === 'NAT' && towerToPlaceType === 'PIN') { // Specific logic for NAT + PIN merge
+                    const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                    if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                        
+                        if (clickedOnTower.damageMultiplierFromMerge === undefined) clickedOnTower.damageMultiplierFromMerge = 1;
+                        
+                        clickedOnTower.level++;
+                        clickedOnTower.damageLevel++; // Increase both levels for damage scaling
+                        clickedOnTower.damageMultiplierFromMerge *= 1.25; // 25% more damage
+                        
+                        clickedOnTower.updateStats();
+                        clickedOnTower.cost += mergingTowerStats.cost;
+                        clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.PIN.color);
+                        merged = true;
+                    }
+                } else if (clickedOnTower.type === 'CASTLE' && towerToPlaceType === 'NAT') {
+                    // This logic path is currently unreachable because you can't select NAT to place.
+                    const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                    if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                        clickedOnTower.type = 'NAT';
+                        clickedOnTower.level = 1; // New hybrid towers start at level 1
+                        clickedOnTower.damageLevel = 1;
+                        clickedOnTower.projectileCount = 2; // Becomes a NAT with an extra projectile
+                        clickedOnTower.updateStats();
+                        clickedOnTower.splashRadius = TOWER_TYPES.NAT.splashRadius;
+                        clickedOnTower.cost += mergingTowerStats.cost;
+                        clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.NAT.color);
+                        merged = true;
+                    }
+                } else if ((['FORT', 'PIN_HEART', 'ORBIT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
+                    const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                    if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
+                        const diminishingFactor = 0.15;
+                        const levelModifier = typeof clickedOnTower.level === 'number' ? Math.pow(1 - diminishingFactor, clickedOnTower.level - 1) : 1;
+                        
+                        if (clickedOnTower.type === 'ORBIT') {
+                            if (towerToPlaceType === 'PIN') {
+                                clickedOnTower.damage += 2 * levelModifier; // More significant damage boost
+                            } else if (towerToPlaceType === 'CASTLE') {
+                                clickedOnTower.damage += 1 * levelModifier; // Slight damage boost
+                                clickedOnTower.projectileSize += 1; // Increase projectile size
+                            }
+                        } else { // Generic logic for other hybrids
+                            if (towerToPlaceType === 'PIN') {
+                                clickedOnTower.damage += 0.5 * levelModifier;
+                                clickedOnTower.permFireRate *= (1 - (0.05 * levelModifier));
+                            } else if (towerToPlaceType === 'CASTLE') {
+                                clickedOnTower.damage += 2 * levelModifier;
+                                if (clickedOnTower.splashRadius) {
+                                    clickedOnTower.splashRadius += 5 * levelModifier;
+                                }
                             }
                         }
-                    }
 
-                    clickedOnTower.level++;
-                    if(clickedOnTower.damageLevel) clickedOnTower.damageLevel++;
-                    clickedOnTower.cost += mergingTowerStats.cost;
-                    clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
-                    merged = true;
-                }
-            } else if (clickedOnTower.type === 'FIREPLACE' && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
-                 const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
-                 if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 3) { // Max level is 3
-                    if (towerToPlaceType === 'CASTLE') {
-                        // Merging a CASTLE increases splash radius
-                        clickedOnTower.splashRadius += 10;
-                    } else if (towerToPlaceType === 'PIN') {
-                        // Merging a PIN increases burn DPS
-                        clickedOnTower.burnDps += 1;
+                        clickedOnTower.level++;
+                        if(clickedOnTower.damageLevel) clickedOnTower.damageLevel++;
+                        clickedOnTower.cost += mergingTowerStats.cost;
+                        clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
+                        merged = true;
                     }
-                    
-                    clickedOnTower.level++;
-                    clickedOnTower.cost += mergingTowerStats.cost;
-                    clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
-                    clickedOnTower.updateStats(); 
-                    // Force-reset damage to its base value after update to prevent any increase.
-                    clickedOnTower.damage = TOWER_TYPES.FIREPLACE.damage;
-                    merged = true;
+                } else if (clickedOnTower.type === 'FIREPLACE' && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
+                    const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                    if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 3) { // Max level is 3
+                        if (towerToPlaceType === 'CASTLE') {
+                            // Merging a CASTLE increases splash radius
+                            clickedOnTower.splashRadius += 10;
+                        } else if (towerToPlaceType === 'PIN') {
+                            // Merging a PIN increases burn DPS
+                            clickedOnTower.burnDps += 1;
+                        }
+                        
+                        clickedOnTower.level++;
+                        clickedOnTower.cost += mergingTowerStats.cost;
+                        clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
+                        clickedOnTower.updateStats(); 
+                        // Force-reset damage to its base value after update to prevent any increase.
+                        clickedOnTower.damage = TOWER_TYPES.FIREPLACE.damage;
+                        merged = true;
+                    }
+                }
+                
+                if (clickedOnTower.type === 'FIREPLACE' && clickedOnTower.level === 3) {
+                    clickedOnTower.level = 'MAX LEVEL';
+                } else if (clickedOnTower.type !== 'FIREPLACE' && clickedOnTower.level === 5) {
+                    clickedOnTower.level = 'MAX LEVEL';
+                    if(clickedOnTower.damageLevel) clickedOnTower.damageLevel = 'MAX LEVEL';
+                }
+
+                if (merged) {
+                    gold -= TOWER_TYPES[towerToPlaceType].cost;
+                    window.gold = gold;
+                    placingTower = null;
+                    actionTaken = true;
+                    updateSellPanel(clickedOnTower, isCloudUnlocked); // Update panel to show new stats
+                } else {
+                    // Merge failed (e.g., max level), so we cancel placement mode
+                    // and will fall through to select the tower instead.
+                    placingTower = null;
                 }
             }
-            
-            if (clickedOnTower.type === 'FIREPLACE' && clickedOnTower.level === 3) {
-                clickedOnTower.level = 'MAX LEVEL';
-            } else if (clickedOnTower.type !== 'FIREPLACE' && clickedOnTower.level === 5) {
-                clickedOnTower.level = 'MAX LEVEL';
-                if(clickedOnTower.damageLevel) clickedOnTower.damageLevel = 'MAX LEVEL';
-            }
-
-            if (merged) {
-                gold -= TOWER_TYPES[towerToPlaceType].cost;
+            // Case 3: Click is on a valid empty spot -> PLACE
+            else { 
+                towers.push(new Tower(snappedX, snappedY, placingTower));
+                if (placingTower === 'SUPPORT' && !hasPlacedFirstSupport) {
+                    announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180, undefined, canvasWidth));
+                    hasPlacedFirstSupport = true;
+                }
+                placementGrid[gridY][gridX] = GRID_TOWER;
+                gold -= TOWER_TYPES[placingTower].cost;
                 window.gold = gold;
                 placingTower = null;
                 actionTaken = true;
-                updateSellPanel(clickedOnTower); // Update panel to show new stats
-            } else {
-                // Merge failed (e.g., max level), so we cancel placement mode
-                // and will fall through to select the tower instead.
-                placingTower = null;
             }
-        }
-        // Case 3: Click is on a valid empty spot -> PLACE
-        else { 
-            towers.push(new Tower(snappedX, snappedY, placingTower));
-            if (placingTower === 'SUPPORT' && !hasPlacedFirstSupport) {
-                announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180, undefined, canvasWidth));
-                hasPlacedFirstSupport = true;
+
+            if (!placingTower) {
+                updateUI({ lives, gold, wave, isCloudUnlocked });
+                uiElements.buyPinBtn.classList.remove('selected');
+                uiElements.buyCastleBtn.classList.remove('selected');
+                uiElements.buySupportBtn.classList.remove('selected');
             }
-            placementGrid[gridY][gridX] = GRID_TOWER;
-            gold -= TOWER_TYPES[placingTower].cost;
-            window.gold = gold;
-            placingTower = null;
-            actionTaken = true;
         }
 
-        if (!placingTower) {
-            updateUI({ lives, gold, wave });
-            uiElements.buyPinBtn.classList.remove('selected');
-            uiElements.buyCastleBtn.classList.remove('selected');
-            uiElements.buySupportBtn.classList.remove('selected');
-        }
     }
 
     if (!actionTaken) {
@@ -782,7 +931,14 @@ canvas.addEventListener('click', (e) => {
             const tGridY = Math.floor(t.y / TILE_SIZE);
             return tGridX === gridX && tGridY === gridY;
         }) || null;
-        updateSellPanel(selectedTower);
+        // If a tower is selected, cancel any placement mode.
+        if (selectedTower) {
+            placingTower = null;
+            placingFromCloud = null;
+            document.querySelectorAll('.tower-button.selected').forEach(btn => btn.classList.remove('selected'));
+            renderCloudInventory();
+        }
+        updateSellPanel(selectedTower, isCloudUnlocked);
     }
 });
 
@@ -825,7 +981,6 @@ function init() {
     towers = [];
     projectiles = [];
     effects = [];
-    // We reset the announcements and the set of seen enemies for the new game.
     announcements = [];
     introducedEnemies.clear();
     hasPlacedFirstSupport = false; // Reset for the new game.
@@ -834,6 +989,11 @@ function init() {
     gameOver = false;
     selectedTower = null;
     gameSpeed = 1;
+    // Reset cloud variables
+    isCloudUnlocked = false;
+    cloudInventory = [];
+    placingFromCloud = null;
+
     uiElements.speedToggleBtn.textContent = 'x1';
     
     uiElements.buyPinBtn.classList.remove('selected');
@@ -841,9 +1001,12 @@ function init() {
     uiElements.buySupportBtn.classList.remove('selected');
     uiElements.startWaveBtn.disabled = false;
     uiElements.gameOverModal.classList.add('hidden');
+    // Hide the cloud panel on reset
+    uiElements.cloudInventoryPanel.classList.add('hidden');
+    renderCloudInventory(); // Clear the inventory display
 
-    updateUI({ lives, gold, wave });
-    updateSellPanel(null);
+    updateUI({ lives, gold, wave, isCloudUnlocked });
+    updateSellPanel(null, isCloudUnlocked);
     
     // Set the fixed, internal resolution of the game canvas.
     // This will NOT change, ensuring the grid size is always the same.

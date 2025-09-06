@@ -33,7 +33,7 @@
         /* Style for the game's drawing area (the canvas) */
         canvas {
             background-color: #2c2c2c; /* Dark gray for the game area */
-            border-radius: 8-px; /* Rounded corners */
+            border-radius: 8px; /* Rounded corners */
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); /* A nice green glow */
             border: 2px solid rgba(0, 255, 136, 0.4);
             position: absolute;
@@ -78,10 +78,11 @@
             cursor: not-allowed;
         }
         /* Highlights the tower button you've selected to place */
-        .tower-button.selected {
+        .tower-button.selected, #cloud-inventory-slots .pixel-button.selected {
             background-color: #00ff88;
             color: #1a1a1a;
             box-shadow: 0 4px 0 #00aa5b;
+            transform: translateY(-2px);
         }
         /* Needed to make the newer Google icons work correctly */
         .material-symbols-outlined {
@@ -125,14 +126,32 @@
             </div>
         </div>
 
-        <!-- This container holds the actual game canvas -->
-        <div id="canvas-container" class="flex-grow relative w-full min-h-0">
-            <canvas id="gameCanvas"></canvas>
+        <!-- This container holds the actual game canvas AND the new cloud inventory -->
+        <div class="flex-grow relative w-full min-h-0 flex gap-2">
+            <div id="canvas-container" class="flex-grow relative h-full min-h-0">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <!-- Cloud Inventory Panel -->
+            <div id="cloud-inventory-panel" class="hidden game-ui-panel w-[72px] flex-shrink-0 flex flex-col items-center p-1 gap-2 overflow-y-auto">
+                <h3 class="text-xs text-green-400 -mb-1">CLOUD</h3>
+                <div id="cloud-inventory-slots" class="flex flex-col gap-2 w-full items-center">
+                    <!-- Inventoried towers will be added here -->
+                </div>
+            </div>
         </div>
         
         <!-- This is the control panel at the bottom of the screen -->
         <div class="game-ui-panel p-4 w-full flex-shrink-0 flex flex-col gap-4">
-             <h2 id="towers-title" class="text-xl text-center text-green-400">TOWERS</h2>
+            <div class="flex justify-between items-center">
+                 <h2 id="towers-title" class="text-xl text-green-400">TOWERS</h2>
+                 <!-- This new section is for special upgrades like the Cloud -->
+                <div id="upgrade-buttons">
+                    <button id="unlock-cloud" class="pixel-button flex items-center justify-center !p-2 text-xs">
+                        <span class="material-symbols-outlined !text-lg">cloud</span>
+                        <span class="hidden sm:inline ml-1">(100G)</span>
+                    </button>
+                </div>
+            </div>
             <!-- Buttons to buy the different towers -->
             <div id="tower-buttons" class="grid grid-cols-3 gap-2">
                 <button id="buy-pin" class="pixel-button tower-button text-xs sm:text-sm">PIN (25G)</button>
@@ -158,11 +177,14 @@
                     <p id="stat-special-p" class="flex items-center gap-1 col-span-full justify-center"><span class="material-symbols-outlined text-base align-bottom" title="Special Ability">star</span><span id="stat-special">None</span></p>
                 </div>
                 <button id="toggle-mode" class="pixel-button bg-purple-800 text-yellow-300 border-yellow-300 hidden">MODE: </button>
-                <div class="grid grid-cols-2 gap-2">
-                     <!-- Button to upgrade the selected tower -->
-                    <button id="upgrade-tower" class="pixel-button hidden">UPGRADE</button>
-                    <!-- Button to sell the selected tower -->
-                    <button id="sell-tower" class="pixel-button bg-red-800 text-yellow-300 border-yellow-300 shadow-[0_4px_0_#b36d00] text-sm py-2">SELL FOR 0G</button>
+                <div id="selected-tower-actions" class="grid grid-cols-2 gap-2">
+                     <!-- Button to sell the selected tower -->
+                    <button id="sell-tower-btn" class="pixel-button bg-red-700 text-yellow-300 border-yellow-400 shadow-[0_4px_0_#9a3412] text-sm py-2">SELL</button>
+                    <!-- Button to move the selected tower to the cloud -->
+                    <button id="move-to-cloud-btn" class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] text-sm py-2 hidden items-center justify-center gap-1 sm:flex">
+                        <span class="material-symbols-outlined !text-base">cloud_upload</span>
+                        <span class="hidden sm:inline">CLOUD</span>
+                    </button>
                 </div>
             </div>
 

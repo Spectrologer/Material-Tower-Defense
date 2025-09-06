@@ -13,7 +13,8 @@ export const uiElements = {
     gameOverMessage: document.getElementById('game-over-message'),
     restartGameBtn: document.getElementById('restart-game'),
     sellPanel: document.getElementById('sell-panel'),
-    sellTowerBtn: document.getElementById('sell-tower'),
+    sellTowerBtn: document.getElementById('sell-tower-btn'),
+    moveToCloudBtn: document.getElementById('move-to-cloud-btn'),
     toggleModeBtn: document.getElementById('toggle-mode'),
     speedToggleBtn: document.getElementById('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
@@ -22,7 +23,11 @@ export const uiElements = {
     // New elements for showing/hiding UI sections
     towerButtons: document.getElementById('tower-buttons'),
     gameControls: document.getElementById('game-controls'),
-    towersTitle: document.getElementById('towers-title')
+    towersTitle: document.getElementById('towers-title'),
+    // Cloud inventory elements
+    unlockCloudBtn: document.getElementById('unlock-cloud'),
+    cloudInventoryPanel: document.getElementById('cloud-inventory-panel'),
+    cloudInventorySlots: document.getElementById('cloud-inventory-slots'),
 };
 
 export function updateUI(state) {
@@ -32,9 +37,17 @@ export function updateUI(state) {
     uiElements.buyPinBtn.disabled = state.gold < TOWER_TYPES.PIN.cost;
     uiElements.buyCastleBtn.disabled = state.gold < TOWER_TYPES.CASTLE.cost;
     uiElements.buySupportBtn.disabled = state.gold < TOWER_TYPES.SUPPORT.cost;
+
+    // Handle the cloud unlock button state
+    uiElements.unlockCloudBtn.disabled = state.gold < 100 || state.isCloudUnlocked;
+    if(state.isCloudUnlocked) {
+        uiElements.unlockCloudBtn.classList.add('hidden');
+    } else {
+        uiElements.unlockCloudBtn.classList.remove('hidden');
+    }
 }
 
-export function updateSellPanel(selectedTower) {
+export function updateSellPanel(selectedTower, isCloudUnlocked) {
     if (selectedTower) {
         // Hide general controls and show sell panel
         uiElements.towerButtons.classList.add('hidden');
@@ -52,7 +65,19 @@ export function updateSellPanel(selectedTower) {
         }
 
         uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
+        
+        // Update sell button text
         uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
+
+        // Handle visibility of sell/cloud buttons based on cloud status
+        if(isCloudUnlocked) {
+            uiElements.moveToCloudBtn.classList.remove('hidden');
+            uiElements.sellTowerBtn.classList.remove('col-span-2');
+        } else {
+            uiElements.moveToCloudBtn.classList.add('hidden');
+            uiElements.sellTowerBtn.classList.add('col-span-2');
+        }
+
 
         // Upgrading is now done via merging, so the upgrade button is always hidden.
         uiElements.upgradeTowerBtn.classList.add('hidden');
