@@ -943,6 +943,148 @@ uiElements.buyCastleBtn.addEventListener('click', () => selectTowerToPlace('CAST
 uiElements.buySupportBtn.addEventListener('click', () => selectTowerToPlace('SUPPORT'));
 uiElements.restartGameBtn.addEventListener('click', init);
 
+uiElements.sellTowerBtn.addEventListener('click', () => {
+    if (selectedTower) {
+        gold += Math.floor(selectedTower.cost * 0.5);
+        const gridX = Math.floor(selectedTower.x / TILE_SIZE);
+        const gridY = Math.floor(selectedTower.y / TILE_SIZE);
+        placementGrid[gridY][gridX] = GRID_EMPTY;
+        towers = towers.filter(t => t !== selectedTower);
+        selectedTower = null;
+        updateUI({ lives, gold, wave, isCloudUnlocked });
+        updateSellPanel(null, isCloudUnlocked);
+    }
+});
+
+uiElements.moveToCloudBtn.addEventListener('click', () => {
+    if (selectedTower && isCloudUnlocked) {
+        cloudInventory.push(selectedTower);
+        const gridX = Math.floor(selectedTower.x / TILE_SIZE);
+        const gridY = Math.floor(selectedTower.y / TILE_SIZE);
+        placementGrid[gridY][gridX] = GRID_EMPTY;
+        towers = towers.filter(t => t !== selectedTower);
+        selectedTower = null;
+        renderCloudInventory();
+        updateSellPanel(null, isCloudUnlocked);
+    }
+});
+
+uiElements.toggleModeBtn.addEventListener('click', () => {
+    if (selectedTower) {
+        if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
+            selectedTower.mode = selectedTower.mode === 'boost' ? 'slow' : 'boost';
+        } else if (selectedTower.type === 'ORBIT') {
+            selectedTower.orbitMode = selectedTower.orbitMode === 'far' ? 'near' : 'far';
+        }
+        updateSellPanel(selectedTower, isCloudUnlocked);
+    }
+});
+
+uiElements.toggleTargetingBtn.addEventListener('click', () => {
+    if (selectedTower) {
+        const modes = ['strongest', 'weakest', 'furthest'];
+        const currentIndex = modes.indexOf(selectedTower.targetingMode);
+        selectedTower.targetingMode = modes[(currentIndex + 1) % modes.length];
+        updateSellPanel(selectedTower, isCloudUnlocked);
+    }
+});
+
+uiElements.speedToggleBtn.addEventListener('click', () => {
+    if (gameSpeed === 1) {
+        gameSpeed = 2;
+        uiElements.speedToggleBtn.textContent = 'x2';
+    } else {
+        gameSpeed = 1;
+        uiElements.speedToggleBtn.textContent = 'x1';
+    }
+});
+
+uiElements.soundToggleBtn.addEventListener('click', () => {
+    isSoundEnabled = !isSoundEnabled;
+    const soundIcon = document.getElementById('sound-icon');
+    soundIcon.textContent = isSoundEnabled ? 'volume_up' : 'volume_off';
+});
+
+uiElements.cloudButton.addEventListener('click', () => {
+    if (!isCloudUnlocked) {
+        if (gold >= 100) {
+            gold -= 100;
+            isCloudUnlocked = true;
+            uiElements.cloudInventoryPanel.classList.remove('hidden');
+            updateUI({ lives, gold, wave, isCloudUnlocked });
+            announcements.push(new TextAnnouncement("Cloud Storage Unlocked!", canvasWidth / 2, 50, 180, undefined, canvasWidth));
+        }
+    } else {
+        uiElements.cloudInventoryPanel.classList.toggle('hidden');
+    }
+});
+
+uiElements.cancelMergeBtn.addEventListener('click', () => {
+    // Reset dragging state and hide the modal without performing the merge
+    draggedCanvasTower = null;
+    draggedCloudTower = null;
+    placingTower = null;
+    placingFromCloud = null;
+    uiElements.mergeConfirmModal.classList.add('hidden');
+});
+
+uiElements.confirmMergeBtn.addEventListener('click', () => {
+    const mergeState = uiElements.mergeConfirmModal.mergeState;
+    if (!mergeState) return;
+
+    const {
+        existingTower,
+        mergingTower,
+        placingFromCloud,
+        mergingFromCanvas,
+        originalPosition
+    } = mergeState;
+
+    let cost = 0;
+    // Determine the cost based on the source of the merging tower
+    if (placingFromCloud || mergingFromCanvas) {
+        cost = mergingTower.cost;
+    } else {
+        cost = TOWER_TYPES[mergingTower.type].cost;
+    }
+
+    // Check for sufficient gold only if buying a new tower for the merge
+    if (!placingFromCloud && !mergingFromCanvas && gold < cost) {
+        uiElements.mergeConfirmModal.classList.add('hidden');
+        return; // Not enough gold
+    }
+
+    const merged = performMerge(existingTower, mergingTower.type, cost);
+
+    if (merged) {
+        if (placingFromCloud) {
+            cloudInventory = cloudInventory.filter(t => t.id !== mergingTower.id);
+        } else if (mergingFromCanvas) {
+            towers = towers.filter(t => t.id !== mergingTower.id);
+            if (originalPosition.x !== -1) {
+                placementGrid[originalPosition.y][originalPosition.x] = GRID_EMPTY;
+            }
+        } else {
+            gold -= cost;
+        }
+        // Select the tower that was merged into to show its new stats
+        selectedTower = existingTower;
+    }
+
+    // Hide modal and reset states
+    uiElements.mergeConfirmModal.classList.add('hidden');
+    draggedCanvasTower = null;
+    draggedCloudTower = null;
+    placingTower = null;
+    placingFromCloud = null;
+
+    // Update all relevant UI components
+    updateUI({ lives, gold, wave, isCloudUnlocked });
+    updateSellPanel(selectedTower, isCloudUnlocked);
+    renderCloudInventory();
+});
+
+
 window.addEventListener('resize', resizeCanvas);
 
 document.fonts.ready.then(() => {
@@ -951,4 +1093,3 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
-

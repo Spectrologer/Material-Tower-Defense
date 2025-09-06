@@ -37,6 +37,7 @@ export const uiElements = {
     mergeToTowerName: document.getElementById('merge-to-tower-name'),
     mergeResultTowerIconContainer: document.getElementById('merge-result-tower-icon-container'),
     mergeResultTowerName: document.getElementById('merge-result-tower-name'),
+    mergeResultBenefitText: document.getElementById('merge-result-benefit-text'),
     mergeCostInfo: document.getElementById('merge-cost-info'),
     confirmMergeBtn: document.getElementById('confirm-merge-btn'),
     cancelMergeBtn: document.getElementById('cancel-merge-btn'),
@@ -205,11 +206,20 @@ export function showMergeConfirmation(mergeState) {
     createAndAppendIcon(uiElements.mergeToTowerIconContainer, mergeState.placingTowerType);
     uiElements.mergeToTowerName.textContent = mergeState.placingTowerType.replace('_', ' ');
     createAndAppendIcon(uiElements.mergeResultTowerIconContainer, mergeState.mergeInfo.resultType);
-    const resultName = mergeState.mergeInfo.text.replace('LVL ', 'LVL-').replace('_', ' ');
+
+    let resultName = mergeState.mergeInfo.text.replace('LVL ', 'LVL-').replace('_', ' ');
+    uiElements.mergeResultBenefitText.textContent = ''; // Clear previous benefit text
+
+    if (resultName.toLowerCase() === 'upgrade' && mergeState.mergeInfo.upgrade) {
+        resultName = mergeState.mergeInfo.resultType.replace('_', ' ');
+        uiElements.mergeResultBenefitText.textContent = mergeState.mergeInfo.upgrade.text;
+    }
+
     uiElements.mergeResultTowerName.textContent = resultName;
+
     let cost = TOWER_TYPES[mergeState.placingTowerType].cost;
-    if (mergeState.placingFromCloud || mergeState.draggedCanvasTower) {
-        cost = mergeState.placingFromCloud?.cost || mergeState.draggedCanvasTower.cost;
+    if (mergeState.placingFromCloud || mergeState.mergingFromCanvas) { // Corrected this line
+        cost = mergeState.mergingTower.cost;
     }
     uiElements.mergeCostInfo.textContent = `Cost: ${cost}G`;
     uiElements.mergeConfirmModal.classList.remove('hidden');
@@ -225,3 +235,4 @@ export function triggerGameOver(isWin, wave) {
         uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }
+
