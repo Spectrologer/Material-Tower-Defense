@@ -125,6 +125,16 @@ class Tower {
         this.damageMultiplier = 1; // New property to handle non-stacking damage boosts.
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1; // Handles damage buffs from merges.
+
+        // Initialize stats that are modified by merges directly.
+        // This prevents updateStats() from resetting them.
+        const baseStats = TOWER_TYPES[type];
+        this.splashRadius = baseStats.splashRadius;
+        if (type === 'FIREPLACE') {
+            this.burnDps = baseStats.burnDps;
+            this.burnDuration = baseStats.burnDuration;
+        }
+
         this.updateStats(); // Set initial stats based on its type.
         this.cooldown = 0; // Timer for when it can shoot next.
         this.target = null; // The enemy it's currently aiming at.
@@ -141,8 +151,9 @@ class Tower {
     // Updates the tower's stats when it's created, leveled up, or merged.
     updateStats() {
         const baseStats = TOWER_TYPES[this.type];
-        const levelForCalc = this.level === 'MAX LEVEL' ? 5 : this.level;
-        const damageLevelForCalc = this.damageLevel === 'MAX LEVEL' ? 5 : this.damageLevel;
+        const maxLevel = this.type === 'FIREPLACE' ? 3 : 5;
+        const levelForCalc = this.level === 'MAX LEVEL' ? maxLevel : this.level;
+        const damageLevelForCalc = this.damageLevel === 'MAX LEVEL' ? maxLevel : this.damageLevel;
 
         if (this.type === 'ENT') {
             this.level = 'MAX LEVEL';
@@ -156,7 +167,14 @@ class Tower {
 
         this.cost = baseStats.cost * levelForCalc;
         this.range = baseStats.range;
-        this.damage = baseStats.damage * (1 + (damageLevelForCalc - 1) * 0.5) * this.damageMultiplierFromMerge;
+        
+        // Fireplace tower's direct damage does not increase with upgrades.
+        if (this.type === 'FIREPLACE') {
+            this.damage = baseStats.damage;
+        } else {
+            this.damage = baseStats.damage * (1 + (damageLevelForCalc - 1) * 0.5) * this.damageMultiplierFromMerge;
+        }
+
         this.permFireRate = baseStats.fireRate * Math.pow(0.9, levelForCalc - 1);
         this.fireRate = this.permFireRate;
         this.color = this.color || baseStats.color; // Preserve blended color
@@ -166,13 +184,9 @@ class Tower {
             this.projectileSize = baseStats.projectileSize;
         }
         this.projectileColor = baseStats.projectileColor;
-        this.splashRadius = baseStats.splashRadius;
+
         if (this.type === 'SUPPORT') {
             this.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, levelForCalc - 1);
-        }
-        if (this.type === 'FIREPLACE') {
-            this.burnDps = baseStats.burnDps * (1 + (levelForCalc - 1) * 0.5);
-            this.burnDuration = baseStats.burnDuration;
         }
     }
     // Draws the tower on the screen.

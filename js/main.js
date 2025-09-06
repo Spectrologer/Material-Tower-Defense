@@ -577,6 +577,7 @@ canvas.addEventListener('click', (e) => {
                 clickedOnTower.projectileCount = 1; // Initialize projectile count for new NAT
                 clickedOnTower.damageMultiplierFromMerge = 1; // Initialize damage multiplier
                 clickedOnTower.updateStats();
+                clickedOnTower.splashRadius = TOWER_TYPES.NAT.splashRadius;
                 clickedOnTower.color = TOWER_TYPES.NAT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES['PIN'].cost;
                 merged = true;
@@ -594,6 +595,7 @@ canvas.addEventListener('click', (e) => {
                 clickedOnTower.level = existingTowerLevel; 
                 clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats(); // Recalculate stats for the new tower type and level
+                clickedOnTower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
                 clickedOnTower.color = TOWER_TYPES.ORBIT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
@@ -610,6 +612,7 @@ canvas.addEventListener('click', (e) => {
                 clickedOnTower.level = existingTowerLevel;
                 clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats();
+                clickedOnTower.splashRadius = TOWER_TYPES.PIN_HEART.splashRadius;
                 clickedOnTower.color = TOWER_TYPES.PIN_HEART.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
@@ -619,6 +622,11 @@ canvas.addEventListener('click', (e) => {
                 clickedOnTower.level = existingTowerLevel; 
                 clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats();
+                // Explicitly set/reset stats for the new Fireplace tower
+                clickedOnTower.damage = TOWER_TYPES.FIREPLACE.damage;
+                clickedOnTower.splashRadius = TOWER_TYPES.FIREPLACE.splashRadius;
+                clickedOnTower.burnDps = TOWER_TYPES.FIREPLACE.burnDps;
+                clickedOnTower.burnDuration = TOWER_TYPES.FIREPLACE.burnDuration;
                 clickedOnTower.color = TOWER_TYPES.FIREPLACE.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
@@ -628,6 +636,7 @@ canvas.addEventListener('click', (e) => {
                 clickedOnTower.level = existingTowerLevel; 
                 clickedOnTower.damageLevel = existingTowerLevel;
                 clickedOnTower.updateStats();
+                clickedOnTower.splashRadius = TOWER_TYPES.FORT.splashRadius;
                 clickedOnTower.color = TOWER_TYPES.FORT.color;
                 clickedOnTower.cost = oldCost + TOWER_TYPES[towerToPlaceType].cost;
                 merged = true;
@@ -669,11 +678,12 @@ canvas.addEventListener('click', (e) => {
                     clickedOnTower.damageLevel = 1;
                     clickedOnTower.projectileCount = 2; // Becomes a NAT with an extra projectile
                     clickedOnTower.updateStats();
+                    clickedOnTower.splashRadius = TOWER_TYPES.NAT.splashRadius;
                     clickedOnTower.cost += mergingTowerStats.cost;
                     clickedOnTower.color = blendColors(clickedOnTower.color, TOWER_TYPES.NAT.color);
                     merged = true;
                 }
-            } else if ((['FORT', 'PIN_HEART', 'FIREPLACE', 'ORBIT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
+            } else if ((['FORT', 'PIN_HEART', 'ORBIT'].includes(clickedOnTower.type)) && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
                 const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
                 if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 5) {
                      const diminishingFactor = 0.15;
@@ -704,9 +714,30 @@ canvas.addEventListener('click', (e) => {
                     clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
                     merged = true;
                 }
+            } else if (clickedOnTower.type === 'FIREPLACE' && (['PIN', 'CASTLE'].includes(towerToPlaceType))) {
+                 const mergingTowerStats = TOWER_TYPES[towerToPlaceType];
+                 if (clickedOnTower.level !== 'MAX LEVEL' && clickedOnTower.level < 3) { // Max level is 3
+                    if (towerToPlaceType === 'CASTLE') {
+                        // Merging a CASTLE increases splash radius
+                        clickedOnTower.splashRadius += 10;
+                    } else if (towerToPlaceType === 'PIN') {
+                        // Merging a PIN increases burn DPS
+                        clickedOnTower.burnDps += 1;
+                    }
+                    
+                    clickedOnTower.level++;
+                    clickedOnTower.cost += mergingTowerStats.cost;
+                    clickedOnTower.color = blendColors(originalTowerColor, TOWER_TYPES[towerToPlaceType].color);
+                    clickedOnTower.updateStats(); 
+                    // Force-reset damage to its base value after update to prevent any increase.
+                    clickedOnTower.damage = TOWER_TYPES.FIREPLACE.damage;
+                    merged = true;
+                }
             }
             
-            if (clickedOnTower.level === 5) {
+            if (clickedOnTower.type === 'FIREPLACE' && clickedOnTower.level === 3) {
+                clickedOnTower.level = 'MAX LEVEL';
+            } else if (clickedOnTower.type !== 'FIREPLACE' && clickedOnTower.level === 5) {
                 clickedOnTower.level = 'MAX LEVEL';
                 if(clickedOnTower.damageLevel) clickedOnTower.damageLevel = 'MAX LEVEL';
             }
@@ -841,4 +872,3 @@ window.addEventListener('resize', resizeCanvas);
 document.fonts.ready.then(() => {
     init(); // Start the game!
 });
-
