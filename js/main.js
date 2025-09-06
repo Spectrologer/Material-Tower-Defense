@@ -323,7 +323,7 @@ function gameLoop() {
             }
 
             // Add a smaller flat bonus for completing the wave
-            const waveBonus = 10 + wave;
+            const waveBonus = 20 + wave;
             gold += waveBonus;
             
             // Add a warning for the next wave if it contains flying enemies for the first time
