@@ -422,11 +422,13 @@ class Projectile {
         this.y = owner.y;
         this.target = target; // The enemy it's flying towards.
         
+        // This set is now initialized for all projectiles to prevent the error.
+        this.hitEnemies = new Set();
+        this.hitCooldown = 0;
+
         if (this.owner.type === 'ORBIT') {
             this.angle = startAngle;
             this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
-            this.hitEnemies = new Set();
-            this.hitCooldown = 0;
         }
     }
     // Draws the projectile on the screen.

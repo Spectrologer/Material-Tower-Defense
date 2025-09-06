@@ -5,7 +5,7 @@ import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS,
 import { generatePath } from './path-generator.js';
 // We now import the new TextAnnouncement class as well.
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation } from './ui-manager.js';
 
 // Setting up the drawing area (the canvas).
 const canvas = document.getElementById('gameCanvas');
@@ -45,8 +45,9 @@ function playMoneySound() {
     gainNode.connect(audioContext.destination);
 
     // Set the initial volume to a low value and increase it quickly.
+    const volume = 0.05; // Reduced initial volume
     gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 0.01); // Made the sound slightly softer.
+    gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01); 
 
     // Schedule a smooth fade-out.
     gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
@@ -988,7 +989,52 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
     updateSellPanel(selectedTower, isCloudUnlocked);
 });
 
-canvas.addEventListener('click', (e) => {
+// Handles the final step of a merge after the confirmation modal.
+uiElements.confirmMergeBtn.addEventListener('click', () => {
+    const mergeState = uiElements.mergeConfirmModal.mergeState;
+    if (!mergeState) return;
+    
+    const existingTower = mergeState.existingTower;
+    const mergingTower = mergeState.mergingTower;
+    const mergingFromCloud = mergeState.placingFromCloud;
+    const mergingFromCanvas = mergeState.mergingFromCanvas;
+    
+    // Perform the merge based on the saved state
+    if (performMerge(existingTower, mergingTower.type, mergingTower.cost)) {
+        if (mergingFromCloud) {
+            cloudInventory = cloudInventory.filter(t => t.id !== mergingTower.id);
+        } else if (mergingFromCanvas) {
+             towers = towers.filter(t => t.id !== mergingTower.id);
+             placementGrid[Math.floor(mergingTower.y / TILE_SIZE)][Math.floor(mergingTower.x / TILE_SIZE)] = GRID_EMPTY;
+        } else {
+             gold -= mergingTower.cost;
+        }
+        selectedTower = null;
+        updateUI({ lives, gold, wave, isCloudUnlocked });
+        updateSellPanel(null, isCloudUnlocked);
+    }
+    uiElements.mergeConfirmModal.classList.add('hidden');
+    renderCloudInventory();
+});
+
+uiElements.cancelMergeBtn.addEventListener('click', () => {
+    uiElements.mergeConfirmModal.classList.add('hidden');
+    // If a tower was dragged from the canvas for a merge, we need to put it back.
+    const mergeState = uiElements.mergeConfirmModal.mergeState;
+    if(mergeState && mergeState.mergingFromCanvas) {
+        const tower = mergeState.mergingTower;
+        // Find the tower in the original array and reset its position
+        const originalTower = towers.find(t => t.id === tower.id);
+        if(originalTower) {
+            originalTower.x = mergeState.originalPosition.x * TILE_SIZE + TILE_SIZE / 2;
+            originalTower.y = mergeState.originalPosition.y * TILE_SIZE + TILE_SIZE / 2;
+            placementGrid[mergeState.originalPosition.y][mergeState.originalPosition.x] = GRID_TOWER;
+        }
+    }
+});
+
+
+function handleCanvasAction(e) {
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
@@ -997,96 +1043,120 @@ canvas.addEventListener('click', (e) => {
 
     let actionTaken = false;
 
-    if (placingTower) {
-        if (placingFromCloud) {
-            // Logic for placing a tower FROM the cloud inventory
-            if (isValidPlacement(snappedX, snappedY)) {
-                placingFromCloud.x = snappedX;
-                placingFromCloud.y = snappedY;
-                towers.push(placingFromCloud);
-                cloudInventory = cloudInventory.filter(t => t.id !== placingFromCloud.id); // Filter by ID
-                placementGrid[gridY][gridX] = GRID_TOWER;
-                
-                actionTaken = true;
-                renderCloudInventory();
-            } else {
-                // Clicked on an invalid spot, so cancel placement
-                actionTaken = true; // Still counts as an action to prevent selecting a tower underneath
-            }
+    // Check if the user is in a placing state, which could be from a button or a cloud tap
+    const isPlacingMode = placingTower || placingFromCloud;
+
+    if (isPlacingMode) {
+        const towerToPlaceType = placingTower;
+        let mergingTower = null;
+        let mergingFromCloud = false;
+        let mergingFromCanvas = false;
+        let costOfPlacingTower;
+        
+        if(placingFromCloud) {
+            mergingTower = placingFromCloud;
+            mergingFromCloud = true;
+            costOfPlacingTower = mergingTower.cost;
+        } else if (draggedCanvasTower) {
+            mergingTower = draggedCanvasTower;
+            mergingFromCanvas = true;
+            costOfPlacingTower = mergingTower.cost;
+        } else {
+            costOfPlacingTower = TOWER_TYPES[towerToPlaceType].cost;
+            mergingTower = {type: towerToPlaceType, cost: costOfPlacingTower, id: crypto.randomUUID()}; // Create a temporary object for the new tower
+        }
+        
+        if (gold < costOfPlacingTower && !mergingFromCloud && !mergingFromCanvas) return;
+
+        const clickedOnTower = towers.find(t => {
+            const tGridX = Math.floor(t.x / TILE_SIZE);
+            const tGridY = Math.floor(t.y / TILE_SIZE);
+            return tGridX === gridX && tGridY === gridY;
+        });
+
+        const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type) : null;
+
+        if(mergeInfo) {
+            // Found a merge target, show the confirmation modal
+            const mergeState = {
+                existingTower: clickedOnTower,
+                mergingTower: mergingTower,
+                placingTowerType: mergingTower.type,
+                mergeInfo: mergeInfo,
+                placingFromCloud: mergingFromCloud,
+                mergingFromCanvas: mergingFromCanvas,
+                originalPosition: draggedCanvasTowerOriginalGridPos // Save original position for a canvas-to-canvas move
+            };
+            uiElements.mergeConfirmModal.mergeState = mergeState;
+            showMergeConfirmation(mergeState);
+            
+            // Cancel placement mode
             placingTower = null;
             placingFromCloud = null;
-            renderCloudInventory(); // Redraw to remove selection highlight
+            draggedCloudTower = null;
             
+            actionTaken = true;
+
+        } else if (isValidPlacement(snappedX, snappedY)) {
+            // No merge, just a regular placement
+            towers.push(new Tower(snappedX, snappedY, mergingTower.type));
+            
+            // Set the new tower's properties if it came from the cloud or was a drag from canvas
+            const newTower = towers[towers.length - 1];
+            if(mergingFromCloud || mergingFromCanvas) {
+                Object.assign(newTower, mergingTower);
+                newTower.x = snappedX;
+                newTower.y = snappedY;
+                if(mergingFromCloud) {
+                    cloudInventory = cloudInventory.filter(t => t.id !== mergingTower.id);
+                    renderCloudInventory();
+                } else if (mergingFromCanvas) {
+                     towers = towers.filter(t => t.id !== mergingTower.id);
+                     placementGrid[draggedCanvasTowerOriginalGridPos.y][draggedCanvasTowerOriginalGridPos.x] = GRID_EMPTY;
+                     towers.push(newTower);
+                }
+            } else {
+                gold -= costOfPlacingTower;
+            }
+
+            if (newTower.type === 'SUPPORT' && !hasPlacedFirstSupport) {
+                announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180, undefined, canvasWidth));
+                hasPlacedFirstSupport = true;
+            }
+            placementGrid[gridY][gridX] = GRID_TOWER;
+            placingTower = null;
+            placingFromCloud = null;
+            actionTaken = true;
         } else {
-             // This is the original logic for buying and merging a NEW tower
-            const towerToPlaceType = placingTower;
-            if (gold < TOWER_TYPES[towerToPlaceType].cost) return;
-
-            const clickedOnTower = towers.find(t => {
-                const tGridX = Math.floor(t.x / TILE_SIZE);
-                const tGridY = Math.floor(t.y / TILE_SIZE);
-                return tGridX === gridX && tGridY === gridY;
-            });
-
-            // Case 1: Click is on an invalid spot (not a tower, not an empty spot) -> CANCEL
-            if (!clickedOnTower && !isValidPlacement(snappedX, snappedY)) {
-                placingTower = null;
-                actionTaken = true; // We performed the "cancel" action
-            }
-            // Case 2: Click is on an existing tower -> TRY MERGE
-            else if (clickedOnTower) {
-                const costOfPlacingTower = TOWER_TYPES[towerToPlaceType].cost;
-                if (performMerge(clickedOnTower, towerToPlaceType, costOfPlacingTower)) {
-                    gold -= costOfPlacingTower;
-                    placingTower = null;
-                    actionTaken = true;
-                    updateSellPanel(clickedOnTower, isCloudUnlocked); // Update panel to show new stats
-                } else {
-                    // Merge failed (e.g., max level), so we cancel placement mode
-                    // and will fall through to select the tower instead.
-                    placingTower = null;
-                }
-            }
-            // Case 3: Click is on a valid empty spot -> PLACE
-            else { 
-                towers.push(new Tower(snappedX, snappedY, placingTower));
-                if (placingTower === 'SUPPORT' && !hasPlacedFirstSupport) {
-                    announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180, undefined, canvasWidth));
-                    hasPlacedFirstSupport = true;
-                }
-                placementGrid[gridY][gridX] = GRID_TOWER;
-                gold -= TOWER_TYPES[placingTower].cost;
-                placingTower = null;
-                actionTaken = true;
-            }
-
-            if (!placingTower) {
-                updateUI({ lives, gold, wave, isCloudUnlocked });
-                uiElements.buyPinBtn.classList.remove('selected');
-                uiElements.buyCastleBtn.classList.remove('selected');
-                uiElements.buySupportBtn.classList.remove('selected');
-            }
+            // Clicked on an invalid spot (not a tower, not an empty spot) -> CANCEL
+            placingTower = null;
+            placingFromCloud = null;
+            actionTaken = true;
         }
-
-    }
-
-    if (!actionTaken) {
+    } else {
+        // Not in placing mode, so select a tower or deselect it
         selectedTower = towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
             return tGridX === gridX && tGridY === gridY;
         }) || null;
-        // If a tower is selected, cancel any placement mode.
-        if (selectedTower) {
-            placingTower = null;
-            placingFromCloud = null;
-            document.querySelectorAll('.tower-button.selected').forEach(btn => btn.classList.remove('selected'));
-            renderCloudInventory();
-        }
+        actionTaken = true;
+    }
+
+    if (!isPlacingMode) {
+         // Reset state after a successful action.
+        uiElements.buyPinBtn.classList.remove('selected');
+        uiElements.buyCastleBtn.classList.remove('selected');
+        uiElements.buySupportBtn.classList.remove('selected');
+    }
+
+    if (actionTaken) {
+        updateUI({ lives, gold, wave, isCloudUnlocked });
         updateSellPanel(selectedTower, isCloudUnlocked);
     }
-});
+}
 
+canvas.addEventListener('click', handleCanvasAction);
 
 canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
@@ -1132,7 +1202,7 @@ canvas.addEventListener('mousemove', e => {
     }
 });
 
-// New Drag and Drop listeners for the canvas
+// Drag and Drop listeners for the canvas
 canvas.addEventListener('dragover', e => {
     e.preventDefault(); // This is necessary to allow a drop
     if (draggedCloudTower) {
@@ -1153,9 +1223,8 @@ canvas.addEventListener('dragleave', () => {
     placingTower = null; // Clear preview when dragging off canvas
 });
 
-// New dragstart listener on the canvas for dragging towers from the field.
+// Dragstart listener on the canvas for dragging towers from the field.
 canvas.addEventListener('dragstart', (e) => {
-    // New: Add a class to the body to change the cursor
     document.body.classList.add('is-dragging');
 
     const mousePos = getMousePos(canvas, e);
@@ -1198,17 +1267,16 @@ canvas.addEventListener('dragstart', (e) => {
     } else {
         // Prevent drag operation if no tower is selected.
         e.preventDefault();
-        // New: Remove the class if the drag is prevented
         document.body.classList.remove('is-dragging');
     }
 });
 
-// New: Add dragend listener to remove the class from the body
+// Add dragend listener to remove the class from the body
 canvas.addEventListener('dragend', () => {
     document.body.classList.remove('is-dragging');
 });
 
-// New drop listener for the cloud inventory panel
+// Drop listener for the cloud inventory panel
 uiElements.cloudInventoryPanel.addEventListener('dragover', e => {
     e.preventDefault(); // This is crucial to allow a drop
 });
@@ -1278,17 +1346,20 @@ canvas.addEventListener('drop', e => {
     if (sourceTower) {
         // Case 1: Drop onto an existing tower for a merge
         if (targetTower && targetTower.id !== sourceTower.id) {
-            if (performMerge(targetTower, sourceTower.type, sourceTower.cost)) {
-                if (transferData.source === 'cloud') {
-                    cloudInventory = cloudInventory.filter(t => t.id !== sourceTower.id);
-                } else if (transferData.source === 'canvas') {
-                    towers = towers.filter(t => t.id !== sourceTower.id);
-                    placementGrid[Math.floor(sourceTower.y / TILE_SIZE)][Math.floor(sourceTower.x / TILE_SIZE)] = GRID_EMPTY;
-                }
-                selectedTower = null;
-                updateSellPanel(null, isCloudUnlocked);
-                actionTaken = true;
-            }
+            const mergeState = {
+                existingTower: targetTower,
+                mergingTower: sourceTower,
+                placingTowerType: sourceTower.type,
+                mergeInfo: getMergeResultInfo(targetTower, sourceTower.type),
+                placingFromCloud: transferData.source === 'cloud',
+                mergingFromCanvas: transferData.source === 'canvas',
+                originalPosition: draggedCanvasTowerOriginalGridPos
+            };
+
+            uiElements.mergeConfirmModal.mergeState = mergeState;
+            showMergeConfirmation(mergeState);
+            actionTaken = true;
+
         }
         // Case 2: Drop onto an empty spot
         else if (!targetTower && isValidPlacement(snappedX, snappedY)) {
@@ -1318,58 +1389,238 @@ canvas.addEventListener('drop', e => {
     draggedCanvasTower = null;
 });
 
-// Mobile Touch Listeners for Long Press Tooltip
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if (!placingTower) return;
+canvas.addEventListener('click', handleCanvasAction);
 
-    const touchPos = getMousePos(canvas, e.touches[0]);
-    
-    longPressTimer = setTimeout(() => {
-        const gridX = Math.floor(touchPos.x / TILE_SIZE);
-        const gridY = Math.floor(touchPos.y / TILE_SIZE);
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-        const targetTower = towers.find(t => {
+    // Scale mouse coordinates to match canvas resolution
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    mouse.x = mouseX * scaleX;
+    mouse.y = mouseY * scaleY;
+
+    // Logic for merge tooltip on hover
+    if (placingTower) {
+        const gridX = Math.floor(mouse.x / TILE_SIZE);
+        const gridY = Math.floor(mouse.y / TILE_SIZE);
+        
+        const hoveredTower = towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
             return tGridX === gridX && tGridY === gridY;
         });
 
-        if (targetTower) {
-            const mergeInfo = getMergeResultInfo(targetTower, placingTower);
+        if (hoveredTower) {
+            const mergeInfo = getMergeResultInfo(hoveredTower, placingTower);
             if (mergeInfo) {
                 mergeTooltip.show = true;
                 mergeTooltip.info = mergeInfo;
-                mergeTooltip.x = touchPos.x;
-                mergeTooltip.y = touchPos.y;
+                mergeTooltip.x = mouse.x;
+                mergeTooltip.y = mouse.y;
+            } else {
+                mergeTooltip.show = false;
+                mergeTooltip.info = null;
+            }
+        } else {
+            mergeTooltip.show = false;
+            mergeTooltip.info = null;
+        }
+    } else {
+        mergeTooltip.show = false;
+        mergeTooltip.info = null;
+    }
+});
+
+// Drag and Drop listeners for the canvas
+canvas.addEventListener('dragover', e => {
+    e.preventDefault(); // This is necessary to allow a drop
+    if (draggedCloudTower) {
+        const mousePos = getMousePos(canvas, e);
+        mouse.x = mousePos.x;
+        mouse.y = mousePos.y;
+        placingTower = draggedCloudTower.type; // Use placingTower for visual preview
+    } else if (draggedCanvasTower) {
+        // Allow dropping a tower from the field back onto the field.
+        const mousePos = getMousePos(canvas, e);
+        mouse.x = mousePos.x;
+        mouse.y = mousePos.y;
+        placingTower = draggedCanvasTower.type;
+    }
+});
+
+canvas.addEventListener('dragleave', () => {
+    placingTower = null; // Clear preview when dragging off canvas
+});
+
+// Dragstart listener on the canvas for dragging towers from the field.
+canvas.addEventListener('dragstart', (e) => {
+    document.body.classList.add('is-dragging');
+
+    const mousePos = getMousePos(canvas, e);
+    const gridX = Math.floor(mousePos.x / TILE_SIZE);
+    const gridY = Math.floor(mousePos.y / TILE_SIZE);
+    
+    // Only allow dragging a tower if Cloud is unlocked and a tower exists at the grid position.
+    if (!isCloudUnlocked) {
+        e.preventDefault();
+        return;
+    }
+    
+    const towerToDrag = towers.find(t => {
+        const tGridX = Math.floor(t.x / TILE_SIZE);
+        const tGridY = Math.floor(t.y / TILE_SIZE);
+        return tGridX === gridX && tGridY === gridY;
+    });
+
+    if (towerToDrag) {
+        draggedCanvasTower = towerToDrag;
+        draggedCanvasTowerOriginalGridPos = {x: gridX, y: gridY};
+        e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'canvas', towerId: towerToDrag.id }));
+        
+        // This is a common pattern to create a simple drag image from the canvas context
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = TILE_SIZE;
+        tempCanvas.height = TILE_SIZE;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        const towerColor = (towerToDrag.type === 'ENT' && towerToDrag.mode === 'slow') ? '#0891b2' : ((towerToDrag.type === 'CAT' && towerToDrag.mode === 'slow') ? '#0891b2' : towerToDrag.color);
+        const towerIconInfo = getTowerIconInfo(towerToDrag.type);
+        const fontStyle = towerIconInfo.className === 'fa-solid' ? '900' : '400';
+        tempCtx.font = `${fontStyle} 24px "${towerIconInfo.className.replace('fa-solid', 'Font Awesome 6 Free').replace('material-symbols-outlined', 'Material Symbols Outlined').replace('material-icons', 'Material Icons')}"`;
+        tempCtx.textAlign = 'center';
+        tempCtx.textBaseline = 'middle';
+        tempCtx.fillStyle = towerColor;
+        tempCtx.fillText(towerIconInfo.icon, TILE_SIZE / 2, TILE_SIZE / 2);
+
+        e.dataTransfer.setDragImage(tempCanvas, TILE_SIZE/2, TILE_SIZE/2);
+    } else {
+        // Prevent drag operation if no tower is selected.
+        e.preventDefault();
+        document.body.classList.remove('is-dragging');
+    }
+});
+
+// Add dragend listener to remove the class from the body
+canvas.addEventListener('dragend', () => {
+    document.body.classList.remove('is-dragging');
+});
+
+// Drop listener for the cloud inventory panel
+uiElements.cloudInventoryPanel.addEventListener('dragover', e => {
+    e.preventDefault(); // This is crucial to allow a drop
+});
+
+uiElements.cloudInventoryPanel.addEventListener('drop', e => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
+
+    try {
+        const transferData = JSON.parse(data);
+        if (transferData.source === 'canvas') {
+            const towerToMove = towers.find(t => t.id === transferData.towerId);
+            if (towerToMove) {
+                // Remove from canvas, add to cloud
+                const gridX = Math.floor(towerToMove.x / TILE_SIZE);
+                const gridY = Math.floor(towerToMove.y / TILE_SIZE);
+                placementGrid[gridY][gridX] = GRID_EMPTY;
+                towers = towers.filter(t => t.id !== towerToMove.id);
+                cloudInventory.push(towerToMove);
+                renderCloudInventory();
+                selectedTower = null;
+                updateSellPanel(null, isCloudUnlocked);
             }
         }
-    }, LONG_PRESS_DURATION);
-}, { passive: false });
-
-function handleTouchEnd() {
-    clearTimeout(longPressTimer);
-    mergeTooltip.show = false;
-    mergeTooltip.info = null;
-}
-
-canvas.addEventListener('touchend', handleTouchEnd);
-canvas.addEventListener('touchcancel', handleTouchEnd);
-
-canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    // If finger moves, cancel the long press timer and hide the tooltip
-    clearTimeout(longPressTimer);
-    mergeTooltip.show = false;
-    mergeTooltip.info = null;
-    // Also update mouse position for the preview
-    if (placingTower && e.touches[0]) {
-        const touchPos = getMousePos(canvas, e.touches[0]);
-        mouse.x = touchPos.x;
-        mouse.y = touchPos.y;
+    } catch (e) {
+        console.error("Failed to parse drop data:", e);
     }
-}, { passive: false });
+});
 
+canvas.addEventListener('drop', e => {
+    e.preventDefault();
+    
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
+    
+    let transferData;
+    try {
+        transferData = JSON.parse(data);
+    } catch (e) {
+        console.error("Failed to parse drop data:", e);
+        return;
+    }
+    
+    // Get mouse position for placement
+    const mousePos = getMousePos(canvas, e);
+    const gridX = Math.floor(mousePos.x / TILE_SIZE);
+    const gridY = Math.floor(mousePos.y / TILE_SIZE);
+    const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
+    const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
+
+    const targetTower = towers.find(t => {
+        const tGridX = Math.floor(t.x / TILE_SIZE);
+        const tGridY = Math.floor(t.y / TILE_SIZE);
+        return tGridX === gridX && tGridY === gridY;
+    });
+
+    let sourceTower;
+    if (transferData.source === 'cloud') {
+        sourceTower = cloudInventory.find(t => t.id === transferData.towerId);
+    } else if (transferData.source === 'canvas') {
+        sourceTower = towers.find(t => t.id === transferData.towerId);
+    }
+    
+    let actionTaken = false;
+    
+    if (sourceTower) {
+        // Case 1: Drop onto an existing tower for a merge
+        if (targetTower && targetTower.id !== sourceTower.id) {
+            const mergeState = {
+                existingTower: targetTower,
+                mergingTower: sourceTower,
+                placingTowerType: sourceTower.type,
+                mergeInfo: getMergeResultInfo(targetTower, sourceTower.type),
+                placingFromCloud: transferData.source === 'cloud',
+                mergingFromCanvas: transferData.source === 'canvas',
+                originalPosition: draggedCanvasTowerOriginalGridPos
+            };
+
+            uiElements.mergeConfirmModal.mergeState = mergeState;
+            showMergeConfirmation(mergeState);
+            actionTaken = true;
+
+        }
+        // Case 2: Drop onto an empty spot
+        else if (!targetTower && isValidPlacement(snappedX, snappedY)) {
+            if (transferData.source === 'cloud') {
+                sourceTower.x = snappedX;
+                sourceTower.y = snappedY;
+                towers.push(sourceTower);
+                cloudInventory = cloudInventory.filter(t => t.id !== sourceTower.id);
+            } else if (transferData.source === 'canvas') {
+                // Move tower to new spot on canvas
+                placementGrid[Math.floor(sourceTower.y / TILE_SIZE)][Math.floor(sourceTower.x / TILE_SIZE)] = GRID_EMPTY;
+                sourceTower.x = snappedX;
+                sourceTower.y = snappedY;
+            }
+            placementGrid[gridY][gridX] = GRID_TOWER;
+            actionTaken = true;
+        }
+    }
+
+    if (actionTaken) {
+        renderCloudInventory();
+    }
+
+    // Reset state variables
+    placingTower = null;
+    draggedCloudTower = null;
+    draggedCanvasTower = null;
+});
 
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
@@ -1379,7 +1630,7 @@ function getMousePos(canvas, evt) {
     // Scale mouse coordinates to match canvas resolution
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     return { 
         x: mouseX * scaleX, 
         y: mouseY * scaleY
