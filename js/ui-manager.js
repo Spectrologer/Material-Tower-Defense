@@ -19,7 +19,6 @@ export const uiElements = {
     speedToggleBtn: document.getElementById('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
     soundToggleBtn: document.getElementById('sound-toggle-btn'),
-    upgradeTowerBtn: document.getElementById('upgrade-tower'),
     // New elements for showing/hiding UI sections
     towerButtons: document.getElementById('tower-buttons'),
     gameControls: document.getElementById('game-controls'),
@@ -79,14 +78,11 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
         }
 
 
-        // Upgrading is now done via merging, so the upgrade button is always hidden.
-        uiElements.upgradeTowerBtn.classList.add('hidden');
-
         // Hide toggle button by default, show it for specific towers
         uiElements.toggleModeBtn.classList.add('hidden');
-        if (['ENT', 'ORBIT'].includes(selectedTower.type)) {
+        if (['ENT', 'ORBIT', 'CAT'].includes(selectedTower.type)) {
             uiElements.toggleModeBtn.classList.remove('hidden');
-            if (selectedTower.type === 'ENT') {
+            if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                 uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
             } else if (selectedTower.type === 'ORBIT') {
                 uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
@@ -99,6 +95,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
         document.getElementById('stat-splash-p').classList.add('hidden');
         document.getElementById('stat-boost-p').classList.add('hidden');
         document.getElementById('stat-slow-p').classList.add('hidden');
+        document.getElementById('stat-gold-p').classList.add('hidden');
         document.getElementById('stat-burn-p').classList.add('hidden');
         document.getElementById('stat-special-p').classList.add('hidden');
         document.getElementById('stat-projectiles-p').classList.add('hidden');
@@ -124,8 +121,14 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
             document.getElementById('stat-projectiles').textContent = selectedTower.projectileCount || 1;
         }
         
-        if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT') {
-            if (selectedTower.type === 'ENT') {
+        if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
+            if (selectedTower.type === 'CAT') {
+                document.getElementById('stat-gold-p').classList.remove('hidden');
+                const goldPercent = ((selectedTower.goldBonus - 1) * 100).toFixed(0);
+                document.getElementById('stat-gold').textContent = `${goldPercent}%`;
+            }
+
+            if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                  if (selectedTower.mode === 'boost') {
                     document.getElementById('stat-boost-p').classList.remove('hidden');
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);

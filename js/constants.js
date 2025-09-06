@@ -16,6 +16,7 @@ export const TOWER_TYPES = {
     NAT: { cost: 50, range: 300, damage: 15, fireRate: 120, color: '#DEB887', projectileSpeed: 12, projectileSize: 5, projectileColor: '#DEB887', splashRadius: 0, special: 'Sniper' },
     ENT: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, special: 'Toggle Aura: Boost/Slow' },
     ORBIT: { cost: 150, range: 9999, damage: 10, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 6, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters' },
+    CAT: { cost: 180, range: 120, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1.2, special: 'Greed Aura & Toggle' },
 };
 
 // Enemy Configuration
