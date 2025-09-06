@@ -119,6 +119,7 @@ class Tower {
         this.x = x;
         this.y = y;
         this.type = type;
+        this.id = crypto.randomUUID(); // Assign a unique ID to each tower
         this.level = 1;
         this.damageLevel = 1; // Separate level for damage calculation
         this.mode = 'boost'; // 'boost' or 'slow'
@@ -240,7 +241,12 @@ class Tower {
                 icon = '\uf6be'; // Unicode for 'cat'
                 iconFamily = '"Font Awesome 6 Free"';
                 fontWeight = '900'; // For solid icons
-                iconSize *= 0.9; // Making the cat tower slightly smaller
+                iconSize *= TOWER_TYPES.CAT.iconSize; // Makes the cat tower slightly smaller
+                if (this.mode === 'boost') {
+                    ctx.fillStyle = '#65a30d'; // Green for boost
+                } else {
+                    ctx.fillStyle = '#0891b2'; // Blue for slow
+                }
                 break;
         }
         
@@ -286,8 +292,10 @@ class Tower {
         const pulseSize = this.range * (0.9 + Math.sin(Date.now() / 400) * 0.1);
         ctx.save();
         ctx.globalAlpha = 0.5;
-        ctx.strokeStyle = this.color;
-        ctx.fillStyle = this.color;
+        // Use the color based on the tower's current mode
+        const auraColor = (this.type === 'ENT' && this.mode === 'slow') ? '#0891b2' : ((this.type === 'CAT' && this.mode === 'slow') ? '#0891b2' : this.color);
+        ctx.strokeStyle = auraColor;
+        ctx.fillStyle = auraColor;
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 10]);
         ctx.beginPath();
@@ -352,7 +360,7 @@ class Tower {
                     // This ground-based projectile cannot hit flying enemies
                     if (enemy.type.isFlying) return;
 
-                    // Use the tower's current projectileSize for collision, not the base one.
+                    // Use the tower's current projectileSize, not the base one.
                     const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
                     if (dist < enemy.size + this.projectileSize) {
                         if (!orbiter.hitEnemies.has(enemy)) {

@@ -84,6 +84,12 @@ let isCloudUnlocked = false;
 let cloudInventory = [];
 let placingFromCloud = null; // Stores the tower object being placed from the cloud
 let draggedCloudTower = null; // Stores the tower object being dragged from the cloud
+let draggedCanvasTower = null; // New variable to store the tower dragged from the canvas
+let draggedCanvasTowerOriginalGridPos = {x: -1, y: -1}; // Stores the original position of the dragged tower
+// New variables for the merge preview tooltip
+let mergeTooltip = { show: false, x: 0, y: 0, info: null };
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 500; // 500 milliseconds for a long press
 
 // This function scales the canvas display size to fit its container.
 function resizeCanvas() {
@@ -149,7 +155,7 @@ function getTowerIconInfo(type) {
             break;
         case 'CAT':
             icon = 'cat';
-            className = "fa-solid fa-cat";
+            className = "fa-solid";
             break;
         default:
             icon = 'help'; // Default icon for unknown types
@@ -168,7 +174,7 @@ function renderCloudInventory() {
         const towerRep = document.createElement('button');
         towerRep.className = `pixel-button p-1 w-full h-14 flex flex-col items-center justify-center relative ${isSelected ? 'selected' : ''}`;
         
-        const towerColor = (tower.type === 'ENT' && tower.mode === 'slow') ? '#0891b2' : tower.color;
+        const towerColor = (tower.type === 'ENT' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
         towerRep.style.backgroundColor = towerColor;
         towerRep.style.borderColor = towerColor;
 
@@ -179,7 +185,7 @@ function renderCloudInventory() {
         let iconEl;
         if (towerIconInfo.className.startsWith('fa-')) {
             // Font Awesome uses <i> tags with full class names
-            iconEl = `<i class="${towerIconInfo.className}" style="font-size: 24px; color: #1a1a1a;"></i>`;
+            iconEl = `<i class="${towerIconInfo.className} fa-${towerIconInfo.icon}" style="font-size: 24px; color: #1a1a1a;"></i>`;
         } else {
             // Material Icons use <span> tags with the icon name as content
             iconEl = `<span class="${towerIconInfo.className}" style="font-size: 28px; color: #1a1a1a; font-variation-settings: 'FILL' 1;">${towerIconInfo.icon}</span>`;
@@ -195,6 +201,7 @@ function renderCloudInventory() {
         // Event listeners for drag and drop functionality
         towerRep.addEventListener('dragstart', (e) => {
             draggedCloudTower = tower;
+            e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'cloud', towerId: tower.id }));
             // A slight delay ensures the drag image is created before the original is hidden
             setTimeout(() => {
                 towerRep.classList.add('opacity-50');
@@ -458,8 +465,8 @@ function gameLoop() {
         const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
 
         const tempTower = new Tower(snappedX, snappedY, placingTower);
-        if (placingFromCloud || draggedCloudTower) {
-             Object.assign(tempTower, placingFromCloud || draggedCloudTower);
+        if (placingFromCloud || draggedCloudTower || draggedCanvasTower) {
+             Object.assign(tempTower, placingFromCloud || draggedCloudTower || draggedCanvasTower);
             tempTower.x = snappedX;
             tempTower.y = snappedY;
         }
@@ -473,6 +480,10 @@ function gameLoop() {
             ctx.fill();
         }
     }
+
+    // Draw merge tooltip last so it's on top
+    drawMergeTooltip(ctx);
+
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
@@ -741,6 +752,150 @@ function performMerge(clickedOnTower, mergingTowerType, costToAdd) {
     return merged;
 }
 
+// Determines the outcome of a merge without actually performing it.
+function getMergeResultInfo(existingTower, placingType) {
+    const existingType = existingTower.type;
+    let result = { text: null, resultType: null, upgrade: null };
+
+    // New tower creation
+    if ((existingType === 'SUPPORT' && placingType === 'SUPPORT')) { result.resultType = 'ENT'; }
+    else if ((existingType === 'ENT' && placingType === 'SUPPORT') || (existingType === 'SUPPORT' && placingType === 'ENT')) { result.resultType = 'CAT'; }
+    else if ((existingType === 'PIN' && placingType === 'PIN')) { result.resultType = 'NAT'; }
+    else if ((existingType === 'CASTLE' && placingType === 'CASTLE')) { result.resultType = 'ORBIT'; }
+    else if ((existingType === 'SUPPORT' && placingType === 'PIN') || (existingType === 'PIN' && placingType === 'SUPPORT')) { result.resultType = 'PIN_HEART'; }
+    else if ((existingType === 'SUPPORT' && placingType === 'CASTLE') || (existingType === 'CASTLE' && placingType === 'SUPPORT')) { result.resultType = 'FIREPLACE'; }
+    else if ((existingType === 'PIN' && placingType === 'CASTLE') || (existingType === 'CASTLE' && placingType === 'PIN')) { result.resultType = 'FORT'; }
+    
+    // Same-type level up
+    else if (existingType === placingType && existingTower.level !== 'MAX LEVEL' && existingTower.level < 5) {
+        result.resultType = existingType;
+        result.text = `${existingType} LVL ${existingTower.level + 1}`;
+    }
+    
+    // Hybrid upgrades
+    else if (existingTower.level !== 'MAX LEVEL') {
+        if (existingType === 'NAT' && existingTower.level < 5) {
+            if (placingType === 'CASTLE') result.upgrade = { text: '+ Proj', icon: 'multiple_stop', family: 'material-symbols-outlined' };
+            else if (placingType === 'PIN') result.upgrade = { text: '+ Dmg', icon: 'bolt', family: 'material-icons' };
+        } else if (['FORT', 'PIN_HEART'].includes(existingType) && existingTower.level < 5) {
+            if (placingType === 'PIN') result.upgrade = { text: '+ Dmg/Spd', icon: 'bolt', family: 'material-icons' }; // Simplified for tooltip
+            else if (placingType === 'CASTLE') result.upgrade = { text: '+ Dmg/Spl', icon: 'bolt', family: 'material-icons' };
+        } else if (existingType === 'ORBIT' && existingTower.level < 5) {
+            if (placingType === 'PIN') result.upgrade = { text: '+ Dmg', icon: 'bolt', family: 'material-icons' };
+            else if (placingType === 'CASTLE') result.upgrade = { text: '+ Dmg/Size', icon: 'bolt', family: 'material-icons' };
+        } else if (existingType === 'FIREPLACE' && existingTower.level < 3) {
+            if (placingType === 'CASTLE') result.upgrade = { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' };
+            else if (placingType === 'PIN') result.upgrade = { text: '+ Burn', icon: 'local_fire_department', family: 'material-symbols-outlined' };
+        }
+
+        if(result.upgrade){
+            result.resultType = existingType;
+            result.text = `Upgrade`;
+        }
+    }
+    
+    if (!result.text && result.resultType) {
+        result.text = result.resultType.replace('_', ' ');
+    }
+
+    return (result.text && result.resultType) ? result : null;
+}
+
+
+// Draws the merge preview tooltip on the canvas.
+function drawMergeTooltip(ctx) {
+    if (!mergeTooltip.show || !mergeTooltip.info) return;
+
+    ctx.save();
+    
+    const info = mergeTooltip.info;
+    const padding = 8;
+    const iconSize = 24;
+    const iconPadding = 5;
+    
+    // --- Measure all components first ---
+    ctx.font = "14px 'Press Start 2P'";
+    const resultTextMetrics = ctx.measureText(info.text);
+    let totalContentWidth = 0;
+    
+    // Main result icon + text
+    const resultIconInfo = getTowerIconInfo(info.resultType);
+    totalContentWidth += iconSize + iconPadding + resultTextMetrics.width;
+    
+    // Upgrade icon + text (if it exists)
+    let upgradeTextMetrics = { width: 0 };
+    if (info.upgrade) {
+        upgradeTextMetrics = ctx.measureText(info.upgrade.text);
+        totalContentWidth += iconSize + iconPadding + upgradeTextMetrics.width;
+        totalContentWidth += 10; // Extra padding between result and upgrade
+    }
+
+    const rectWidth = totalContentWidth + padding * 2;
+    const rectHeight = iconSize + padding * 2;
+
+    // --- Position the tooltip ---
+    let rectX = mergeTooltip.x + 20;
+    let rectY = mergeTooltip.y - rectHeight - 10;
+    if (rectX + rectWidth > canvasWidth) rectX = canvasWidth - rectWidth - 5;
+    if (rectY < 5) rectY = mergeTooltip.y + 20;
+
+    // --- Draw background ---
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.rect(rectX, rectY, rectWidth, rectHeight);
+    ctx.fill();
+    ctx.stroke();
+
+    // --- Draw content ---
+    let currentX = rectX + padding;
+    const contentY = rectY + padding + (rectHeight - padding * 2) / 2;
+
+    // 1. Draw Result Icon
+    if (resultIconInfo && resultIconInfo.icon) {
+        let fontWeight = '400', fontFamily = "'Material Icons'", iconToDraw = resultIconInfo.icon;
+        if (resultIconInfo.className.startsWith('fa-')) {
+            fontWeight = '900'; fontFamily = '"Font Awesome 6 Free"';
+            if (info.resultType === 'CAT') iconToDraw = '\uf6be';
+        } else if (resultIconInfo.className === 'material-symbols-outlined') {
+            fontFamily = "'Material Symbols Outlined'";
+        }
+        ctx.font = `${fontWeight} ${iconSize}px ${fontFamily}`;
+        ctx.fillStyle = TOWER_TYPES[info.resultType]?.color || '#FFFFFF';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(iconToDraw, currentX, contentY);
+        currentX += iconSize + iconPadding;
+    }
+
+    // 2. Draw Result Text
+    ctx.font = "14px 'Press Start 2P'";
+    ctx.fillStyle = '#00ff88';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(info.text, currentX, contentY);
+    currentX += resultTextMetrics.width + 10;
+
+    // 3. Draw Upgrade Info (if it exists)
+    if (info.upgrade) {
+        // 3a. Draw Upgrade Icon
+        let fontWeight = '400', fontFamily = "'Material Icons'", iconToDraw = info.upgrade.icon;
+        if (info.upgrade.family === 'material-symbols-outlined') {
+             fontFamily = "'Material Symbols Outlined'";
+        }
+        ctx.font = `${fontWeight} ${iconSize-4}px ${fontFamily}`; // Slightly smaller icon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(iconToDraw, currentX, contentY);
+        currentX += (iconSize-4) + iconPadding;
+
+        // 3b. Draw Upgrade Text
+        ctx.font = "14px 'Press Start 2P'";
+        ctx.fillStyle = '#00ff88';
+        ctx.fillText(info.upgrade.text, currentX, contentY);
+    }
+    
+    ctx.restore();
+}
+
 // Event Listeners: These watch for clicks and other user actions.
 uiElements.startWaveBtn.addEventListener('click', spawnWave);
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
@@ -783,7 +938,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
 
         gold += Math.floor(selectedTower.cost * 0.5);
         window.gold = gold; // Sync global gold
-        towers = towers.filter(t => t !== selectedTower);
+        towers = towers.filter(t => t.id !== selectedTower.id);
         selectedTower = null;
         updateUI({ lives, gold, wave, isCloudUnlocked });
         updateSellPanel(null, isCloudUnlocked);
@@ -798,7 +953,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
         placementGrid[gridY][gridX] = GRID_EMPTY;
 
         cloudInventory.push(selectedTower);
-        towers = towers.filter(t => t !== selectedTower);
+        towers = towers.filter(t => t.id !== selectedTower.id);
         renderCloudInventory();
 
         selectedTower = null;
@@ -849,7 +1004,7 @@ canvas.addEventListener('click', (e) => {
                 placingFromCloud.x = snappedX;
                 placingFromCloud.y = snappedY;
                 towers.push(placingFromCloud);
-                cloudInventory = cloudInventory.filter(t => t !== placingFromCloud);
+                cloudInventory = cloudInventory.filter(t => t.id !== placingFromCloud.id); // Filter by ID
                 placementGrid[gridY][gridX] = GRID_TOWER;
                 
                 actionTaken = true;
@@ -946,6 +1101,37 @@ canvas.addEventListener('mousemove', e => {
 
     mouse.x = mouseX * scaleX;
     mouse.y = mouseY * scaleY;
+
+    // Logic for merge tooltip on hover
+    if (placingTower) {
+        const gridX = Math.floor(mouse.x / TILE_SIZE);
+        const gridY = Math.floor(mouse.y / TILE_SIZE);
+        
+        const hoveredTower = towers.find(t => {
+            const tGridX = Math.floor(t.x / TILE_SIZE);
+            const tGridY = Math.floor(t.y / TILE_SIZE);
+            return tGridX === gridX && tGridY === gridY;
+        });
+
+        if (hoveredTower) {
+            const mergeInfo = getMergeResultInfo(hoveredTower, placingTower);
+            if (mergeInfo) {
+                mergeTooltip.show = true;
+                mergeTooltip.info = mergeInfo;
+                mergeTooltip.x = mouse.x;
+                mergeTooltip.y = mouse.y;
+            } else {
+                mergeTooltip.show = false;
+                mergeTooltip.info = null;
+            }
+        } else {
+            mergeTooltip.show = false;
+            mergeTooltip.info = null;
+        }
+    } else {
+        mergeTooltip.show = false;
+        mergeTooltip.info = null;
+    }
 });
 
 // New Drag and Drop listeners for the canvas
@@ -956,6 +1142,12 @@ canvas.addEventListener('dragover', e => {
         mouse.x = mousePos.x;
         mouse.y = mousePos.y;
         placingTower = draggedCloudTower.type; // Use placingTower for visual preview
+    } else if (draggedCanvasTower) {
+        // Allow dropping a tower from the field back onto the field.
+        const mousePos = getMousePos(canvas, e);
+        mouse.x = mousePos.x;
+        mouse.y = mousePos.y;
+        placingTower = draggedCanvasTower.type;
     }
 });
 
@@ -963,38 +1155,150 @@ canvas.addEventListener('dragleave', () => {
     placingTower = null; // Clear preview when dragging off canvas
 });
 
+// This listener enables dragging a tower from the game canvas.
+canvas.addEventListener('dragstart', (e) => {
+    const mousePos = getMousePos(canvas, e);
+    const gridX = Math.floor(mousePos.x / TILE_SIZE);
+    const gridY = Math.floor(mousePos.y / TILE_SIZE);
+    
+    // Only allow dragging a tower if Cloud is unlocked and a tower exists at the grid position.
+    if (!isCloudUnlocked) {
+        e.preventDefault();
+        return;
+    }
+    
+    const towerToDrag = towers.find(t => {
+        const tGridX = Math.floor(t.x / TILE_SIZE);
+        const tGridY = Math.floor(t.y / TILE_SIZE);
+        return tGridX === gridX && tGridY === gridY;
+    });
+
+    if (towerToDrag) {
+        draggedCanvasTower = towerToDrag;
+        draggedCanvasTowerOriginalGridPos = {x: gridX, y: gridY};
+        // Use a dataTransfer object to communicate the source and tower ID
+        e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'canvas', towerId: towerToDrag.id }));
+        
+        // This is a common pattern to create a simple drag image from the canvas context
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = TILE_SIZE;
+        tempCanvas.height = TILE_SIZE;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        const towerColor = (towerToDrag.type === 'ENT' && towerToDrag.mode === 'slow') ? '#0891b2' : ((towerToDrag.type === 'CAT' && towerToDrag.mode === 'slow') ? '#0891b2' : towerToDrag.color);
+        const towerIconInfo = getTowerIconInfo(towerToDrag.type);
+        const fontStyle = towerIconInfo.className === 'fa-solid' ? '900' : '400';
+        tempCtx.font = `${fontStyle} 24px "${towerIconInfo.className.replace('fa-solid', 'Font Awesome 6 Free').replace('material-symbols-outlined', 'Material Symbols Outlined').replace('material-icons', 'Material Icons')}"`;
+        tempCtx.textAlign = 'center';
+        tempCtx.textBaseline = 'middle';
+        tempCtx.fillStyle = towerColor;
+        tempCtx.fillText(towerIconInfo.icon, TILE_SIZE / 2, TILE_SIZE / 2);
+
+        e.dataTransfer.setDragImage(tempCanvas, TILE_SIZE/2, TILE_SIZE/2);
+    } else {
+        // Prevent drag operation if no tower is selected.
+        e.preventDefault();
+    }
+});
+
+// This listener handles dropping a tower onto the cloud inventory panel.
+uiElements.cloudInventoryPanel.addEventListener('dragover', e => {
+    e.preventDefault(); // This is crucial to allow a drop
+});
+
+uiElements.cloudInventoryPanel.addEventListener('drop', e => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
+
+    try {
+        const transferData = JSON.parse(data);
+        if (transferData.source === 'canvas') {
+            const towerToMove = towers.find(t => t.id === transferData.towerId);
+            if (towerToMove) {
+                // Remove from canvas, add to cloud
+                const gridX = Math.floor(towerToMove.x / TILE_SIZE);
+                const gridY = Math.floor(towerToMove.y / TILE_SIZE);
+                placementGrid[gridY][gridX] = GRID_EMPTY;
+                towers = towers.filter(t => t.id !== towerToMove.id);
+                cloudInventory.push(towerToMove);
+                renderCloudInventory();
+                selectedTower = null;
+                updateSellPanel(null, isCloudUnlocked);
+            }
+        }
+    } catch (e) {
+        console.error("Failed to parse drop data:", e);
+    }
+});
+
 canvas.addEventListener('drop', e => {
     e.preventDefault();
-    if (!draggedCloudTower) return;
-
+    
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
+    
+    let transferData;
+    try {
+        transferData = JSON.parse(data);
+    } catch (e) {
+        console.error("Failed to parse drop data:", e);
+        return;
+    }
+    
+    // Get mouse position for placement
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
     const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
     const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
 
-    const clickedOnTower = towers.find(t => {
+    const targetTower = towers.find(t => {
         const tGridX = Math.floor(t.x / TILE_SIZE);
         const tGridY = Math.floor(t.y / TILE_SIZE);
         return tGridX === gridX && tGridY === gridY;
     });
 
+    let sourceTower;
+    if (transferData.source === 'cloud') {
+        sourceTower = cloudInventory.find(t => t.id === transferData.towerId);
+    } else if (transferData.source === 'canvas') {
+        sourceTower = towers.find(t => t.id === transferData.towerId);
+    }
+    
     let actionTaken = false;
-    if (clickedOnTower) {
-        // Attempt to merge
-        if (performMerge(clickedOnTower, draggedCloudTower.type, draggedCloudTower.cost)) {
-            cloudInventory = cloudInventory.filter(t => t !== draggedCloudTower);
-            updateSellPanel(clickedOnTower, isCloudUnlocked);
+    
+    if (sourceTower) {
+        // Case 1: Drop onto an existing tower for a merge
+        if (targetTower && targetTower.id !== sourceTower.id) {
+            if (performMerge(targetTower, sourceTower.type, sourceTower.cost)) {
+                if (transferData.source === 'cloud') {
+                    cloudInventory = cloudInventory.filter(t => t.id !== sourceTower.id);
+                } else if (transferData.source === 'canvas') {
+                    towers = towers.filter(t => t.id !== sourceTower.id);
+                    placementGrid[Math.floor(sourceTower.y / TILE_SIZE)][Math.floor(sourceTower.x / TILE_SIZE)] = GRID_EMPTY;
+                }
+                selectedTower = null;
+                updateSellPanel(null, isCloudUnlocked);
+                actionTaken = true;
+            }
+        }
+        // Case 2: Drop onto an empty spot
+        else if (!targetTower && isValidPlacement(snappedX, snappedY)) {
+            if (transferData.source === 'cloud') {
+                sourceTower.x = snappedX;
+                sourceTower.y = snappedY;
+                towers.push(sourceTower);
+                cloudInventory = cloudInventory.filter(t => t.id !== sourceTower.id);
+            } else if (transferData.source === 'canvas') {
+                // Move tower to new spot on canvas
+                placementGrid[Math.floor(sourceTower.y / TILE_SIZE)][Math.floor(sourceTower.x / TILE_SIZE)] = GRID_EMPTY;
+                sourceTower.x = snappedX;
+                sourceTower.y = snappedY;
+            }
+            placementGrid[gridY][gridX] = GRID_TOWER;
             actionTaken = true;
         }
-    } else if (isValidPlacement(snappedX, snappedY)) {
-        // Place the tower on an empty spot
-        draggedCloudTower.x = snappedX;
-        draggedCloudTower.y = snappedY;
-        towers.push(draggedCloudTower);
-        placementGrid[gridY][gridX] = GRID_TOWER;
-        cloudInventory = cloudInventory.filter(t => t !== draggedCloudTower);
-        actionTaken = true;
     }
 
     if (actionTaken) {
@@ -1004,7 +1308,60 @@ canvas.addEventListener('drop', e => {
     // Reset state variables
     placingTower = null;
     draggedCloudTower = null;
+    draggedCanvasTower = null;
 });
+
+// Mobile Touch Listeners for Long Press Tooltip
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (!placingTower) return;
+
+    const touchPos = getMousePos(canvas, e.touches[0]);
+    
+    longPressTimer = setTimeout(() => {
+        const gridX = Math.floor(touchPos.x / TILE_SIZE);
+        const gridY = Math.floor(touchPos.y / TILE_SIZE);
+
+        const targetTower = towers.find(t => {
+            const tGridX = Math.floor(t.x / TILE_SIZE);
+            const tGridY = Math.floor(t.y / TILE_SIZE);
+            return tGridX === gridX && tGridY === gridY;
+        });
+
+        if (targetTower) {
+            const mergeInfo = getMergeResultInfo(targetTower, placingTower);
+            if (mergeInfo) {
+                mergeTooltip.show = true;
+                mergeTooltip.info = mergeInfo;
+                mergeTooltip.x = touchPos.x;
+                mergeTooltip.y = touchPos.y;
+            }
+        }
+    }, LONG_PRESS_DURATION);
+}, { passive: false });
+
+function handleTouchEnd() {
+    clearTimeout(longPressTimer);
+    mergeTooltip.show = false;
+    mergeTooltip.info = null;
+}
+
+canvas.addEventListener('touchend', handleTouchEnd);
+canvas.addEventListener('touchcancel', handleTouchEnd);
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    // If finger moves, cancel the long press timer and hide the tooltip
+    clearTimeout(longPressTimer);
+    mergeTooltip.show = false;
+    mergeTooltip.info = null;
+    // Also update mouse position for the preview
+    if (placingTower && e.touches[0]) {
+        const touchPos = getMousePos(canvas, e.touches[0]);
+        mouse.x = touchPos.x;
+        mouse.y = touchPos.y;
+    }
+}, { passive: false });
 
 
 function getMousePos(canvas, evt) {
@@ -1045,6 +1402,10 @@ function init() {
     cloudInventory = [];
     placingFromCloud = null;
     draggedCloudTower = null;
+    draggedCanvasTower = null; // Reset this variable on init
+    draggedCanvasTowerOriginalGridPos = {x: -1, y: -1};
+    mergeTooltip.show = false; // Reset tooltip state
+    mergeTooltip.info = null;
 
     uiElements.speedToggleBtn.textContent = 'x1';
     

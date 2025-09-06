@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <!-- This makes sure the game looks good on mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tower Defense</title>
+    <title>Iconic Tower Defense</title>
 
     <!-- This script brings in TailwindCSS for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,7 +36,6 @@
         /* Style for the game's drawing area (the canvas) */
         canvas {
             background-color: #2c2c2c; /* Dark gray for the game area */
-            border-radius: 8px; /* Rounded corners */
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); /* A nice green glow */
             border: 2px solid rgba(0, 255, 136, 0.4);
             position: absolute;
@@ -46,7 +45,6 @@
             background-color: rgba(26, 26, 26, 0.8); /* See-through dark background */
             backdrop-filter: blur(5px); /* Blurs what's behind the panel */
             border: 2px solid rgba(0, 255, 136, 0.4); /* Green border */
-            border-radius: 8px;
         }
         /* Style for the clickable buttons */
         .pixel-button {
@@ -56,7 +54,6 @@
             padding: 10px 15px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            border-radius: 6px;
             transition: all 0.2s ease;
             box-shadow: 0 4px 0 #00aa5b; /* Gives it a 3D, pressable look */
             cursor: pointer;
@@ -96,6 +93,10 @@
           font-family: 'Material Symbols Outlined';
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
         }
+        .fa-solid {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
 
         /* Custom styles for the new debug button */
         #infinite-gold {
@@ -106,11 +107,11 @@
         }
         #infinite-gold:hover:not(:disabled) {
             background-color: #ef4444;
-            box-shadow: 0 6px 0 #991b1b;
+            box-shadow: 6px 0 #991b1b;
         }
         #infinite-gold:active:not(:disabled) {
             transform: translateY(2px);
-            box-shadow: 0 2px 0 #991b1b;
+            box-shadow: 2px 0 #991b1b;
         }
     </style>
 </head>
@@ -121,7 +122,7 @@
         
         <!-- This is the stats bar at the top (Lives, Gold, Wave) -->
         <div class="game-stats-panel py-1 px-2 flex-shrink-0 relative">
-            <h1 class="text-sm text-center text-green-400">MATERIAL TOWER DEFENSE</h1>
+            <h1 class="text-sm text-center text-green-400">ICONIC TOWER DEFENSE</h1>
             <div class="flex justify-between items-center text-xs md:text-sm">
                 <div class="flex flex-1 justify-center items-center gap-x-4 md:gap-x-6">
                     <p class="flex items-center gap-1"><span class="material-symbols-outlined text-red-500 text-base md:text-lg">favorite</span> <span id="lives" class="text-red-500">20</span></p>
@@ -138,9 +139,10 @@
         <!-- This container holds the actual game canvas AND the new cloud inventory -->
         <div class="flex-grow relative w-full min-h-0 flex gap-2">
             <div id="canvas-container" class="flex-grow relative h-full min-h-0">
-                <canvas id="gameCanvas"></canvas>
+                <!-- The canvas is now draggable to enable dragging towers from the game grid -->
+                <canvas id="gameCanvas" draggable="true"></canvas>
             </div>
-            <!-- Cloud Inventory Panel -->
+            <!-- Cloud Inventory Panel, this is a drop target for towers from the canvas -->
             <div id="cloud-inventory-panel" class="hidden game-ui-panel w-[72px] flex-shrink-0 flex flex-col items-center p-1 gap-2 overflow-y-auto">
                 <h3 class="text-xs text-green-400 -mb-1">CLOUD</h3>
                 <div id="cloud-inventory-slots" class="flex flex-col gap-2 w-full items-center">
@@ -157,7 +159,7 @@
                 <div id="upgrade-buttons">
                     <button id="unlock-cloud" class="pixel-button flex items-center justify-center !p-2 text-xs">
                         <span class="material-symbols-outlined !text-lg">cloud</span>
-                        <span class="hidden sm:inline ml-1">(100G)</span>
+                        <span class="ml-1">(100G)</span>
                     </button>
                 </div>
             </div>
@@ -220,4 +222,3 @@
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
-
