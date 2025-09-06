@@ -119,12 +119,14 @@ class Tower {
         this.x = x;
         this.y = y;
         this.type = type;
+        this.id = crypto.randomUUID(); // Assign a unique ID to each tower
         this.level = 1;
         this.damageLevel = 1; // Separate level for damage calculation
         this.mode = 'boost'; // 'boost' or 'slow'
         this.damageMultiplier = 1; // New property to handle non-stacking damage boosts.
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1; // Handles damage buffs from merges.
+        this.goldBonusMultiplier = 1; // For CAT tower aura
 
         // Initialize stats that are modified by merges directly.
         // This prevents updateStats() from resetting them.
@@ -155,13 +157,16 @@ class Tower {
         const levelForCalc = this.level === 'MAX LEVEL' ? maxLevel : this.level;
         const damageLevelForCalc = this.damageLevel === 'MAX LEVEL' ? maxLevel : this.damageLevel;
 
-        if (this.type === 'ENT') {
+        if (this.type === 'ENT' || this.type === 'CAT') {
             this.level = 'MAX LEVEL';
             this.cost = baseStats.cost;
             this.range = baseStats.range;
             this.attackSpeedBoost = baseStats.attackSpeedBoost;
             this.damageBoost = baseStats.damageBoost;
             this.enemySlow = baseStats.enemySlow;
+            if (this.type === 'CAT') {
+                this.goldBonus = baseStats.goldBonus;
+            }
             return;
         }
 
@@ -193,7 +198,7 @@ class Tower {
     draw(ctx) {
         // Make the tower grow visually with each level, including MAX LEVEL
         const visualLevel = this.level === 'MAX LEVEL' ? 6 : this.level;
-        const iconSize = 28 + (visualLevel * 2);
+        let iconSize = 28 + (visualLevel * 2);
         
         ctx.fillStyle = this.color;
         ctx.textAlign = 'center';
@@ -201,6 +206,7 @@ class Tower {
         
         let icon;
         let iconFamily = 'Material Icons';
+        let fontWeight = '400';
         switch (this.type) {
             case 'PIN': icon = 'location_pin'; break;
             case 'CASTLE': icon = 'castle'; break;
@@ -231,9 +237,20 @@ class Tower {
                 icon = 'orbit';
                 iconFamily = "'Material Symbols Outlined'";
                 break;
+            case 'CAT':
+                icon = '\uf6be'; // Unicode for 'cat'
+                iconFamily = '"Font Awesome 6 Free"';
+                fontWeight = '900'; // For solid icons
+                iconSize *= TOWER_TYPES.CAT.iconSize; // Makes the cat tower slightly smaller
+                if (this.mode === 'boost') {
+                    ctx.fillStyle = '#65a30d'; // Green for boost
+                } else {
+                    ctx.fillStyle = '#0891b2'; // Blue for slow
+                }
+                break;
         }
         
-        ctx.font = `${iconSize}px ${iconFamily}`;
+        ctx.font = `${fontWeight} ${iconSize}px ${iconFamily}`;
         
         // This makes the tower rotate to face its target.
         const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : 0;
@@ -275,8 +292,10 @@ class Tower {
         const pulseSize = this.range * (0.9 + Math.sin(Date.now() / 400) * 0.1);
         ctx.save();
         ctx.globalAlpha = 0.5;
-        ctx.strokeStyle = this.color;
-        ctx.fillStyle = this.color;
+        // Use the color based on the tower's current mode
+        const auraColor = (this.type === 'ENT' && this.mode === 'slow') ? '#0891b2' : ((this.type === 'CAT' && this.mode === 'slow') ? '#0891b2' : this.color);
+        ctx.strokeStyle = auraColor;
+        ctx.fillStyle = auraColor;
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 10]);
         ctx.beginPath();
@@ -330,8 +349,8 @@ class Tower {
     }
     // Updates the tower's state every frame (like finding a target and shooting).
     update(enemies, projectiles, onEnemyDeath) {
-        if (this.type === 'SUPPORT' || this.type === 'ENT') {
-            return; // Support and Ent towers don't attack.
+        if (this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') {
+            return; // Aura towers don't attack.
         }
         
         if (this.type === 'ORBIT') {
@@ -341,7 +360,7 @@ class Tower {
                     // This ground-based projectile cannot hit flying enemies
                     if (enemy.type.isFlying) return;
 
-                    // Use the tower's current projectileSize for collision, not the base one.
+                    // Use the tower's current projectileSize, not the base one.
                     const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
                     if (dist < enemy.size + this.projectileSize) {
                         if (!orbiter.hitEnemies.has(enemy)) {

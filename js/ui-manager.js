@@ -13,16 +13,34 @@ export const uiElements = {
     gameOverMessage: document.getElementById('game-over-message'),
     restartGameBtn: document.getElementById('restart-game'),
     sellPanel: document.getElementById('sell-panel'),
-    sellTowerBtn: document.getElementById('sell-tower'),
+    sellTowerBtn: document.getElementById('sell-tower-btn'),
+    moveToCloudBtn: document.getElementById('move-to-cloud-btn'),
     toggleModeBtn: document.getElementById('toggle-mode'),
     speedToggleBtn: document.getElementById('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
     soundToggleBtn: document.getElementById('sound-toggle-btn'),
-    upgradeTowerBtn: document.getElementById('upgrade-tower'),
     // New elements for showing/hiding UI sections
     towerButtons: document.getElementById('tower-buttons'),
     gameControls: document.getElementById('game-controls'),
-    towersTitle: document.getElementById('towers-title')
+    towersTitle: document.getElementById('towers-title'),
+    // Cloud inventory elements
+    cloudButton: document.getElementById('cloud-button'),
+    cloudIcon: document.getElementById('cloud-icon'),
+    cloudText: document.getElementById('cloud-text'),
+    cloudInventoryPanel: document.getElementById('cloud-inventory-panel'),
+    cloudInventorySlots: document.getElementById('cloud-inventory-slots'),
+    cloudTooltipContainer: document.getElementById('cloud-tooltip-container'),
+    // New merge confirmation elements
+    mergeConfirmModal: document.getElementById('merge-confirm-modal'),
+    mergeFromTowerIconContainer: document.getElementById('merge-from-tower-icon-container'),
+    mergeFromTowerName: document.getElementById('merge-from-tower-name'),
+    mergeToTowerIconContainer: document.getElementById('merge-to-tower-icon-container'),
+    mergeToTowerName: document.getElementById('merge-to-tower-name'),
+    mergeResultTowerIconContainer: document.getElementById('merge-result-tower-icon-container'),
+    mergeResultTowerName: document.getElementById('merge-result-tower-name'),
+    mergeCostInfo: document.getElementById('merge-cost-info'),
+    confirmMergeBtn: document.getElementById('confirm-merge-btn'),
+    cancelMergeBtn: document.getElementById('cancel-merge-btn'),
 };
 
 export function updateUI(state) {
@@ -32,9 +50,20 @@ export function updateUI(state) {
     uiElements.buyPinBtn.disabled = state.gold < TOWER_TYPES.PIN.cost;
     uiElements.buyCastleBtn.disabled = state.gold < TOWER_TYPES.CASTLE.cost;
     uiElements.buySupportBtn.disabled = state.gold < TOWER_TYPES.SUPPORT.cost;
+
+    // Handle the cloud button state
+    if(state.isCloudUnlocked) {
+        uiElements.cloudButton.disabled = false;
+        uiElements.cloudIcon.textContent = 'cloud_done';
+        uiElements.cloudText.classList.add('hidden');
+    } else {
+        uiElements.cloudButton.disabled = state.gold < 100;
+        uiElements.cloudIcon.textContent = 'cloud_download';
+        uiElements.cloudText.classList.remove('hidden');
+    }
 }
 
-export function updateSellPanel(selectedTower) {
+export function updateSellPanel(selectedTower, isCloudUnlocked) {
     if (selectedTower) {
         // Hide general controls and show sell panel
         uiElements.towerButtons.classList.add('hidden');
@@ -52,16 +81,25 @@ export function updateSellPanel(selectedTower) {
         }
 
         uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
+        
+        // Update sell button text
         uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
 
-        // Upgrading is now done via merging, so the upgrade button is always hidden.
-        uiElements.upgradeTowerBtn.classList.add('hidden');
+        // Handle visibility of sell/cloud buttons based on cloud status
+        if(isCloudUnlocked) {
+            uiElements.moveToCloudBtn.classList.remove('hidden');
+            uiElements.sellTowerBtn.classList.remove('col-span-2');
+        } else {
+            uiElements.moveToCloudBtn.classList.add('hidden');
+            uiElements.sellTowerBtn.classList.add('col-span-2');
+        }
+
 
         // Hide toggle button by default, show it for specific towers
         uiElements.toggleModeBtn.classList.add('hidden');
-        if (['ENT', 'ORBIT'].includes(selectedTower.type)) {
+        if (['ENT', 'ORBIT', 'CAT'].includes(selectedTower.type)) {
             uiElements.toggleModeBtn.classList.remove('hidden');
-            if (selectedTower.type === 'ENT') {
+            if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                 uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
             } else if (selectedTower.type === 'ORBIT') {
                 uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
@@ -74,6 +112,7 @@ export function updateSellPanel(selectedTower) {
         document.getElementById('stat-splash-p').classList.add('hidden');
         document.getElementById('stat-boost-p').classList.add('hidden');
         document.getElementById('stat-slow-p').classList.add('hidden');
+        document.getElementById('stat-gold-p').classList.add('hidden');
         document.getElementById('stat-burn-p').classList.add('hidden');
         document.getElementById('stat-special-p').classList.add('hidden');
         document.getElementById('stat-projectiles-p').classList.add('hidden');
@@ -99,8 +138,14 @@ export function updateSellPanel(selectedTower) {
             document.getElementById('stat-projectiles').textContent = selectedTower.projectileCount || 1;
         }
         
-        if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT') {
-            if (selectedTower.type === 'ENT') {
+        if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
+            if (selectedTower.type === 'CAT') {
+                document.getElementById('stat-gold-p').classList.remove('hidden');
+                const goldPercent = ((selectedTower.goldBonus - 1) * 100).toFixed(0);
+                document.getElementById('stat-gold').textContent = `${goldPercent}%`;
+            }
+
+            if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                  if (selectedTower.mode === 'boost') {
                     document.getElementById('stat-boost-p').classList.remove('hidden');
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
@@ -145,6 +190,103 @@ export function updateSellPanel(selectedTower) {
         uiElements.selectedTowerInfoEl.textContent = '';
     }
 }
+
+/**
+ * Gets the correct icon string and the class needed to display it.
+ * This function is local to main.js, so we'll re-implement it here to keep this file self-contained.
+ * @param {string} type - The tower type (e.g., 'PIN').
+ * @returns {{icon: string, className: string}}
+ */
+function getTowerIconInfo(type) {
+    let icon;
+    let className = 'material-icons'; // Default to the standard icon set
+    switch (type) {
+        case 'PIN': icon = 'location_pin'; break;
+        case 'CASTLE': icon = 'castle'; break;
+        case 'FORT': icon = 'fort'; break;
+        case 'SUPPORT': icon = 'support_agent'; break;
+        case 'PIN_HEART': 
+            icon = 'map_pin_heart'; 
+            className = "material-symbols-outlined";
+            break;
+        case 'FIREPLACE':
+            icon = 'fireplace';
+            className = "material-symbols-outlined";
+            break;
+        case 'NAT':
+            icon = 'nat';
+            className = "material-symbols-outlined";
+            break;
+        case 'ENT':
+            icon = 'psychology';
+            className = "material-symbols-outlined";
+            break;
+        case 'ORBIT':
+            icon = 'orbit';
+            className = "material-symbols-outlined";
+            break;
+        case 'CAT':
+            icon = 'cat';
+            className = "fa-solid";
+            break;
+        default:
+            icon = 'help'; // Default icon for unknown types
+            break;
+    }
+    return { icon, className };
+}
+
+/**
+ * Creates and appends an icon element to a container.
+ * @param {HTMLElement} container - The container to append the icon to.
+ * @param {string} type - The tower type to get icon info for.
+ */
+function createAndAppendIcon(container, type) {
+    const iconInfo = getTowerIconInfo(type);
+    let iconEl;
+    if (iconInfo.className.startsWith('fa-')) {
+        iconEl = document.createElement('i');
+        iconEl.className = `${iconInfo.className} fa-${iconInfo.icon}`;
+    } else {
+        iconEl = document.createElement('span');
+        iconEl.className = iconInfo.className;
+        iconEl.textContent = iconInfo.icon;
+    }
+    const color = TOWER_TYPES[type]?.color || '#FFFFFF';
+    iconEl.style.color = color;
+    iconEl.style.fontSize = '2.5rem';
+    container.innerHTML = '';
+    container.appendChild(iconEl);
+}
+
+/**
+ * Fills the merge confirmation modal with the correct info and shows it.
+ * @param {object} mergeState - The object holding merge info (existingTower, placingTowerType, mergeInfo).
+ */
+export function showMergeConfirmation(mergeState) {
+    // Populate modal content
+    createAndAppendIcon(uiElements.mergeFromTowerIconContainer, mergeState.existingTower.type);
+    uiElements.mergeFromTowerName.textContent = mergeState.existingTower.type.replace('_', ' ');
+
+    createAndAppendIcon(uiElements.mergeToTowerIconContainer, mergeState.placingTowerType);
+    uiElements.mergeToTowerName.textContent = mergeState.placingTowerType.replace('_', ' ');
+
+    createAndAppendIcon(uiElements.mergeResultTowerIconContainer, mergeState.mergeInfo.resultType);
+    const resultName = mergeState.mergeInfo.text.replace('LVL ', 'LVL-').replace('_', ' ');
+    uiElements.mergeResultTowerName.textContent = resultName;
+    
+    // Calculate cost based on where the tower is coming from
+    let cost = TOWER_TYPES[mergeState.placingTowerType].cost;
+    if (mergeState.placingFromCloud || mergeState.draggedCanvasTower) {
+        cost = mergeState.placingFromCloud?.cost || mergeState.draggedCanvasTower.cost;
+    }
+    
+    uiElements.mergeCostInfo.textContent = `Cost: ${cost}G`;
+
+    // Show the modal
+    uiElements.mergeConfirmModal.classList.remove('hidden');
+}
+
 
 export function triggerGameOver(isWin, wave) {
     uiElements.gameOverModal.classList.remove('hidden');
