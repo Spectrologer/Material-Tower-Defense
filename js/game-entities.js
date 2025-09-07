@@ -412,9 +412,8 @@ export class Enemy {
     toJSON() {
         return {
             id: this.id,
-            x: this.x,
-            y: this.y,
             typeName: this.typeName,
+            pathIndex: this.pathIndex,
             health: this.health,
             type: this.type,
             id: this.id,
@@ -422,10 +421,12 @@ export class Enemy {
     }
     static fromJSON(data, path) {
         const enemy = new Enemy(ENEMY_TYPES[data.typeName], path, data.typeName);
+        const pathSquare = path[data.pathIndex] ?? path[0];
         enemy.id = data.id;
-        enemy.x = data.x;
-        enemy.y = data.y;
+        enemy.x = pathSquare.x;
+        enemy.y = pathSquare.y;
         enemy.health = data.health;
+        enemy.pathIndex = data.pathIndex;
         return enemy;
     }
 }
