@@ -180,6 +180,37 @@ rotation -= Math.PI / 2;}else if (this.owner.type === 'NAT') {
         }
         return true;
     }
+    toJSON() {
+        return {
+            x: this.x,
+            y: this.y,
+            ownerId: this.owner.id,
+            targetId: this.target ? this.target.id : null,
+            hitTargetIds: [...this.hitEnemies].map(e => e.id),
+            life: this.life
+        };
+    }
+    static fromJSON(data, towers, enemies) {
+        const owner = towers.find(t => t.id === data.ownerId);
+        const target = enemies.find(e => e.id === data.targetId);
+
+        if (!owner) {
+            console.warn(`Projectile owner with ID ${data.ownerId} not found.`);
+            return null;
+        }
+        if (!target) {
+            console.warn(`Projectile target with ID ${data.targetId} not found.`);
+            return null;
+        }
+
+        const projectile = new Projectile(owner, target);
+        projectile.x = data.x;
+        projectile.y = data.y;
+        projectile.hitEnemies = new Set(enemies.filter(e => data.hitTargetIds.includes(e.id)));
+        projectile.life = data.life;
+
+        return projectile;
+    }
 }
 
 export class Enemy {
@@ -374,6 +405,25 @@ export class Enemy {
         this.health -= amount;
         this.hitTimer = 5;
         return this.health <= 0;
+    }
+    toJSON() {
+        return {
+            id: this.id,
+            x: this.x,
+            y: this.y,
+            typeName: this.typeName,
+            health: this.health,
+            type: this.type,
+            id: this.id,
+        };
+    }
+    static fromJSON(data, path) {
+        const enemy = new Enemy(ENEMY_TYPES[data.typeName], path, data.typeName);
+        enemy.id = data.id;
+        enemy.x = data.x;
+        enemy.y = data.y;
+        enemy.health = data.health;
+        return enemy;
     }
 }
 
@@ -710,6 +760,37 @@ export class Tower {
             projectiles.push(new Projectile(this, this.target));
         }
     }
+    toJSON() {
+        return {
+            x: this.x,
+            y: this.y,
+            type: this.type,
+            id: this.id,
+            level: this.level,
+            damageLevel: this.damageLevel,
+            mode: this.mode,
+            targetingMode: this.targetingMode,
+            damageMultiplierFromMerge: this.damageMultiplierFromMerge,
+            fragmentBounces: this.fragmentBounces,
+            bounceDamageFalloff: this.bounceDamageFalloff,
+            hasFragmentingShot: this.hasFragmentingShot,
+            goldBonusMultiplier: this.goldBonusMultiplier
+        };
+    }
+    static fromJSON(data) {
+        const tower = new Tower(data.x, data.y, data.type);
+        tower.id = data.id;
+        tower.level = data.level;
+        tower.damageLevel = data.damageLevel;
+        tower.mode = data.mode;
+        tower.targetingMode = data.targetingMode;
+        tower.damageMultiplierFromMerge = data.damageMultiplierFromMerge || 1;
+        tower.fragmentBounces = data.fragmentBounces || 0;
+        tower.bounceDamageFalloff = data.bounceDamageFalloff || 0.5;
+        tower.hasFragmentingShot = data.hasFragmentingShot || false;
+        tower.goldBonusMultiplier = data.goldBonusMultiplier || 1;
+        return tower;
+    }
 }
 
 export class Effect {
@@ -813,5 +894,26 @@ export class TextAnnouncement {
             ctx.fillText(line, this.x, startY + (index * lineHeight));
         });
         ctx.restore();
+    }
+    toJSON() {
+        return {
+            text: this.text,
+            x: this.x,
+            y: this.y,
+            life: this.life,
+            maxLife: this.maxLife,
+            color: this.color,
+            maxWidth:  this.maxWidth
+        };
+    }
+    static fromJSON(data) {
+        return new TextAnnouncement(
+            data.text,
+            data.x,
+            data.y,
+            data.life,
+            data.color,
+            data.maxWidth ?? Infinity
+        );
     }
 }

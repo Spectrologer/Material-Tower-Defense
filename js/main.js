@@ -4,6 +4,7 @@ import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entit
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
+import { gameState, resetGameState, persistGameState } from './game-state.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -13,9 +14,6 @@ let isSoundEnabled = true;
 let isAudioResumed = false;
 let isInfiniteGold = false;
 let mazeColor = '#818181ff';
-
-// Game State
-let gameState;
 
 // UI/Interaction State (not part of core game data)
 let placingTower = null;
@@ -409,6 +407,7 @@ function handleProjectileHit(projectile, hitEnemy) {
             }
         }
         updateUI(gameState);
+        persistGameState();
         return; // End execution here for this projectile type
     }
 
@@ -444,6 +443,7 @@ function handleProjectileHit(projectile, hitEnemy) {
         }
     }
     updateUI(gameState);
+    persistGameState();
 }
 
 function gameLoop() {
@@ -708,6 +708,7 @@ function checkForAndCreateNinePin(placedGridX, placedGridY) {
 
                 gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 180, '#FFFFFF', canvasWidth));
                 selectedTower = ninePin;
+                persistGameState();
                 return;
             }
         }
@@ -857,6 +858,7 @@ function handleCanvasAction(e) {
     if (actionTaken) {
         updateUI(gameState);
         updateSellPanel(selectedTower, gameState.isCloudUnlocked);
+        persistGameState();
     }
 }
 canvas.addEventListener('click', handleCanvasAction);
@@ -1088,6 +1090,7 @@ canvas.addEventListener('drop', e => {
     }
     if (actionTaken) {
         renderCloudInventory();
+        persistGameState();
     }
     placingTower = null;
     draggedCloudTower = null;
@@ -1109,25 +1112,7 @@ function getMousePos(canvas, evt) {
 }
 
 function init() {
-    gameState = {
-        lives: 20,
-        gold: 100,
-        wave: 0,
-        enemies: [],
-        towers: [],
-        projectiles: [],
-        effects: [],
-        announcements: [],
-        introducedEnemies: new Set(),
-        hasPlacedFirstSupport: false,
-        waveInProgress: false,
-        spawningEnemies: false,
-        gameOver: false,
-        isCloudUnlocked: false,
-        cloudInventory: [],
-        path: [],
-        placementGrid: []
-    };
+    resetGameState();
 
     placingTower = null;
     selectedTower = null;
@@ -1221,6 +1206,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
         selectedTower = null;
         updateUI(gameState);
         updateSellPanel(null, gameState.isCloudUnlocked);
+        persistGameState();
     }
 });
 
