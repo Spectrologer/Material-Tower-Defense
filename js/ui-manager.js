@@ -41,6 +41,12 @@ export const uiElements = {
     mergeCostInfo: document.getElementById('merge-cost-info'),
     confirmMergeBtn: document.getElementById('confirm-merge-btn'),
     cancelMergeBtn: document.getElementById('cancel-merge-btn'),
+    // New options menu elements
+    optionsBtn: document.getElementById('options-btn'),
+    optionsMenu: document.getElementById('options-menu'),
+    closeOptionsBtn: document.getElementById('close-options-btn'),
+    toggleMergeConfirm: document.getElementById('toggle-merge-confirm'),
+    // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
     statRangeP: document.getElementById('stat-range-p'),
@@ -61,6 +67,10 @@ export const uiElements = {
     statBurn: document.getElementById('stat-burn'),
     statSpecialP: document.getElementById('stat-special-p'),
     statSpecial: document.getElementById('stat-special'),
+    statFragsP: document.getElementById('stat-frags-p'),
+    statFrags: document.getElementById('stat-frags'),
+    statPinsP: document.getElementById('stat-pins-p'),
+    statPins: document.getElementById('stat-pins'),
 };
 
 export function updateUI(state) {
@@ -93,7 +103,8 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
         if (selectedTower.level === 'MAX LEVEL') {
             levelText = '<span class="material-icons">star</span> MAX LEVEL';
         } else {
-            levelText = `LVL ${selectedTower.level}`;
+            const visualLevel = selectedTower.damageLevel || selectedTower.level;
+            levelText = `LVL ${visualLevel}`;
         }
         uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
         uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
@@ -130,30 +141,41 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
                     break;
             }
         }
-        uiElements.statDamageP.classList.add('hidden');
-        uiElements.statSpeedP.classList.add('hidden');
-        uiElements.statSplashP.classList.add('hidden');
-        uiElements.statBoostP.classList.add('hidden');
-        uiElements.statSlowP.classList.add('hidden');
-        uiElements.statGoldP.classList.add('hidden');
-        uiElements.statBurnP.classList.add('hidden');
-        uiElements.statSpecialP.classList.add('hidden');
-        uiElements.statProjectilesP.classList.add('hidden');
-        uiElements.statRangeP.classList.add('hidden');
+        // Hide all stat paragraphs by default
+        [
+            uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
+            uiElements.statBoostP, uiElements.statSlowP, uiElements.statGoldP,
+            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP,
+            uiElements.statRangeP, uiElements.statFragsP, uiElements.statPinsP
+        ].forEach(p => p.classList.add('hidden'));
+
+
         if (selectedTower.type !== 'ORBIT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'CAT') {
             uiElements.statRangeP.classList.remove('hidden');
             uiElements.statRange.textContent = Math.round(selectedTower.range);
         }
         const baseStats = TOWER_TYPES[selectedTower.type];
-        
-        let specialText = baseStats.special || '';
-        if (selectedTower.fragmentBounces > 0) {
-            specialText += (specialText ? ' & ' : '') + `Fragmenting (${selectedTower.fragmentBounces} bounces)`;
+        if (baseStats.special) {
+            uiElements.statSpecialP.classList.remove('hidden');
+            uiElements.statSpecial.textContent = baseStats.special;
         }
 
-        if (specialText) {
-            uiElements.statSpecialP.classList.remove('hidden');
-            uiElements.statSpecial.textContent = specialText;
+        if (selectedTower.hasFragmentingShot) {
+            uiElements.statFragsP.classList.remove('hidden');
+            uiElements.statFrags.textContent = selectedTower.fragmentBounces;
+            uiElements.statSpecial.textContent = 'Fragmenting Shot';
+        }
+        if (selectedTower.type === 'FORT') {
+            if (selectedTower.mortarReplacedByPins) {
+                uiElements.statPinsP.classList.remove('hidden');
+                uiElements.statPins.textContent = selectedTower.radialPinCount;
+                uiElements.statSplashP.classList.add('hidden'); // No more splash radius stat
+                uiElements.statSpecial.textContent = 'Radial Pin Strike';
+            } else {
+                uiElements.statSplashP.classList.remove('hidden');
+                uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius);
+                uiElements.statSpecial.textContent = 'Mortar Strike';
+            }
         }
 
         if (selectedTower.type === 'NAT') {
@@ -171,12 +193,14 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
                     uiElements.statBoostP.classList.remove('hidden');
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
                     uiElements.statBoost.textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
-                } else {
+                    uiElements.statSlowP.classList.add('hidden'); // Hide slow stat if in boost mode
+                } else { // 'slow' mode
                     uiElements.statSlowP.classList.remove('hidden');
                     const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
                     uiElements.statSlow.textContent = `${slowPercent}%`;
+                    uiElements.statBoostP.classList.add('hidden'); // Hide boost stat if in slow mode
                 }
-            } else {
+            } else { // SUPPORT tower
                 uiElements.statBoostP.classList.remove('hidden');
                 const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
                 uiElements.statBoost.textContent = `${boostPercent}%`;
@@ -191,7 +215,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
             } else {
                 uiElements.statSpeedP.classList.add('hidden');
             }
-            if (selectedTower.splashRadius > 0) {
+            if (selectedTower.splashRadius > 0 && !selectedTower.mortarReplacedByPins) {
                 uiElements.statSplashP.classList.remove('hidden');
                 uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius);
             }
@@ -262,5 +286,3 @@ export function triggerGameOver(isWin, wave) {
         uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }
-
-

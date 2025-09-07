@@ -151,7 +151,7 @@
             background-color: #dc2626;
             border-color: #dc2626;
             color: #fde047;
-            box-shadow: 0 4px 0 #991b1b;
+            box-shadow: 0 4-2px 0 #991b1b;
         }
 
         #infinite-gold:hover:not(:disabled) {
@@ -189,6 +189,28 @@
             gap: 0.5rem;
             justify-content: space-between;
         }
+        
+        .options-menu {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            z-index: 29;
+            width: 200px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .options-menu.hidden {
+            display: none;
+        }
+
+        /* A visual indicator for the selected maze color button */
+        .color-option.selected {
+            border-color: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
     </style>
 
 </head>
@@ -198,8 +220,12 @@
     <!-- This is the main container for the entire game interface. -->
     <div class="flex flex-col h-full w-full items-center p-2 sm:p-4 gap-2">
 
-        <!-- This is the stats bar at the top (Lives, Gold, Wave) -->
+        <!-- This is the stats bar at the top (Lives, Gold, Wave) and options button -->
         <div class="game-stats-panel py-1 px-2 flex-shrink-0 relative w-full max-w-[440px]">
+            <button id="options-btn" class="absolute left-1 top-1 pixel-button p-2 text-xs">
+                <span class="material-symbols-outlined !text-lg">settings</span>
+            </button>
+
             <h1 class="text-sm text-center text-green-400">ICONIC TD</h1>
             <div class="flex justify-between items-center text-xs md:text-sm">
                 <div class="flex flex-1 justify-center items-center gap-x-4 md:gap-x-6">
@@ -218,6 +244,21 @@
                 </button>
             </div>
         </div>
+        
+        <!-- Options Menu -->
+        <div id="options-menu" class="options-menu game-ui-panel hidden">
+            <h3 class="text-lg text-green-400 mb-2">OPTIONS</h3>
+            <!-- New controls for the options menu -->
+            <div id="merge-confirm-toggle-container" class="flex items-center justify-between text-xs py-2">
+                <label for="toggle-merge-confirm" class="text-white cursor-pointer">Confirm Merges?</label>
+                <input type="checkbox" id="toggle-merge-confirm" class="form-checkbox h-4 w-4 text-green-500" checked>
+            </div>
+            <a href="https://github.com/Spectrologer" target="_blank"
+                class="pixel-button bg-blue-700 text-white border-blue-500 shadow-[0_4px_0_#1e40af] text-sm py-2 text-center mt-auto">
+                <span class="material-symbols-outlined align-middle !text-lg">link</span> My Website
+            </a>
+        </div>
+
 
         <!-- This container holds the actual game canvas AND the new cloud inventory -->
         <div class="flex-grow relative w-full max-w-[440px] min-h-0 flex gap-2">
@@ -283,6 +324,12 @@
                     <p id="stat-burn-p" class="flex items-center gap-1"><span
                             class="material-symbols-outlined text-base align-bottom"
                             title="Burn Damage">local_fire_department</span> Brn: <span id="stat-burn">0/s</span></p>
+                    <p id="stat-frags-p" class="hidden flex items-center gap-1"><span
+                            class="material-icons text-base align-bottom" title="Fragments">call_split</span> Frags: <span
+                            id="stat-frags">0</span></p>
+                    <p id="stat-pins-p" class="hidden flex items-center gap-1"><span
+                            class="material-icons text-base align-bottom" title="Radial Pins">push_pin</span> Pins: <span
+                            id="stat-pins">0</span></p>
                     <p id="stat-special-p" class="flex items-center gap-1 col-span-full justify-center"><span
                             class="material-symbols-outlined text-base align-bottom" title="Special Ability">star</span><span
                             id="stat-special">None</span></p>
@@ -317,6 +364,7 @@
                 </button>
             </div>
         </div>
+
     </div>
 
     <!-- This is the "Game Over" screen. It's hidden until you lose. -->
@@ -367,4 +415,3 @@
 </body>
 
 </html>
-

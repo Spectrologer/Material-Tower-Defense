@@ -10,20 +10,21 @@ export class Projectile {
         this.hitCooldown = 0;
         this.bounces = owner.fragmentBounces || 0;
         this.damageMultiplier = 1;
+
         if (this.owner.type === 'ORBIT') {
             this.angle = startAngle;
             this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
         }
         if (this.owner.type === 'FORT') {
             this.isMortar = true;
-            this.startX = owner.x;
-            this.startY = owner.y;
+            this.startX = this.owner.x;
+            this.startY = this.owner.y;
             this.targetX = target.x;
             this.targetY = target.y;
             this.totalDist = Math.hypot(this.targetX - this.startX, this.targetY - this.startY);
             this.travelTime = this.totalDist / this.owner.projectileSpeed;
             this.life = this.travelTime;
-            this.peakHeight = this.totalDist / 2; // Arc height is half the distance
+            this.peakHeight = this.totalDist / 2;
         }
     }
     draw(ctx) {
@@ -57,7 +58,7 @@ export class Projectile {
             icon = 'chevron_right';
         } else if (this.owner.type === 'PIN_HEART') {
             icon = 'favorite';
-            rotation -= Math.PI / 2; // Corrected rotation to point towards the enemy
+            rotation += Math.PI / 2;
         } else if (this.owner.type === 'NAT') {
             icon = 'arrow_forward';
             iconFamily = "'Material Symbols Outlined'";
@@ -72,7 +73,7 @@ export class Projectile {
             } else if (this.owner.type === 'NINE_PIN') {
                 fontSize = 40;
             } else if (this.owner.type === 'PIN_HEART') {
-                fontSize = 16; // Further reduced the size of the heart projectile
+                fontSize = 16;
             }
             ctx.font = `${fontSize}px ${iconFamily}`;
             ctx.fillStyle = this.owner.projectileColor;
@@ -94,7 +95,6 @@ export class Projectile {
         if (this.isMortar) {
             this.life--;
             if (this.life <= 0) {
-                // Explode at target location
                 onHit(this);
                 return false;
             }
@@ -106,7 +106,7 @@ export class Projectile {
         }
         if (this.owner.type === 'ORBIT') {
             this.angle += this.owner.projectileSpeed / 30;
-            this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
+            this.orbitRadius = this.owner.orbitMode === 'far' ? 40 : 60;
             this.x = this.owner.x + Math.cos(this.angle) * this.orbitRadius;
             this.y = this.owner.y + Math.sin(this.angle) * this.orbitRadius;
             if (this.hitCooldown > 0) {
@@ -117,24 +117,20 @@ export class Projectile {
             return true;
         }
 
-        if ((!this.target || this.target.health <= 0) && (this.owner.type === 'PIN_HEART' || this.bounces > 0)) {
+        if ((!this.target || this.target.health <= 0) && (this.owner.type === 'PIN_HEART' || this.owner.type === 'NAT')) {
             let closestEnemy = null;
             let minDistance = Infinity;
             for (const enemy of enemies) {
                 if (!this.hitEnemies.has(enemy)) {
-                    const distToTower = Math.hypot(this.owner.x - enemy.x, this.owner.y - enemy.y);
-                    if (distToTower <= this.owner.range) {
-                        const distToProjectile = Math.hypot(this.x - enemy.x, this.y - enemy.y);
-                        if (distToProjectile < minDistance) {
-                            minDistance = distToProjectile;
-                            closestEnemy = enemy;
-                        }
+                    const distToProjectile = Math.hypot(this.x - enemy.x, this.y - enemy.y);
+                    if (distToProjectile < minDistance) {
+                        minDistance = distToProjectile;
+                        closestEnemy = enemy;
                     }
                 }
             }
             this.target = closestEnemy;
         }
-
         if (!this.target || this.target.health <= 0) return false;
 
         const dx = this.target.x - this.x;
@@ -151,32 +147,38 @@ export class Projectile {
                 }
             }
         }
-        
+
         const hitCondition = distance < this.owner.projectileSpeed || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
 
         if (hitCondition) {
             onHit(this);
             this.hitEnemies.add(this.target);
 
-            if (this.bounces > 0) {
-                // Create a visual effect for the fragmentation
-                if (effects) {
-                    effects.push(new Effect(this.x, this.y, 'clear_day', 25, this.owner.projectileColor, 20));
+            if (this.owner.hasFragmentingShot && this.bounces > 0) {
+                let nextTarget = null;
+                let minDistance = Infinity;
+                for (const enemy of enemies) {
+                    if (!this.hitEnemies.has(enemy) && enemy.health > 0) {
+                        const dist = Math.hypot(this.x - enemy.x, this.y - enemy.y);
+                        if (dist < minDistance && dist <= this.owner.range / 2) {
+                            minDistance = dist;
+                            nextTarget = enemy;
+                        }
+                    }
                 }
-
-                // Logic to find a new target and "bounce"
-                this.bounces--;
-                this.damageMultiplier *= this.owner.bounceDamageFalloff;
-                this.target = null; // Clear target to find a new one
-                return true; // Keep the projectile alive to find a new target
+                if (nextTarget) {
+                    this.target = nextTarget;
+                    this.bounces--;
+                    this.damageMultiplier *= this.owner.bounceDamageFalloff;
+                    effects.push(new Effect(this.x, this.y, 'gps_fixed', 20, '#ff69b4', 15));
+                    return true;
+                }
             }
-
-            return false; // Destroy projectile if it doesn't fragment
+            return false;
         } else {
             this.x += (dx / distance) * this.owner.projectileSpeed;
             this.y += (dy / distance) * this.owner.projectileSpeed;
         }
-
         return true;
     }
 }
@@ -282,37 +284,6 @@ export class Enemy {
         }
 
         // --- Special Behaviors ---
-        if (this.type.laysEggs && !this.isLayingEgg) {
-            this.timeUntilLay--;
-            if (this.timeUntilLay <= 0) {
-                this.isLayingEgg = true;
-                this.stopTimer = this.type.eggLayStopTime;
-                this.wiggleTimer = this.type.wiggleTime;
-            }
-        }
-
-        if (this.isLayingEgg) {
-            this.stopTimer--;
-            if (this.wiggleTimer > 0) {
-                this.wiggleTimer--;
-                if (this.wiggleTimer % 20 === 0) { // Play sound less frequently than every frame
-                    playWiggleSound();
-                }
-            }
-            if (this.stopTimer <= 0) {
-                this.isLayingEgg = false;
-                this.timeUntilLay = this.type.layEggInterval;
-                const egg = new Enemy(ENEMY_TYPES.EGG, this.path, 'EGG');
-                egg.x = this.x;
-                egg.y = this.y;
-                egg.pathIndex = this.pathIndex;
-                allEnemies.push(egg);
-            } else {
-                return true; // Stop moving while laying egg
-            }
-        }
-
-
         if (this.type.hatchTime) {
             this.hatchTimer--;
             if (this.hatchTimer <= 0) {
@@ -330,6 +301,37 @@ export class Enemy {
             return true; // Don't move
         }
 
+        // Consolidate the egg-laying logic into a single block.
+        if (this.type.laysEggs) {
+            if (this.isLayingEgg) {
+                // We are currently in the egg-laying state
+                this.stopTimer--;
+                if (this.wiggleTimer > 0) {
+                    this.wiggleTimer--;
+                    if (this.wiggleTimer % 20 === 0) {
+                        playWiggleSound();
+                    }
+                }
+                if (this.stopTimer <= 0) {
+                    this.isLayingEgg = false;
+                    this.timeUntilLay = this.type.layEggInterval;
+                    const egg = new Enemy(ENEMY_TYPES.EGG, this.path, 'EGG');
+                    egg.x = this.x;
+                    egg.y = this.y;
+                    egg.pathIndex = this.pathIndex;
+                    allEnemies.push(egg);
+                }
+            } else {
+                // We are moving, but checking to start the egg-laying state
+                this.timeUntilLay--;
+                if (this.timeUntilLay <= 0) {
+                    this.isLayingEgg = true;
+                    this.stopTimer = this.type.eggLayStopTime;
+                    this.wiggleTimer = this.type.wiggleTime;
+                }
+            }
+        }
+
         // --- Movement Logic ---
         let atEnd = this.pathIndex >= this.path.length - 1;
         let atStart = this.pathIndex <= 0;
@@ -344,24 +346,28 @@ export class Enemy {
             }
         }
 
-        const targetIndex = this.pathIndex + this.direction;
-        if (targetIndex < 0 || targetIndex >= this.path.length) {
-            // This case should primarily be for the boss turning around
-            return true;
+        // Only update movement if we are NOT laying an egg.
+        if (!this.isLayingEgg) {
+            const targetIndex = this.pathIndex + this.direction;
+            if (targetIndex < 0 || targetIndex >= this.path.length) {
+                // This case should primarily be for the boss turning around
+                return true;
+            }
+
+            const target = this.path[targetIndex];
+            const dx = target.x - this.x;
+            const dy = target.y - this.y;
+            const distance = Math.hypot(dx, dy);
+            const currentSpeed = this.speed * this.slowMultiplier;
+
+            if (distance < currentSpeed) {
+                this.pathIndex += this.direction;
+            } else {
+                this.x += (dx / distance) * currentSpeed;
+                this.y += (dy / distance) * currentSpeed;
+            }
         }
 
-        const target = this.path[targetIndex];
-        const dx = target.x - this.x;
-        const dy = target.y - this.y;
-        const distance = Math.hypot(dx, dy);
-        const currentSpeed = this.speed * this.slowMultiplier;
-
-        if (distance < currentSpeed) {
-            this.pathIndex += this.direction;
-        } else {
-            this.x += (dx / distance) * currentSpeed;
-            this.y += (dy / distance) * currentSpeed;
-        }
 
         return true; // Keep this enemy
     }
@@ -388,6 +394,7 @@ export class Tower {
         this.goldBonusMultiplier = 1;
         this.fragmentBounces = 0;
         this.bounceDamageFalloff = 0.5;
+        this.hasFragmentingShot = false;
         const baseStats = TOWER_TYPES[type];
         this.splashRadius = baseStats.splashRadius;
         if (type === 'FIREPLACE') {
@@ -431,7 +438,7 @@ export class Tower {
         if (this.type === 'FIREPLACE') {
             this.damage = baseStats.damage;
         } else {
-            this.damage = baseStats.damage * (1 + (damageLevelForCalc - 1) * 0.5) * this.damageMultiplierFromMerge;
+            this.damage = baseStats.damage * (1 + (damageLevelForCalc - 1) * 0.5) * (this.damageMultiplierFromMerge || 1);
         }
         this.permFireRate = baseStats.fireRate * Math.pow(0.9, levelForCalc - 1);
         this.fireRate = this.permFireRate;
@@ -473,8 +480,7 @@ export class Tower {
             case 'FORT': icon = 'fort'; break;
             case 'SUPPORT': icon = 'support_agent'; break;
             case 'PIN_HEART':
-                icon = 'map_pin_heart';
-                iconFamily = "'Material Symbols Outlined'";
+                icon = 'favorite';
                 break;
             case 'FIREPLACE':
                 icon = 'fireplace';
@@ -715,19 +721,43 @@ export class Effect {
     }
     draw(ctx) {
         let progress = 1 - (this.life / this.maxLife);
-        let currentSize = this.size * progress;
-        let opacity = 1 - progress;
-        if (this.icon === 'attach_money') {
-            currentSize = this.size + (5 * progress);
-            opacity = 1 - progress * 0.5;
+        let currentSize;
+        let opacity = 1.0;
+        
+        // Use 'material-symbols-outlined' font for the explosion icon
+        if (this.icon === 'explosion') {
+            currentSize = this.size * progress;
+            opacity = 1 - progress;
+            ctx.save();
+            ctx.font = `${currentSize}px 'Material Symbols Outlined'`;
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = opacity;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('explosion', this.x, this.y);
+            ctx.restore();
+        } else {
+            currentSize = this.size * progress;
+            opacity = 1 - progress;
+            let iconFamily = '';
+            if (this.icon === 'attach_money') {
+                iconFamily = 'Material Symbols Outlined';
+            } else {
+                iconFamily = 'Material Icons';
+            }
+            
+            if (this.icon === 'attach_money') {
+                currentSize = this.size + (5 * progress);
+                opacity = 1 - progress * 0.5;
+            }
+            ctx.font = `${currentSize}px '${iconFamily}'`;
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = opacity;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.icon, this.x, this.y);
+            ctx.globalAlpha = 1.0;
         }
-        ctx.font = `${currentSize}px 'Material Symbols Outlined'`;
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = opacity;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(this.icon, this.x, this.y);
-        ctx.globalAlpha = 1.0;
     }
 }
 
@@ -784,8 +814,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-
-
-
-
-

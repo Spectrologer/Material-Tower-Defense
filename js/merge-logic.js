@@ -1,4 +1,5 @@
 import { TOWER_TYPES } from './constants.js';
+import { Projectile } from './game-entities.js';
 
 /**
  * Blends two hexadecimal colors.
@@ -60,6 +61,7 @@ addRecipe('ENT', 'SUPPORT', {
     }
 });
 
+// This is the recipe to restore the original functionality.
 addRecipe('PIN', 'PIN', {
     resultType: 'NAT',
     apply: (tower, { existingTowerLevel }) => {
@@ -85,6 +87,11 @@ addRecipe('CASTLE', 'CASTLE', {
         tower.updateStats();
         tower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
         tower.color = TOWER_TYPES.ORBIT.color;
+        // Fix: Initialize the orbiters when the tower is created via merge.
+        tower.orbiters = [
+            new Projectile(tower, null, 0),
+            new Projectile(tower, null, Math.PI)
+        ];
     }
 });
 
@@ -97,6 +104,8 @@ addRecipe('PIN', 'SUPPORT', {
         tower.updateStats();
         tower.splashRadius = TOWER_TYPES.PIN_HEART.splashRadius;
         tower.color = TOWER_TYPES.PIN_HEART.color;
+        tower.hasFragmentingShot = false;
+        tower.fragmentBounces = 0;
     }
 });
 
@@ -157,70 +166,75 @@ addRecipe('NAT', 'PIN', {
     }
 });
 
-addRecipe('FORT', 'PIN', {
-    resultType: 'FORT', text: 'Upgrade',
-    upgrade: { text: '+ Dmg/Spd', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
-    apply: (tower, { originalTowerColor, mergingTowerType }) => {
-        const levelModifier = Math.pow(0.85, tower.level - 1);
-        tower.damage += 0.5 * levelModifier;
-        tower.permFireRate *= (1 - (0.05 * levelModifier));
-        tower.level++;
-        tower.damageLevel++;
-        tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
-    }
-});
-
-addRecipe('FORT', 'CASTLE', {
-    resultType: 'FORT', text: 'Upgrade',
-    upgrade: { text: '+ Dmg/Spl', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
-    apply: (tower, { originalTowerColor, mergingTowerType }) => {
-        const levelModifier = Math.pow(0.85, tower.level - 1);
-        tower.damage += 2 * levelModifier;
-        if (tower.splashRadius) tower.splashRadius += 5 * levelModifier;
-        tower.level++;
-        tower.damageLevel++;
-        tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
-    }
-});
-
+// --- PIN_HEART UPGRADES ---
 addRecipe('PIN_HEART', 'PIN', {
     resultType: 'PIN_HEART', text: 'Upgrade',
-    upgrade: { text: '+ Dmg/Spd', icon: 'bolt', family: 'material-icons' },
+    upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
     canApply: (tower) => tower.level < 5,
-    apply: (tower, { originalTowerColor, mergingTowerType }) => {
-        const levelModifier = Math.pow(0.85, tower.level - 1);
-        tower.damage += 0.5 * levelModifier;
-        tower.permFireRate *= (1 - (0.05 * levelModifier));
+    apply: (tower) => {
         tower.level++;
         tower.damageLevel++;
-        tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+        tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.1;
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
     }
 });
 
 addRecipe('PIN_HEART', 'CASTLE', {
     resultType: 'PIN_HEART', text: 'Upgrade',
-    upgrade: { text: '+ Frag', icon: 'grain', family: 'material-icons' },
+    upgrade: { text: '+1 Frag', icon: 'call_split', family: 'material-icons' },
     canApply: (tower) => tower.level < 5,
-    apply: (tower, { originalTowerColor, mergingTowerType }) => {
-        tower.fragmentBounces = (tower.fragmentBounces || 0) + 1;
+    apply: (tower) => {
         tower.level++;
-        tower.damageLevel++;
-        tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+        if (!tower.hasFragmentingShot) {
+            tower.hasFragmentingShot = true;
+            tower.fragmentBounces = 2; // Initial unlock
+        } else {
+            tower.fragmentBounces++; // Add a bounce on subsequent upgrades
+        }
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
     }
 });
+
+// --- FORT UPGRADES ---
+// Upgrade Fort with a Pin to increase its damage.
+addRecipe('FORT', 'PIN', {
+    resultType: 'FORT', text: 'Upgrade',
+    upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
+    canApply: (tower) => tower.level < 5,
+    apply: (tower) => {
+        // Only increase the damage level, not the main level.
+        tower.damageLevel++;
+        tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.1;
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
+    }
+});
+
+addRecipe('FORT', 'CASTLE', {
+    resultType: 'FORT', text: 'Upgrade',
+    upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
+    canApply: (tower) => tower.level < 5,
+    apply: (tower) => {
+        // Only increase the main level, not the damage level.
+        tower.level++;
+        tower.splashRadius += 10;
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
+    }
+});
+
 
 addRecipe('ORBIT', 'PIN', {
     resultType: 'ORBIT', text: 'Upgrade',
     upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
     canApply: (tower) => tower.level < 5,
-    apply: (tower, { originalTowerColor, mergingTowerType }) => {
-        const levelModifier = Math.pow(0.85, tower.level - 1);
-        tower.damage += 2 * levelModifier;
+    apply: (tower) => {
         tower.level++;
         tower.damageLevel++;
-        tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
     }
 });
 
@@ -228,13 +242,12 @@ addRecipe('ORBIT', 'CASTLE', {
     resultType: 'ORBIT', text: 'Upgrade',
     upgrade: { text: '+ Dmg/Size', icon: 'bolt', family: 'material-icons' },
     canApply: (tower) => tower.level < 5,
-    apply: (tower, { originalTowerColor, mergingTowerType }) => {
-        const levelModifier = Math.pow(0.85, tower.level - 1);
-        tower.damage += 1 * levelModifier;
-        tower.projectileSize += 1;
+    apply: (tower) => {
         tower.level++;
         tower.damageLevel++;
-        tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+        tower.projectileSize += 1;
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
     }
 });
 
@@ -291,7 +304,7 @@ export function getMergeResultInfo(existingTower, placingType) {
             upgrade: recipe.upgrade
         };
     }
-    
+
     // Fallback to same-type level up if no recipe is found
     if (existingTower.type === placingType && existingTower.level !== 'MAX LEVEL' && existingTower.level < 5) {
         return {
@@ -334,7 +347,7 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
         }
         return true;
     }
-    
+
     // 2. If no specific recipe, handle same-type level up as a fallback
     if (tower.type === mergingTowerType && tower.level !== 'MAX LEVEL' && tower.level < 5) {
         tower.level++;
@@ -350,5 +363,3 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
 
     return false;
 }
-
-

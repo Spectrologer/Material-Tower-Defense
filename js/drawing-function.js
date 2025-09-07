@@ -28,7 +28,7 @@ export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid,
     ctx.restore();
 }
 
-export function drawPath(ctx, canvasWidth, path) {
+export function drawPath(ctx, canvasWidth, path, mazeColor) {
     ctx.strokeStyle = '#555';
     ctx.lineWidth = TILE_SIZE;
     ctx.lineCap = 'butt';
@@ -44,7 +44,7 @@ export function drawPath(ctx, canvasWidth, path) {
     }
     ctx.stroke();
 
-    ctx.strokeStyle = '#666';
+    ctx.strokeStyle = mazeColor;
     ctx.lineWidth = TILE_SIZE - 10;
     ctx.beginPath();
     if (path.length > 0) {

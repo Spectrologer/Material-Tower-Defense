@@ -11,6 +11,27 @@ let canvasWidth, canvasHeight;
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let isSoundEnabled = true;
 let isAudioResumed = false;
+let isInfiniteGold = false;
+let mazeColor = '#abababff';
+
+// Game State
+let gameState;
+
+// UI/Interaction State (not part of core game data)
+let placingTower = null;
+let selectedTower = null;
+let selectedEnemy = null;
+let gameSpeed = 1;
+let placingFromCloud = null;
+let draggedCloudTower = null;
+let draggedCanvasTower = null;
+let draggedCanvasTowerOriginalGridPos = { x: -1, y: -1 };
+let mergeTooltip = { show: false, x: 0, y: 0, info: null };
+let mouse = { x: 0, y: 0 };
+let animationFrameId;
+let pendingMergeState = null;
+let isMergeConfirmationEnabled = true;
+
 
 // This function will be called on the first user interaction to enable audio.
 function resumeAudioContext() {
@@ -127,40 +148,6 @@ function playCrackSound() {
     noise.stop(now + duration);
 }
 
-// Game State
-let gameState;
-
-// UI/Interaction State (not part of core game data)
-let placingTower = null;
-let selectedTower = null;
-let selectedEnemy = null;
-let gameSpeed = 1;
-let placingFromCloud = null;
-let draggedCloudTower = null;
-let draggedCanvasTower = null;
-let draggedCanvasTowerOriginalGridPos = { x: -1, y: -1 };
-let mergeTooltip = { show: false, x: 0, y: 0, info: null };
-let activeMergeState = null; // Holds state for a pending merge confirmation
-let mouse = { x: 0, y: 0 };
-let animationFrameId;
-
-
-// Debug Functions
-window.addGold = (amount) => {
-    const parsedAmount = parseInt(amount, 10);
-    if (!isNaN(parsedAmount) && parsedAmount > 0) {
-        gameState.gold += parsedAmount;
-        updateUI(gameState);
-        gameState.announcements.push(new TextAnnouncement(`+${parsedAmount}G`, canvasWidth / 2, 80, 180, undefined, canvasWidth));
-    }
-};
-window.spawn = (enemyType) => {
-    const upperEnemyType = enemyType.toUpperCase();
-    const type = ENEMY_TYPES[upperEnemyType];
-    if (type) {
-        gameState.enemies.push(new Enemy(type, gameState.path, upperEnemyType));
-    }
-};
 
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
@@ -249,12 +236,14 @@ function spawnWave() {
             enemyType = ENEMY_TYPES.BITCOIN;
         } else {
             const rand = Math.random();
+            // From wave 4, introduce Flying enemies
             if (nextWave >= 4 && rand < 0.2) {
                 enemyType = ENEMY_TYPES.FLYING;
+            // From wave 6, introduce Heavy enemies
             } else if (nextWave >= 6 && rand < 0.4) {
                 enemyType = ENEMY_TYPES.HEAVY;
             } else if (nextWave >= 3 && rand < 0.7) {
-                enemyType = ENEMY_TYPES.FAST;
+                enemyType = ENEMY_TYPES.NORMAL;
             } else {
                 enemyType = ENEMY_TYPES.NORMAL;
             }
@@ -270,11 +259,16 @@ function spawnWave() {
         if (nextWave <= 10) {
             // Standard health scaling for the first 10 waves
             healthMultiplier = 1 + (nextWave - 1) * 0.15;
-        } else {
-            // More aggressive health scaling after wave 10
+        } else if (nextWave >= 11 && nextWave <= 14) {
+            // Aggressive health scaling for waves 11-14
             const baseHealthAtWave10 = 1 + (10 - 1) * 0.15;
             const wavesAfter10 = nextWave - 10;
-            healthMultiplier = baseHealthAtWave10 + (wavesAfter10 * 0.30);
+            healthMultiplier = baseHealthAtWave10 + (wavesAfter10 * 0.50);
+        } else {
+            // Revert to a less aggressive scale after the transition period.
+            const baseHealthAtWave14 = (1 + (10 - 1) * 0.15) + (4 * 0.50);
+            const wavesAfter14 = nextWave - 14;
+            healthMultiplier = baseHealthAtWave14 + (wavesAfter14 * 0.30);
         }
 
         const finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : enemyType.health * healthMultiplier;
@@ -362,11 +356,16 @@ function applyAuraEffects() {
 
 function handleProjectileHit(projectile, hitEnemy) {
     const targetEnemy = hitEnemy || projectile.target;
-    if (!targetEnemy || (typeof targetEnemy.takeDamage !== 'function' && !projectile.isMortar)) {
-        return;
+
+    if (projectile.isMortar) {
+        // Mortar logic doesn't depend on hitting a specific enemy object
+    } else if (!targetEnemy || typeof targetEnemy.takeDamage !== 'function') {
+        return; // No valid enemy to hit for other projectile types
     }
+
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
     const goldMultiplier = projectile.owner.goldBonusMultiplier || 1;
+
     const awardGold = (enemy) => {
         if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) return;
         const goldToGive = Math.ceil(enemy.gold * goldMultiplier);
@@ -374,12 +373,52 @@ function handleProjectileHit(projectile, hitEnemy) {
         gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
     };
 
-    const splashCenter = projectile.isMortar ? { x: projectile.targetX, y: projectile.targetY } : { x: targetEnemy.x, y: targetEnemy.y };
+    const splashCenter = projectile.isMortar ? { x: projectile.targetX, y: projectile.targetY } : (targetEnemy ? { x: targetEnemy.x, y: targetEnemy.y } : null);
+
+    // Handle mortar with radial pin upgrade: only fires pins, no splash damage.
+    if (projectile.isMortar && projectile.owner.mortarReplacedByPins) {
+        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'adjust', projectile.owner.splashRadius * 2, '#FFFFFF', 20)); // Visual for pin burst
+        if (projectile.owner.radialPinCount > 0) {
+            const pinCount = projectile.owner.radialPinCount;
+            // Create a temporary "owner" for the pins at the impact location
+            const fakePinOwner = {
+                x: splashCenter.x,
+                y: splashCenter.y,
+                type: 'PIN',
+                // Pins inherit the FORT's damage and multipliers, but deal half damage
+                damage: projectile.owner.damage / 2,
+                damageMultiplier: projectile.owner.damageMultiplier,
+                goldBonusMultiplier: projectile.owner.goldBonusMultiplier,
+                // Pin-specific properties
+                projectileSpeed: 7, // Using standard PIN speed
+                projectileSize: 18, // Making them large and visible
+                projectileColor: '#FFFFFF',
+                splashRadius: 0 // Pins do not have splash damage
+            };
+            for (let i = 0; i < pinCount; i++) {
+                // Fire pins outwards in a circle
+                const angle = (2 * Math.PI / pinCount) * i;
+                const fakeTarget = {
+                    x: splashCenter.x + Math.cos(angle) * 1000,
+                    y: splashCenter.y + Math.sin(angle) * 1000,
+                    health: Infinity
+                };
+                const newProjectile = new Projectile(fakePinOwner, fakeTarget);
+                newProjectile.isRadialPin = true;
+                gameState.projectiles.push(newProjectile);
+            }
+        }
+        updateUI(gameState);
+        return; // End execution here for this projectile type
+    }
+
+
+    if (!splashCenter) return; // Should not happen if not a mortar
 
     if (projectile.owner.type === 'FIREPLACE') {
-        gameState.effects.push(new Effect(targetEnemy.x, targetEnemy.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
+        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
         gameState.enemies.forEach(enemy => {
-            if (Math.hypot(targetEnemy.x - enemy.x, targetEnemy.y - enemy.y) <= projectile.owner.splashRadius) {
+            if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 if (enemy === targetEnemy || !enemy.type.splashImmune) {
                     if (enemy.takeDamage(finalDamage)) {
                         awardGold(enemy);
@@ -392,8 +431,7 @@ function handleProjectileHit(projectile, hitEnemy) {
         gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
-                const isPrimaryTarget = !projectile.isMortar && enemy === targetEnemy;
-                if (isPrimaryTarget || !enemy.type.splashImmune) {
+                if (enemy === targetEnemy || !enemy.type.splashImmune || projectile.isMortar) {
                     if (enemy.takeDamage(finalDamage)) {
                         awardGold(enemy);
                     }
@@ -401,7 +439,7 @@ function handleProjectileHit(projectile, hitEnemy) {
             }
         });
     } else {
-        if (targetEnemy.takeDamage(finalDamage)) {
+        if (targetEnemy && targetEnemy.takeDamage(finalDamage)) {
             awardGold(targetEnemy);
         }
     }
@@ -457,8 +495,14 @@ function gameLoop() {
 
         gameState.enemies.push(...newlySpawnedEnemies); // Add the newly spawned enemies to the main list
     }
+    // Corrected line: removed the redundant forEach update, now only the filter call updates the effects.
     gameState.effects = gameState.effects.filter(effect => effect.update());
     gameState.announcements = gameState.announcements.filter(announcement => announcement.update());
+
+    // Check for infinite gold toggle
+    if (isInfiniteGold) {
+        gameState.gold = 99999;
+    }
 
     // Refresh sell panel if a tower is selected, to show aura effects
     if (selectedTower) {
@@ -496,7 +540,7 @@ function gameLoop() {
         updateUI(gameState);
     }
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    drawPath(ctx, canvasWidth, gameState.path);
+    drawPath(ctx, canvasWidth, gameState.path, mazeColor);
     if (placingTower) {
         drawPlacementGrid(ctx, canvasWidth, canvasHeight, gameState.placementGrid, mouse);
     }
@@ -551,7 +595,7 @@ function isValidPlacement(x, y) {
 function selectTowerToPlace(towerType) {
     resumeAudioContext();
     const cost = TOWER_TYPES[towerType].cost;
-    if (gameState.gold >= cost) {
+    if (gameState.gold >= cost || isInfiniteGold) {
         if (placingFromCloud) {
             placingFromCloud = null;
             renderCloudInventory();
@@ -645,7 +689,7 @@ function handleCanvasAction(e) {
     const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
     const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
     let actionTaken = false;
-    const isPlacingMode = placingTower || placingFromCloud;
+    let isPlacingMode = placingTower || placingFromCloud;
 
     // Prioritize clicking on an enemy
     const clickedOnEnemy = gameState.enemies.find(en => Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
@@ -671,7 +715,7 @@ function handleCanvasAction(e) {
             costOfPlacingTower = TOWER_TYPES[towerToPlaceType].cost;
             mergingTower = { type: towerToPlaceType, cost: costOfPlacingTower, id: crypto.randomUUID() };
         }
-        if (gameState.gold < costOfPlacingTower && !mergingFromCloud && !mergingFromCanvas) return;
+        if (gameState.gold < costOfPlacingTower && !mergingFromCloud && !mergingFromCanvas && !isInfiniteGold) return;
         const clickedOnTower = gameState.towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
@@ -679,7 +723,7 @@ function handleCanvasAction(e) {
         });
         const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type) : null;
         if (mergeInfo) {
-            activeMergeState = {
+            pendingMergeState = {
                 existingTower: clickedOnTower,
                 mergingTower: mergingTower,
                 placingTowerType: mergingTower.type,
@@ -688,10 +732,15 @@ function handleCanvasAction(e) {
                 mergingFromCanvas: mergingFromCanvas,
                 originalPosition: draggedCanvasTowerOriginalGridPos
             };
-            showMergeConfirmation(activeMergeState);
+            if (isMergeConfirmationEnabled) {
+                showMergeConfirmation(pendingMergeState);
+            } else {
+                performPendingMerge();
+            }
             placingTower = null;
             placingFromCloud = null;
             draggedCloudTower = null;
+            selectedTower = null; // Deselect after a merge is initiated
             actionTaken = true;
         } else if (isValidPlacement(snappedX, snappedY)) {
             const newTowerType = mergingTower.type;
@@ -924,7 +973,7 @@ canvas.addEventListener('drop', e => {
     let actionTaken = false;
     if (sourceTower) {
         if (targetTower && targetTower.id !== sourceTower.id) {
-            activeMergeState = {
+            pendingMergeState = {
                 existingTower: targetTower,
                 mergingTower: sourceTower,
                 placingTowerType: sourceTower.type,
@@ -933,7 +982,15 @@ canvas.addEventListener('drop', e => {
                 mergingFromCanvas: transferData.source === 'canvas',
                 originalPosition: draggedCanvasTowerOriginalGridPos
             };
-            showMergeConfirmation(activeMergeState);
+            if (isMergeConfirmationEnabled) {
+                showMergeConfirmation(pendingMergeState);
+            } else {
+                performPendingMerge();
+            }
+            placingTower = null;
+            placingFromCloud = null;
+            draggedCloudTower = null;
+            selectedTower = null; // Deselect after a merge is initiated
             actionTaken = true;
         }
         else if (!targetTower && isValidPlacement(snappedX, snappedY)) {
@@ -961,8 +1018,10 @@ canvas.addEventListener('drop', e => {
 
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
-    const mouseX = evt.clientX - rect.left;
-    const mouseY = evt.clientY - rect.top;
+    const clientX = evt.clientX || evt.touches[0].clientX;
+    const clientY = evt.clientY || evt.touches[0].clientY;
+    const mouseX = clientX - rect.left;
+    const mouseY = clientY - rect.top;
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     return {
@@ -1002,7 +1061,8 @@ function init() {
     draggedCanvasTowerOriginalGridPos = { x: -1, y: -1 };
     mergeTooltip.show = false;
     mergeTooltip.info = null;
-    activeMergeState = null;
+    pendingMergeState = null;
+    isMergeConfirmationEnabled = true;
 
     uiElements.speedToggleBtn.textContent = 'x1';
     uiElements.buyPinBtn.classList.remove('selected');
@@ -1024,6 +1084,28 @@ function init() {
     resizeCanvas();
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     gameLoop();
+}
+
+// Function to spawn Flutterdash from the console
+window.spawnFlutterdash = () => {
+    if (gameState && gameState.path.length > 0) {
+        const bossEnemy = new Enemy(ENEMY_TYPES.BOSS, gameState.path, 'BOSS');
+        gameState.enemies.push(bossEnemy);
+        console.log("Flutterdash spawned!");
+    } else {
+        console.error("Game not initialized or path is not available.");
+    }
+};
+
+// Function to add gold from the console
+window.addGold = (value) => {
+    if (gameState) {
+        gameState.gold += value;
+        updateUI(gameState);
+        console.log(`Added ${value} gold. Current gold: ${gameState.gold}`);
+    } else {
+        console.error("Game not initialized.");
+    }
 }
 
 // Event Listeners
@@ -1135,8 +1217,10 @@ uiElements.soundToggleBtn.addEventListener('click', () => {
 uiElements.cloudButton.addEventListener('click', () => {
     resumeAudioContext();
     if (!gameState.isCloudUnlocked) {
-        if (gameState.gold >= 100) {
-            gameState.gold -= 100;
+        if (gameState.gold >= 100 || isInfiniteGold) {
+            if (!isInfiniteGold) {
+                gameState.gold -= 100;
+            }
             gameState.isCloudUnlocked = true;
             uiElements.cloudInventoryPanel.classList.remove('hidden');
             updateUI(gameState);
@@ -1147,49 +1231,28 @@ uiElements.cloudButton.addEventListener('click', () => {
     }
 });
 
-uiElements.cancelMergeBtn.addEventListener('click', () => {
-    resumeAudioContext();
-    // Reset dragging state and hide the modal without performing the merge
-    draggedCanvasTower = null;
-    draggedCloudTower = null;
-    placingTower = null;
-    placingFromCloud = null;
-    activeMergeState = null;
-    uiElements.mergeConfirmModal.classList.add('hidden');
-});
-
-uiElements.confirmMergeBtn.addEventListener('click', () => {
-    resumeAudioContext();
-    const mergeState = activeMergeState;
+function performPendingMerge() {
+    let mergeState = pendingMergeState;
     if (!mergeState) return;
-
     const {
         existingTower,
         mergingTower,
-        placingFromCloud,
         mergingFromCanvas,
         originalPosition
     } = mergeState;
-
     let cost = 0;
-    // Determine the cost based on the source of the merging tower
-    if (placingFromCloud || mergingFromCanvas) {
+    if (mergeState.placingFromCloud || mergingFromCanvas) {
         cost = mergingTower.cost;
     } else {
         cost = TOWER_TYPES[mergingTower.type].cost;
     }
-
-    // Check for sufficient gold only if buying a new tower for the merge
-    if (!placingFromCloud && !mergingFromCanvas && gameState.gold < cost) {
+    if (!mergeState.placingFromCloud && !mergingFromCanvas && gameState.gold < cost && !isInfiniteGold) {
         uiElements.mergeConfirmModal.classList.add('hidden');
-        activeMergeState = null;
-        return; // Not enough gold
+        return;
     }
-
     const merged = performMerge(existingTower, mergingTower.type, cost);
-
     if (merged) {
-        if (placingFromCloud) {
+        if (mergeState.placingFromCloud) {
             gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
         } else if (mergingFromCanvas) {
             gameState.towers = gameState.towers.filter(t => t.id !== mergingTower.id);
@@ -1197,28 +1260,58 @@ uiElements.confirmMergeBtn.addEventListener('click', () => {
                 gameState.placementGrid[originalPosition.y][originalPosition.x] = GRID_EMPTY;
             }
         } else {
-            gameState.gold -= cost;
+            if (!isInfiniteGold) {
+                gameState.gold -= cost;
+            }
         }
-        // Select the tower that was merged into to show its new stats
-        selectedTower = existingTower;
+        selectedTower = null; // Deselect after a successful merge.
     }
-
-    // Hide modal and reset states
     uiElements.mergeConfirmModal.classList.add('hidden');
     draggedCanvasTower = null;
     draggedCloudTower = null;
     placingTower = null;
     placingFromCloud = null;
-    activeMergeState = null;
-
-    // Update all relevant UI components
+    pendingMergeState = null;
     updateUI(gameState);
     updateSellPanel(selectedTower, gameState.isCloudUnlocked);
     renderCloudInventory();
+}
+
+uiElements.cancelMergeBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    draggedCanvasTower = null;
+    draggedCloudTower = null;
+    placingTower = null;
+    placingFromCloud = null;
+    pendingMergeState = null;
+    uiElements.mergeConfirmModal.classList.add('hidden');
 });
 
+uiElements.confirmMergeBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    performPendingMerge();
+});
+
+// Options menu event listener
+uiElements.optionsBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    uiElements.optionsMenu.classList.remove('hidden');
+});
+
+uiElements.toggleMergeConfirm.addEventListener('change', (e) => {
+    isMergeConfirmationEnabled = e.target.checked;
+});
 
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('click', (event) => {
+    // Check if the options menu is visible
+    if (!uiElements.optionsMenu.classList.contains('hidden')) {
+        const isClickInsideMenu = uiElements.optionsMenu.contains(event.target) || uiElements.optionsBtn.contains(event.target);
+        if (!isClickInsideMenu) {
+            uiElements.optionsMenu.classList.add('hidden');
+        }
+    }
+});
 
 document.fonts.ready.then(() => {
     init();
@@ -1226,6 +1319,3 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
-
-
-
