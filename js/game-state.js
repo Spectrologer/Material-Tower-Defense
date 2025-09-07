@@ -102,7 +102,6 @@ function serializeGameState() {
         enemies: gameState.enemies.map(e => e.toJSON()),
         towers: gameState.towers.map(t => t.toJSON()),
         projectiles: gameState.projectiles.map(p => p.toJSON()),
-        announcements: gameState.announcements.map(a => a.toJSON()),
         cloudInventory: gameState.cloudInventory.map(t => t.toJSON()),
         introducedEnemies: Array.from(gameState.introducedEnemies),
     });
@@ -134,7 +133,7 @@ function deserializeGameState(serializedGameState) {
             enemies: reconstructedEnemies,
             towers: reconstructedTowers,
             projectiles: projectiles.map(data => Projectile.fromJSON(data, reconstructedTowers, reconstructedEnemies)),
-            announcements: announcements.map(data => TextAnnouncement.fromJSON(data)),
+            announcements: [],
             introducedEnemies: new Set(introducedEnemies),
         };
     } catch (e) {

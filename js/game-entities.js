@@ -899,25 +899,4 @@ export class TextAnnouncement {
         });
         ctx.restore();
     }
-    toJSON() {
-        return {
-            text: this.text,
-            x: this.x,
-            y: this.y,
-            life: this.life,
-            maxLife: this.maxLife,
-            color: this.color,
-            maxWidth:  this.maxWidth
-        };
-    }
-    static fromJSON(data) {
-        return new TextAnnouncement(
-            data.text,
-            data.x,
-            data.y,
-            data.life,
-            data.color,
-            data.maxWidth ?? Infinity
-        );
-    }
 }
