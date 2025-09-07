@@ -91,6 +91,41 @@ function playWiggleSound() {
     osc.stop(now + duration);
 }
 
+function playCrackSound() {
+    if (!isSoundEnabled) return;
+    const now = audioContext.currentTime;
+    const duration = 0.15;
+
+    // White noise source for the "crack"
+    const bufferSize = audioContext.sampleRate * duration;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+
+    // A bandpass filter to shape the noise into a "crack"
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1500, now);
+    filter.Q.setValueAtTime(10, now);
+
+    // A fast volume envelope to make it sharp
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01); // Quick attack
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration); // Fast decay
+
+    // Connect nodes and play
+    noise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    noise.start(now);
+    noise.stop(now + duration);
+}
+
 // Game State
 let lives, gold, wave;
 let enemies = [];
@@ -380,7 +415,8 @@ function gameLoop() {
                 playMoneySound();
             },
             newlySpawnedEnemies, // Pass the temporary array for spawning
-            playWiggleSound // Pass the wiggle sound function
+            playWiggleSound, // Pass the wiggle sound function
+            playCrackSound // Pass the crack sound function
         ));
 
         enemies.push(...newlySpawnedEnemies); // Add the newly spawned enemies to the main list

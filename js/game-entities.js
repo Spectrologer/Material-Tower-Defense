@@ -199,7 +199,7 @@ export class Enemy {
         ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
         ctx.stroke();
     }
-    update(onFinish, onDeath, allEnemies, playWiggleSound) {
+    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound) {
         // --- Health & Burn Damage ---
         if (this.burns.length > 0) {
             const burn = this.burns[0];
@@ -252,7 +252,7 @@ export class Enemy {
                 hatched.y = this.y;
                 hatched.pathIndex = this.pathIndex; // New enemy starts from egg's path index
                 allEnemies.push(hatched);
-                onDeath(this); // Give gold for destroying egg
+                if(playCrackSound) playCrackSound();
                 return false; // Remove the egg
             }
         }
@@ -678,4 +678,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-
