@@ -55,10 +55,13 @@ export class Projectile {
             rotation = angle;
         }
         if (this.owner.type === 'PIN' || this.owner.type === 'NINE_PIN') {
-            icon = 'chevron_right';
+            icon = 'arrow_upward';
+            iconFamily = "'Material Symbols Outlined'";
+            rotation += Math.PI / 2;
        } else if (this.owner.type === 'PIN_HEART') {
-    icon = 'favorite';
-rotation -= Math.PI / 2;}else if (this.owner.type === 'NAT') {
+              icon = 'favorite';
+            rotation -= Math.PI / 2;}
+         else if (this.owner.type === 'NAT') {
             icon = 'arrow_forward';
             iconFamily = "'Material Symbols Outlined'";
         } else if (this.owner.type === 'ORBIT') {
