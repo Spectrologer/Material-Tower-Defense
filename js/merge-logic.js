@@ -12,7 +12,7 @@ function blendColors(colorA, colorB) {
     const [rB, gB, bB] = colorB.match(/\w\w/g).map((c) => parseInt(c, 16));
     const r = Math.round(rA * 0.5 + rB * 0.5).toString(16).padStart(2, '0');
     const g = Math.round(gA * 0.5 + gB * 0.5).toString(16).padStart(2, '0');
-    const b = Math.round(bA * 0.5 + bB * 0.5).toString(16).padStart(2, '0');
+    const b = Math.round(gA * 0.5 + gB * 0.5).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
 }
 
@@ -43,8 +43,8 @@ addRecipe('SUPPORT', 'SUPPORT', {
     resultType: 'ENT',
     apply: (tower) => {
         tower.type = 'ENT';
-        tower.level = 'MAX LEVEL';
-        tower.damageLevel = 'MAX LEVEL';
+        tower.level = 1;
+        tower.damageLevel = 1;
         tower.updateStats();
         tower.color = TOWER_TYPES.ENT.color;
     }
@@ -54,8 +54,8 @@ addRecipe('ENT', 'SUPPORT', {
     resultType: 'CAT',
     apply: (tower) => {
         tower.type = 'CAT';
-        tower.level = 'MAX LEVEL';
-        tower.damageLevel = 'MAX LEVEL';
+        tower.level = 1;
+        tower.damageLevel = 1;
         tower.updateStats();
         tower.color = TOWER_TYPES.CAT.color;
     }
@@ -129,8 +129,8 @@ addRecipe('CASTLE', 'PIN', {
     resultType: 'FORT',
     apply: (tower, { existingTowerLevel }) => {
         tower.type = 'FORT';
-        tower.level = existingTowerLevel;
-        tower.damageLevel = existingTowerLevel;
+        tower.level = 1;
+        tower.damageLevel = 1;
         tower.updateStats();
         tower.splashRadius = TOWER_TYPES.FORT.splashRadius;
         tower.color = TOWER_TYPES.FORT.color;
@@ -203,9 +203,11 @@ addRecipe('PIN_HEART', 'CASTLE', {
 addRecipe('FORT', 'PIN', {
     resultType: 'FORT', text: 'Upgrade',
     upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    canApply: (tower) => {
+        const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel -1);
+        return visualLevel < 5;
+    },
     apply: (tower) => {
-        // Only increase the damage level, not the main level.
         tower.damageLevel++;
         tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.1;
         tower.updateStats();
@@ -213,12 +215,15 @@ addRecipe('FORT', 'PIN', {
     }
 });
 
+// Upgrade Fort with a Castle to increase its splash radius.
 addRecipe('FORT', 'CASTLE', {
     resultType: 'FORT', text: 'Upgrade',
     upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    canApply: (tower) => {
+        const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel - 1);
+        return visualLevel < 5;
+    },
     apply: (tower) => {
-        // Only increase the main level, not the damage level.
         tower.level++;
         tower.splashRadius += 10;
         tower.updateStats();
@@ -359,6 +364,15 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
             tower.level = 'MAX LEVEL';
             if (tower.damageLevel) tower.damageLevel = 'MAX LEVEL';
         }
+
+        // Fort-specific MAX LEVEL check
+        if (tower.type === 'FORT') {
+             const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel - 1);
+             if (visualLevel >= 5) {
+                 tower.level = 'MAX LEVEL';
+             }
+        }
+
         return true;
     }
 

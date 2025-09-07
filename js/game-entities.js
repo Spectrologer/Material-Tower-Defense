@@ -102,7 +102,7 @@ export class Projectile {
             }
             const progress = 1 - (this.life / this.travelTime);
             this.x = this.startX + (this.targetX - this.startX) * progress;
-            this.y = this.startY + (this.targetY - this.y) * progress;
+            this.y = this.startY + (this.targetY - this.startY) * progress; // FIX: Corrected y-axis calculation
             this.z = Math.sin(progress * Math.PI) * this.peakHeight;
             return true;
         }
@@ -398,7 +398,7 @@ export class Tower {
         this.bounceDamageFalloff = 0.5;
         this.hasFragmentingShot = false;
         const baseStats = TOWER_TYPES[type];
-        this.splashRadius = baseStats.splashRadius;
+        this.splashRadius = baseStats.splashRadius || 0; // Ensure splashRadius is always a number
         if (type === 'FIREPLACE') {
             this.burnDps = baseStats.burnDps;
             this.burnDuration = baseStats.burnDuration;

@@ -844,6 +844,9 @@ function handleCanvasAction(e) {
             return tGridX === gridX && tGridY === gridY;
         });
 
+        
+        console.log("Selected tower", selectedTower)
+
         if (selectedTower) {
             selectedEnemy = null; // Deselect any enemy if a tower is selected
         } else {
@@ -1369,7 +1372,7 @@ function performPendingMerge() {
                 gameState.gold -= cost;
             }
         }
-        selectedTower = null; // Deselect after a successful merge.
+        selectedTower = existingTower; // The fix is here: assign the merged tower to selectedTower.
     }
     uiElements.mergeConfirmModal.classList.add('hidden');
     draggedCanvasTower = null;
