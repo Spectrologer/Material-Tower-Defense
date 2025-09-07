@@ -1,4 +1,4 @@
-import { TILE_SIZE, GRID_EMPTY, TOWER_TYPES } from './constants.js';
+import { TILE_SIZE, GRID_EMPTY, TOWER_TYPES, ENEMY_TYPES } from './constants.js';
 
 export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid, mouse) {
     const cols = Math.floor(canvasWidth / TILE_SIZE);
@@ -140,6 +140,88 @@ export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     ctx.restore();
 }
 
+export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
+    ctx.save();
+    const enemyType = enemy.type;
+    const name = enemy.typeName ? enemy.typeName.replace(/_/g, ' ').toUpperCase() : 'UNKNOWN';
+
+    const stats = [
+        { icon: 'favorite', text: `${enemy.health.toFixed(0)}/${enemy.maxHealth}`, color: '#ef4444' },
+        { icon: 'speed', text: `${enemyType.speed}`, color: '#38bdf8' },
+        { icon: 'paid', text: `${enemyType.gold}`, color: '#facc15' }
+    ];
+
+    const padding = 8;
+    const lineHeight = 18;
+    const iconSize = 12;
+    const iconPadding = 4;
+
+    // Measure name width with its own font size first
+    ctx.font = "12px 'Press Start 2P'";
+    const nameMetrics = ctx.measureText(name);
+
+    // Then measure stats width with their font size
+    ctx.font = "10px 'Press Start 2P'";
+    let maxStatWidth = 0;
+    stats.forEach(stat => {
+        const metrics = ctx.measureText(stat.text);
+        const totalWidth = iconSize + iconPadding + metrics.width;
+        if (totalWidth > maxStatWidth) {
+            maxStatWidth = totalWidth;
+        }
+    });
+
+    const rectWidth = Math.max(nameMetrics.width, maxStatWidth) + padding * 2;
+    const rectHeight = (stats.length + 1.5) * lineHeight + padding * 2;
+
+    let rectX = enemy.x + enemy.size + 10;
+    let rectY = enemy.y - rectHeight / 2;
+
+    // Ensure panel stays on screen
+    if (rectX + rectWidth > canvasWidth) {
+        rectX = enemy.x - enemy.size - 10 - rectWidth;
+    }
+    if (rectY < 5) rectY = 5;
+    if (rectY + rectHeight > ctx.canvas.height) rectY = ctx.canvas.height - rectHeight - 5;
+
+
+    // Draw panel background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.strokeStyle = enemyType.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.rect(rectX, rectY, rectWidth, rectHeight);
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw text
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // Draw Name
+    ctx.fillStyle = enemyType.color;
+    ctx.font = "12px 'Press Start 2P'";
+    ctx.fillText(name, rectX + padding, rectY + padding);
+
+    // Draw Stats
+    stats.forEach((stat, index) => {
+        const statY = rectY + padding + (lineHeight * 1.5) + (index * lineHeight);
+        
+        // Draw Icon
+        ctx.font = `${iconSize}px 'Material Symbols Outlined'`;
+        ctx.fillStyle = stat.color;
+        ctx.fillText(stat.icon, rectX + padding, statY);
+        
+        // Draw Text
+        ctx.font = "10px 'Press Start 2P'";
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillText(stat.text, rectX + padding + iconSize + iconPadding, statY);
+    });
+
+    ctx.restore();
+}
+
+
 export function getTowerIconInfo(type) {
     let icon;
     let className = 'material-icons';
@@ -178,3 +260,4 @@ export function getTowerIconInfo(type) {
     }
     return { icon, className };
 }
+

@@ -2,13 +2,22 @@ import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS,
 import { generatePath } from './path-generator.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation } from './ui-manager.js';
-import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo } from './drawing-function.js';
+import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let canvasWidth, canvasHeight;
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let isSoundEnabled = true;
+let isAudioResumed = false;
+
+// This function will be called on the first user interaction to enable audio.
+function resumeAudioContext() {
+    if (!isAudioResumed && audioContext.state === 'suspended') {
+        audioContext.resume();
+        isAudioResumed = true;
+    }
+}
 
 function playMoneySound() {
     if (!isSoundEnabled) return;
@@ -26,6 +35,62 @@ function playMoneySound() {
     oscillator.stop(audioContext.currentTime + 0.5);
 }
 
+function playWiggleSound() {
+    if (!isSoundEnabled) return;
+
+    const now = audioContext.currentTime;
+    const duration = 0.35;
+
+    // Main sound source
+    const osc = audioContext.createOscillator();
+    osc.type = 'sine';
+
+    // Pitch envelope - a strained, rising-then-falling groan
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.linearRampToValueAtTime(150, now + 0.1);
+
+
+    // LFO for vibrato (makes it shaky and "organic")
+    const lfo = audioContext.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(6, now); // Uncomfortably fast vibrato
+
+    // Gain node to control the depth of the vibrato
+    const lfoGain = audioContext.createGain();
+    lfoGain.gain.setValueAtTime(10, now); // How much the pitch wavers
+
+    // Distortion for a strained, gritty quality
+    const distortion = audioContext.createWaveShaper();
+    const k = 10; // More aggressive distortion
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    for (let i = 0; i < n_samples; ++i) {
+        const x = i * 2 / n_samples - 1;
+        curve[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x));
+    }
+    distortion.curve = curve;
+    distortion.oversample = '4x';
+
+    // Master volume envelope for the sound
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.03, now + 0.05); // Fade in
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration); // Fade out
+
+    // Connect the nodes together
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency); // LFO modulates the oscillator's frequency
+    osc.connect(distortion);
+    distortion.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Start and stop the sound
+    lfo.start(now);
+    lfo.stop(now + duration);
+    osc.start(now);
+    osc.stop(now + duration);
+}
+
 // Game State
 let lives, gold, wave;
 let enemies = [];
@@ -38,11 +103,13 @@ let hasPlacedFirstSupport = false;
 let path = [];
 let placementGrid = [];
 let waveInProgress = false;
+let spawningEnemies = false;
 let placingTower = null;
 let gameOver = false;
 let animationFrameId;
 let mouse = { x: 0, y: 0 };
 let selectedTower = null;
+let selectedEnemy = null;
 let gameSpeed = 1;
 let isCloudUnlocked = false;
 let cloudInventory = [];
@@ -62,9 +129,10 @@ window.addGold = (amount) => {
     }
 };
 window.spawn = (enemyType) => {
-    const type = ENEMY_TYPES[enemyType.toUpperCase()];
+    const upperEnemyType = enemyType.toUpperCase();
+    const type = ENEMY_TYPES[upperEnemyType];
     if (type) {
-        enemies.push(new Enemy(type, path));
+        enemies.push(new Enemy(type, path, upperEnemyType));
     }
 };
 
@@ -126,9 +194,17 @@ function renderCloudInventory() {
 
 function spawnWave() {
     waveInProgress = true;
+    spawningEnemies = true;
     updateUI({ lives, gold, wave: wave + 1, isCloudUnlocked });
     uiElements.startWaveBtn.disabled = true;
     const nextWave = wave + 1;
+
+    if (nextWave === 15) {
+        enemies.push(new Enemy(ENEMY_TYPES.BOSS, path, 'BOSS'));
+        spawningEnemies = false;
+        return;
+    }
+
     const isSwarmWave = nextWave > 0 && nextWave % 4 === 0;
     const enemyCount = isSwarmWave ? 15 + nextWave * 5 : 5 + nextWave * 3;
     const spawnRate = isSwarmWave ? 150 : 500;
@@ -137,12 +213,13 @@ function spawnWave() {
     const spawnInterval = setInterval(() => {
         if (spawned >= enemyCount) {
             clearInterval(spawnInterval);
+            spawningEnemies = false;
             return;
         }
         let enemyType;
         if (isSwarmWave) {
             enemyType = ENEMY_TYPES.SWARM;
-        } else if (nextWave === 10 || nextWave === 15) {
+        } else if (nextWave === 10) {
             enemyType = ENEMY_TYPES.BITCOIN;
         } else {
             const rand = Math.random();
@@ -166,7 +243,7 @@ function spawnWave() {
         const finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : enemyType.health * healthMultiplier;
         const finalGold = Math.ceil(enemyType.gold * goldMultiplier);
         const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: finalGold };
-        enemies.push(new Enemy(finalEnemyType, path));
+        enemies.push(new Enemy(finalEnemyType, path, enemyTypeName));
         spawned++;
     }, spawnRate);
 }
@@ -265,13 +342,20 @@ function gameLoop() {
     for (let i = 0; i < gameSpeed; i++) {
         applyAuraEffects();
         const onEnemyDeath = (enemy) => {
+            if (selectedEnemy === enemy) {
+                selectedEnemy = null;
+            }
             playMoneySound();
         };
+
+        const newlySpawnedEnemies = []; // Create a temporary array for new enemies
+
         towers.forEach(tower => tower.update(enemies, projectiles, onEnemyDeath));
         projectiles = projectiles.filter(p => p.update(handleProjectileHit, enemies));
         enemies = enemies.filter(enemy => enemy.update(
-            () => {
-                if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) {
+            (e) => { // onFinish
+                // Handle Bitcoin gold stealing separately
+                if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
                     gold = Math.max(0, gold - 1);
                     updateUI({ lives, gold, wave, isCloudUnlocked });
                     const goldCounterRect = uiElements.goldEl.getBoundingClientRect();
@@ -280,22 +364,30 @@ function gameLoop() {
                     const canvasGoldX = (goldX / window.innerWidth) * canvasWidth;
                     const canvasGoldY = (goldY / window.innerHeight) * canvasHeight;
                     announcements.push(new TextAnnouncement("-$", canvasGoldX, canvasGoldY, 60, '#ff4d4d', canvasWidth));
-                } else {
+                }
+
+                // Handle life damage for other enemies
+                if (e.type.damagesLives) {
                     lives--;
+                    updateUI({ lives, gold, wave, isCloudUnlocked });
                     if (lives <= 0) {
                         gameOver = true;
                         triggerGameOver(false, wave);
                     }
                 }
             },
-            () => {
+            () => { // onDeath
                 playMoneySound();
-            }
+            },
+            newlySpawnedEnemies, // Pass the temporary array for spawning
+            playWiggleSound // Pass the wiggle sound function
         ));
+
+        enemies.push(...newlySpawnedEnemies); // Add the newly spawned enemies to the main list
     }
     effects = effects.filter(effect => effect.update());
     announcements = announcements.filter(announcement => announcement.update());
-    if (waveInProgress && enemies.length === 0) {
+    if (waveInProgress && enemies.length === 0 && !spawningEnemies) {
         waveInProgress = false;
         wave++;
         uiElements.startWaveBtn.disabled = false;
@@ -311,6 +403,16 @@ function gameLoop() {
         if (wave === 3) {
             setTimeout(() => {
                 announcements.push(new TextAnnouncement("Warning:\nFlying enemies incoming!", canvasWidth / 2, canvasHeight / 2, 300, '#ff4d4d', canvasWidth));
+            }, 1500);
+        }
+        if (wave === 9) { // Wave before Bitcoin
+            setTimeout(() => {
+                announcements.push(new TextAnnouncement("Warning:\nBitcoin enemies steal gold!", canvasWidth / 2, canvasHeight / 2, 300, '#F7931A', canvasWidth));
+            }, 1500);
+        }
+        if (wave === 14) { // Wave before Boss
+            setTimeout(() => {
+                announcements.push(new TextAnnouncement("Warning:\nBOSS INCOMING!", canvasWidth / 2, canvasHeight / 2, 300, '#42A5F5', canvasWidth));
             }, 1500);
         }
         updateUI({ lives, gold, wave, isCloudUnlocked });
@@ -329,6 +431,10 @@ function gameLoop() {
     effects.forEach(effect => effect.draw(ctx));
     enemies.forEach(enemy => enemy.draw(ctx));
     announcements.forEach(announcement => announcement.draw(ctx));
+    if (selectedEnemy) {
+        selectedEnemy.drawSelection(ctx);
+        drawEnemyInfoPanel(ctx, selectedEnemy, canvasWidth);
+    }
     if (placingTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);
@@ -365,6 +471,7 @@ function isValidPlacement(x, y) {
 }
 
 function selectTowerToPlace(towerType) {
+    resumeAudioContext();
     const cost = TOWER_TYPES[towerType].cost;
     if (gold >= cost) {
         if (placingFromCloud) {
@@ -373,6 +480,7 @@ function selectTowerToPlace(towerType) {
         }
         placingTower = (placingTower === towerType) ? null : towerType;
         selectedTower = null;
+        selectedEnemy = null;
         updateSellPanel(null, isCloudUnlocked);
         uiElements.buyPinBtn.classList.toggle('selected', placingTower === 'PIN');
         uiElements.buyCastleBtn.classList.toggle('selected', placingTower === 'CASTLE');
@@ -381,6 +489,7 @@ function selectTowerToPlace(towerType) {
 }
 
 function handleCloudTowerClick(towerToPlace) {
+    resumeAudioContext();
     if (placingTower) {
         placingTower = null;
         placingFromCloud = null;
@@ -389,6 +498,7 @@ function handleCloudTowerClick(towerToPlace) {
     placingFromCloud = towerToPlace;
     placingTower = towerToPlace.type;
     selectedTower = null;
+    selectedEnemy = null;
     updateSellPanel(null, isCloudUnlocked);
     renderCloudInventory();
 }
@@ -596,6 +706,7 @@ function getMergeResultInfo(existingTower, placingType) {
 }
 
 function handleCanvasAction(e) {
+    resumeAudioContext();
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
@@ -603,7 +714,14 @@ function handleCanvasAction(e) {
     const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
     let actionTaken = false;
     const isPlacingMode = placingTower || placingFromCloud;
-    if (isPlacingMode) {
+
+    // Prioritize clicking on an enemy
+    const clickedOnEnemy = enemies.find(en => Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
+    if (clickedOnEnemy) {
+        selectedEnemy = clickedOnEnemy;
+        selectedTower = null; // Deselect any tower
+        actionTaken = true;
+    } else if (isPlacingMode) {
         const towerToPlaceType = placingTower;
         let mergingTower = null;
         let mergingFromCloud = false;
@@ -680,14 +798,24 @@ function handleCanvasAction(e) {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
             return tGridX === gridX && tGridY === gridY;
-        }) || null;
+        });
+
+        if (selectedTower) {
+            selectedEnemy = null; // Deselect any enemy if a tower is selected
+        } else {
+            // Click was on empty space, deselect everything
+            selectedEnemy = null;
+            selectedTower = null;
+        }
         actionTaken = true;
     }
-    if (!isPlacingMode) {
+
+    if (!isPlacingMode && !clickedOnEnemy) {
         uiElements.buyPinBtn.classList.remove('selected');
         uiElements.buyCastleBtn.classList.remove('selected');
         uiElements.buySupportBtn.classList.remove('selected');
     }
+
     if (actionTaken) {
         updateUI({ lives, gold, wave, isCloudUnlocked });
         updateSellPanel(selectedTower, isCloudUnlocked);
@@ -902,9 +1030,11 @@ function init() {
     introducedEnemies.clear();
     hasPlacedFirstSupport = false;
     waveInProgress = false;
+    spawningEnemies = false;
     placingTower = null;
     gameOver = false;
     selectedTower = null;
+    selectedEnemy = null;
     gameSpeed = 1;
     isCloudUnlocked = false;
     cloudInventory = [];
@@ -937,13 +1067,17 @@ function init() {
 }
 
 // Event Listeners
-uiElements.startWaveBtn.addEventListener('click', spawnWave);
+uiElements.startWaveBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    spawnWave();
+});
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
 uiElements.buyCastleBtn.addEventListener('click', () => selectTowerToPlace('CASTLE'));
 uiElements.buySupportBtn.addEventListener('click', () => selectTowerToPlace('SUPPORT'));
 uiElements.restartGameBtn.addEventListener('click', init);
 
 uiElements.sellTowerBtn.addEventListener('click', () => {
+    resumeAudioContext();
     if (selectedTower) {
         gold += Math.floor(selectedTower.cost * 0.5);
         const gridX = Math.floor(selectedTower.x / TILE_SIZE);
@@ -957,6 +1091,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
 });
 
 uiElements.moveToCloudBtn.addEventListener('click', () => {
+    resumeAudioContext();
     if (selectedTower && isCloudUnlocked) {
         cloudInventory.push(selectedTower);
         const gridX = Math.floor(selectedTower.x / TILE_SIZE);
@@ -970,6 +1105,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
 });
 
 uiElements.toggleModeBtn.addEventListener('click', () => {
+    resumeAudioContext();
     if (selectedTower) {
         if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
             selectedTower.mode = selectedTower.mode === 'boost' ? 'slow' : 'boost';
@@ -981,6 +1117,7 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
 });
 
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
+    resumeAudioContext();
     if (selectedTower) {
         const modes = ['strongest', 'weakest', 'furthest'];
         const currentIndex = modes.indexOf(selectedTower.targetingMode);
@@ -990,6 +1127,7 @@ uiElements.toggleTargetingBtn.addEventListener('click', () => {
 });
 
 uiElements.speedToggleBtn.addEventListener('click', () => {
+    resumeAudioContext();
     if (gameSpeed === 1) {
         gameSpeed = 2;
         uiElements.speedToggleBtn.textContent = 'x2';
@@ -1000,12 +1138,14 @@ uiElements.speedToggleBtn.addEventListener('click', () => {
 });
 
 uiElements.soundToggleBtn.addEventListener('click', () => {
+    resumeAudioContext();
     isSoundEnabled = !isSoundEnabled;
     const soundIcon = document.getElementById('sound-icon');
     soundIcon.textContent = isSoundEnabled ? 'volume_up' : 'volume_off';
 });
 
 uiElements.cloudButton.addEventListener('click', () => {
+    resumeAudioContext();
     if (!isCloudUnlocked) {
         if (gold >= 100) {
             gold -= 100;
@@ -1020,6 +1160,7 @@ uiElements.cloudButton.addEventListener('click', () => {
 });
 
 uiElements.cancelMergeBtn.addEventListener('click', () => {
+    resumeAudioContext();
     // Reset dragging state and hide the modal without performing the merge
     draggedCanvasTower = null;
     draggedCloudTower = null;
@@ -1029,6 +1170,7 @@ uiElements.cancelMergeBtn.addEventListener('click', () => {
 });
 
 uiElements.confirmMergeBtn.addEventListener('click', () => {
+    resumeAudioContext();
     const mergeState = uiElements.mergeConfirmModal.mergeState;
     if (!mergeState) return;
 
@@ -1093,3 +1235,4 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
+

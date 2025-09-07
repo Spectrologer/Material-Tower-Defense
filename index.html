@@ -196,10 +196,10 @@
 <body class="flex items-center justify-center">
 
     <!-- This is the main container for the entire game interface. -->
-    <div class="flex flex-col h-full w-full max-w-md mx-auto p-2 sm:p-4 gap-2">
+    <div class="flex flex-col h-full w-full items-center p-2 sm:p-4 gap-2">
 
         <!-- This is the stats bar at the top (Lives, Gold, Wave) -->
-        <div class="game-stats-panel py-1 px-2 flex-shrink-0 relative">
+        <div class="game-stats-panel py-1 px-2 flex-shrink-0 relative w-full max-w-[440px]">
             <h1 class="text-sm text-center text-green-400">ICONIC TD</h1>
             <div class="flex justify-between items-center text-xs md:text-sm">
                 <div class="flex flex-1 justify-center items-center gap-x-4 md:gap-x-6">
@@ -220,7 +220,7 @@
         </div>
 
         <!-- This container holds the actual game canvas AND the new cloud inventory -->
-        <div class="flex-grow relative w-full min-h-0 flex gap-2">
+        <div class="flex-grow relative w-full max-w-[440px] min-h-0 flex gap-2">
             <div id="canvas-container" class="flex-grow relative h-full min-h-0">
                 <!-- The canvas is now draggable to enable dragging towers from the game grid -->
                 <canvas id="gameCanvas" draggable="true"></canvas>
@@ -236,15 +236,15 @@
         </div>
 
         <!-- This is the control panel at the bottom of the screen -->
-        <div class="game-ui-panel p-4 w-full flex-shrink-0 flex flex-col gap-4">
+        <div class="game-ui-panel p-4 w-full max-w-[440px] flex-shrink-0 flex flex-col gap-4">
 
             <div id="tower-buttons-group">
                 <h2 id="towers-title" class="text-xl text-green-400">TOWERS</h2>
                 <!-- Buttons to buy the different towers -->
                 <div id="tower-buttons" class="grid grid-cols-3 gap-2 mt-2">
-                    <button id="buy-pin" class="pixel-button tower-button text-xs sm:text-sm">PIN (25G)</button>
-                    <button id="buy-castle" class="pixel-button tower-button text-xs sm:text-sm">CASTLE (75G)</button>
-                    <button id="buy-support" class="pixel-button tower-button text-xs sm:text-sm">SUPPORT (60G)</button>
+                    <button id="buy-pin" class="pixel-button tower-button text-xs sm:text-sm flex items-center justify-center text-center">PIN (25G)</button>
+                    <button id="buy-castle" class="pixel-button tower-button text-xs sm:text-sm flex items-center justify-center text-center">CASTLE (75G)</button>
+                    <button id="buy-support" class="pixel-button tower-button text-xs sm:text-sm flex items-center justify-center text-center">SUPPORT (60G)</button>
                 </div>
             </div>
 

@@ -1,4 +1,4 @@
-import { TILE_SIZE, TOWER_TYPES } from './constants.js';
+import { TILE_SIZE, TOWER_TYPES, ENEMY_TYPES } from './constants.js';
 
 export class Projectile {
     constructor(owner, target, startAngle = 0) {
@@ -113,13 +113,14 @@ export class Projectile {
 }
 
 export class Enemy {
-    constructor(type, path) {
+    constructor(type, path, typeName) {
         this.path = path;
         this.pathIndex = 0;
         this.direction = 1;
         this.x = this.path[0].x - TILE_SIZE;
         this.y = this.path[0].y;
         this.type = type;
+        this.typeName = typeName;
         this.speed = type.speed;
         this.health = type.health;
         this.maxHealth = type.health;
@@ -129,6 +130,17 @@ export class Enemy {
         this.hitTimer = 0;
         this.burns = [];
         this.slowMultiplier = 1;
+
+        if (this.type.laysEggs) {
+            this.timeUntilLay = this.type.layEggInterval;
+            this.isLayingEgg = false;
+            this.stopTimer = 0;
+            this.wiggleTimer = 0;
+        }
+
+        if (this.type.hatchTime) {
+            this.hatchTimer = this.type.hatchTime * 60; // seconds to frames
+        }
     }
     applyBurn(dps, durationInSeconds) {
         const existingBurn = this.burns.find(b => b.dps >= dps);
@@ -139,11 +151,22 @@ export class Enemy {
         }
     }
     draw(ctx) {
+        ctx.save();
+        if (this.wiggleTimer > 0) {
+            const wiggleAmount = 3;
+            const wiggleSpeed = 0.5;
+            ctx.translate(this.x + Math.sin(this.wiggleTimer * wiggleSpeed) * wiggleAmount, this.y);
+        } else {
+            ctx.translate(this.x, this.y);
+        }
+
         ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
         ctx.fillStyle = this.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(this.type.icon, this.x, this.y);
+        ctx.fillText(this.type.icon, 0, 0);
+        ctx.restore();
+
         const healthBarWidth = this.size * 2;
         const healthBarHeight = 5;
         const healthPercentage = this.health / this.maxHealth;
@@ -152,8 +175,13 @@ export class Enemy {
         ctx.fillStyle = 'green';
         ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth * healthPercentage, healthBarHeight);
         if (this.hitTimer > 0) {
+            ctx.save();
+            ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             ctx.fillText(this.type.icon, this.x, this.y);
+            ctx.restore();
             this.hitTimer--;
         }
         if (this.burns.length > 0) {
@@ -164,34 +192,109 @@ export class Enemy {
             ctx.globalAlpha = 1.0;
         }
     }
-    update(onFinish, onDeath) {
+    drawSelection(ctx) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    update(onFinish, onDeath, allEnemies, playWiggleSound) {
+        // --- Health & Burn Damage ---
         if (this.burns.length > 0) {
             const burn = this.burns[0];
             this.health -= burn.dps / 60;
             burn.ticksLeft--;
-            if (burn.ticksLeft <= 0) {
-                this.burns.shift();
-            }
+            if (burn.ticksLeft <= 0) this.burns.shift();
         }
         if (this.health <= 0) {
-            onDeath();
-            return false;
+            onDeath(this);
+            return false; // Remove this enemy
         }
-        if (this.pathIndex + this.direction < 0 || this.pathIndex + this.direction >= this.path.length) {
-            onFinish(this);
-            return false;
+
+        // --- Special Behaviors ---
+        if (this.type.laysEggs && !this.isLayingEgg) {
+            this.timeUntilLay--;
+            if (this.timeUntilLay <= 0) {
+                this.isLayingEgg = true;
+                this.stopTimer = this.type.eggLayStopTime;
+                this.wiggleTimer = this.type.wiggleTime;
+            }
         }
-        const target = this.path[this.pathIndex + this.direction];
+
+        if (this.isLayingEgg) {
+            this.stopTimer--;
+            if (this.wiggleTimer > 0) {
+                this.wiggleTimer--;
+                if (this.wiggleTimer % 20 === 0) { // Play sound less frequently than every frame
+                    playWiggleSound();
+                }
+            }
+            if (this.stopTimer <= 0) {
+                this.isLayingEgg = false;
+                this.timeUntilLay = this.type.layEggInterval;
+                const egg = new Enemy(ENEMY_TYPES.EGG, this.path, 'EGG');
+                egg.x = this.x;
+                egg.y = this.y;
+                egg.pathIndex = this.pathIndex;
+                allEnemies.push(egg);
+            } else {
+                return true; // Stop moving while laying egg
+            }
+        }
+
+
+        if (this.type.hatchTime) {
+            this.hatchTimer--;
+            if (this.hatchTimer <= 0) {
+                const hatched = new Enemy(ENEMY_TYPES[this.type.hatchesTo], this.path, this.type.hatchesTo);
+                hatched.x = this.x;
+                hatched.y = this.y;
+                hatched.pathIndex = this.pathIndex; // New enemy starts from egg's path index
+                allEnemies.push(hatched);
+                onDeath(this); // Give gold for destroying egg
+                return false; // Remove the egg
+            }
+        }
+
+        if (this.type.isStationary) {
+            return true; // Don't move
+        }
+
+        // --- Movement Logic ---
+        let atEnd = this.pathIndex >= this.path.length - 1;
+        let atStart = this.pathIndex <= 0;
+
+        if (this.type === ENEMY_TYPES.BOSS) {
+            if (atEnd && this.direction === 1) this.direction = -1;
+            if (atStart && this.direction === -1) this.direction = 1;
+        } else {
+            if (atEnd) {
+                onFinish(this);
+                return false; // Remove this enemy
+            }
+        }
+
+        const targetIndex = this.pathIndex + this.direction;
+        if (targetIndex < 0 || targetIndex >= this.path.length) {
+             // This case should primarily be for the boss turning around
+             return true;
+        }
+
+        const target = this.path[targetIndex];
         const dx = target.x - this.x;
         const dy = target.y - this.y;
         const distance = Math.hypot(dx, dy);
-        if (distance < this.speed * this.slowMultiplier) {
+        const currentSpeed = this.speed * this.slowMultiplier;
+
+        if (distance < currentSpeed) {
             this.pathIndex += this.direction;
         } else {
-            this.x += (dx / distance) * this.speed * this.slowMultiplier;
-            this.y += (dy / distance) * this.speed * this.slowMultiplier;
+            this.x += (dx / distance) * currentSpeed;
+            this.y += (dy / distance) * currentSpeed;
         }
-        return true;
+
+        return true; // Keep this enemy
     }
     takeDamage(amount) {
         this.health -= amount;
@@ -575,3 +678,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
