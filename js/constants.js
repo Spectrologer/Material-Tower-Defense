@@ -17,7 +17,7 @@ export const TOWER_TYPES = {
     ENT: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, special: 'Toggle Aura: Boost/Slow' },
     ORBIT: { cost: 150, range: 9999, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters' },
     CAT: { cost: 180, range: 120, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1.2, special: 'Greed Aura & Toggle', iconSize: 0.9 },
-    NINE_PIN: { cost: 225, range: 200, damage: 10, fireRate: 15, color: '#FFFFFF', projectileSpeed: 10, projectileSize: 10, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
+    NINE_PIN: { cost: 225, range: 250, damage: 10, fireRate: 15, color: '#FFFFFF', projectileSpeed: 10, projectileSize: 10, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
 };
 
 // Enemy Configuration
