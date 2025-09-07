@@ -274,7 +274,18 @@ function spawnWave() {
             const displayName = enemyType.icon.replace(/_/g, ' ');
             announcements.push(new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 180, undefined, canvasWidth));
         }
-        const healthMultiplier = 1 + (nextWave - 1) * 0.15;
+
+        let healthMultiplier;
+        if (nextWave <= 10) {
+            // Standard health scaling for the first 10 waves
+            healthMultiplier = 1 + (nextWave - 1) * 0.15;
+        } else {
+            // More aggressive health scaling after wave 10
+            const baseHealthAtWave10 = 1 + (10 - 1) * 0.15;
+            const wavesAfter10 = nextWave - 10;
+            healthMultiplier = baseHealthAtWave10 + (wavesAfter10 * 0.30);
+        }
+
         const finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : enemyType.health * healthMultiplier;
         const finalGold = Math.ceil(enemyType.gold * goldMultiplier);
         const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: finalGold };
@@ -1380,3 +1391,4 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
+
