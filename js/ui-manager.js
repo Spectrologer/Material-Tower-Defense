@@ -58,9 +58,7 @@ export const uiElements = {
     statProjectilesP: document.getElementById('stat-projectiles-p'),
     statProjectiles: document.getElementById('stat-projectiles'),
     statBoostP: document.getElementById('stat-boost-p'),
-    statBoost: document.getElementById('stat-boost'),
     statSlowP: document.getElementById('stat-slow-p'),
-    statSlow: document.getElementById('stat-slow'),
     statGoldP: document.getElementById('stat-gold-p'),
     statGold: document.getElementById('stat-gold'),
     statBurnP: document.getElementById('stat-burn-p'),
@@ -99,13 +97,43 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
         uiElements.towersTitle.classList.add('hidden');
         uiElements.sellPanel.classList.remove('hidden');
         const sellValue = Math.floor(selectedTower.cost * 0.5);
+
         let levelText;
-        if (selectedTower.level === 'MAX LEVEL') {
+        if (selectedTower.type === 'ORBIT') {
+            const totalUpgrades = selectedTower.upgradeCount;
+            if (totalUpgrades >= 4) {
+                levelText = '<span class="material-icons">star</span> MAX LEVEL';
+            } else {
+                levelText = `LVL ${totalUpgrades + 1}`;
+            }
+
+            // Display stats specific to ORBIT tower
+            uiElements.statDamageP.classList.remove('hidden');
+            uiElements.statDamage.textContent = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
+
+            uiElements.statProjectilesP.classList.remove('hidden');
+            uiElements.statProjectiles.textContent = selectedTower.orbiters.length;
+
+            uiElements.statRangeP.classList.add('hidden');
+            uiElements.statSpeedP.classList.add('hidden');
+            uiElements.statSplashP.classList.add('hidden');
+            uiElements.statBoostP.classList.add('hidden');
+            uiElements.statSlowP.classList.add('hidden');
+            uiElements.statGoldP.classList.add('hidden');
+            uiElements.statBurnP.classList.add('hidden');
+            uiElements.statFragsP.classList.add('hidden');
+            uiElements.statPinsP.classList.add('hidden');
+        } else if (selectedTower.level === 'MAX LEVEL') {
             levelText = '<span class="material-icons">star</span> MAX LEVEL';
+        } else if (selectedTower.level === 1 && (selectedTower.type === 'PIN' || selectedTower.type === 'CASTLE')) {
+            levelText = '';
         } else {
-            const visualLevel = selectedTower.damageLevel || selectedTower.level;
+            // FIX: Use the main level counter for display, as it is incremented on all tower upgrades,
+            // unlike damageLevel which is specific to certain merges.
+            const visualLevel = selectedTower.level;
             levelText = `LVL ${visualLevel}`;
         }
+
         uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
         uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
         if (isCloudUnlocked) {
@@ -125,7 +153,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
                 uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
             }
         }
-        if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT') {
+        if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
             uiElements.toggleTargetingBtn.classList.remove('hidden');
             uiElements.toggleTargetingBtn.textContent = `TARGET: ${selectedTower.targetingMode.toUpperCase()}`;
             uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'bg-yellow-400', 'bg-blue-800', 'border-red-400', 'border-yellow-300', 'border-blue-400', 'text-black', 'text-yellow-300', 'text-cyan-300');
@@ -149,7 +177,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
             uiElements.statRangeP, uiElements.statFragsP, uiElements.statPinsP
         ].forEach(p => p.classList.add('hidden'));
 
-
+        // Display stats based on tower type
         if (selectedTower.type !== 'ORBIT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'CAT') {
             uiElements.statRangeP.classList.remove('hidden');
             uiElements.statRange.textContent = Math.round(selectedTower.range);
@@ -169,7 +197,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
             if (selectedTower.mortarReplacedByPins) {
                 uiElements.statPinsP.classList.remove('hidden');
                 uiElements.statPins.textContent = selectedTower.radialPinCount;
-                uiElements.statSplashP.classList.add('hidden'); // No more splash radius stat
+                uiElements.statSplashP.classList.add('hidden');
                 uiElements.statSpecial.textContent = 'Radial Pin Strike';
             } else {
                 uiElements.statSplashP.classList.remove('hidden');
@@ -182,6 +210,17 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
             uiElements.statProjectilesP.classList.remove('hidden');
             uiElements.statProjectiles.textContent = selectedTower.projectileCount || 1;
         }
+        if (selectedTower.type === 'ORBIT') {
+            uiElements.statDamageP.classList.remove('hidden');
+            uiElements.statDamage.textContent = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
+
+            uiElements.statProjectilesP.classList.remove('hidden');
+            uiElements.statProjectiles.textContent = selectedTower.orbiters.length;
+            
+            uiElements.statRangeP.classList.add('hidden');
+            uiElements.statSpeedP.classList.add('hidden');
+        }
+
         if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
             if (selectedTower.type === 'CAT') {
                 uiElements.statGoldP.classList.remove('hidden');
@@ -190,17 +229,18 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
             }
             if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                 if (selectedTower.mode === 'boost') {
+                    // Corrected line to access the correct UI elements.
                     uiElements.statBoostP.classList.remove('hidden');
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
                     uiElements.statBoost.textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
-                    uiElements.statSlowP.classList.add('hidden'); // Hide slow stat if in boost mode
-                } else { // 'slow' mode
+                    uiElements.statSlowP.classList.add('hidden');
+                } else {
                     uiElements.statSlowP.classList.remove('hidden');
                     const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
                     uiElements.statSlow.textContent = `${slowPercent}%`;
-                    uiElements.statBoostP.classList.add('hidden'); // Hide boost stat if in slow mode
+                    uiElements.statBoostP.classList.add('hidden');
                 }
-            } else { // SUPPORT tower
+            } else {
                 uiElements.statBoostP.classList.remove('hidden');
                 const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
                 uiElements.statBoost.textContent = `${boostPercent}%`;
@@ -259,8 +299,7 @@ export function showMergeConfirmation(mergeState) {
     createAndAppendIcon(uiElements.mergeResultTowerIconContainer, mergeState.mergeInfo.resultType);
 
     let resultName = mergeState.mergeInfo.text.replace('LVL ', 'LVL-').replace('_', ' ');
-    uiElements.mergeResultBenefitText.textContent = ''; // Clear previous benefit text
-
+    uiElements.mergeResultBenefitText.textContent = '';
     if (resultName.toLowerCase() === 'upgrade' && mergeState.mergeInfo.upgrade) {
         resultName = mergeState.mergeInfo.resultType.replace('_', ' ');
         uiElements.mergeResultBenefitText.textContent = mergeState.mergeInfo.upgrade.text;
@@ -269,7 +308,7 @@ export function showMergeConfirmation(mergeState) {
     uiElements.mergeResultTowerName.textContent = resultName;
 
     let cost = TOWER_TYPES[mergeState.placingTowerType].cost;
-    if (mergeState.placingFromCloud || mergeState.mergingFromCanvas) { // Corrected this line
+    if (mergeState.placingFromCloud || mergeState.mergingFromCanvas) {
         cost = mergeState.mergingTower.cost;
     }
     uiElements.mergeCostInfo.textContent = `Cost: ${cost}G`;

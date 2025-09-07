@@ -84,6 +84,7 @@ addRecipe('CASTLE', 'CASTLE', {
         tower.orbitMode = 'far';
         tower.level = existingTowerLevel;
         tower.damageLevel = existingTowerLevel;
+        tower.upgradeCount = 0; // Fix: Initialize upgrade count on merge.
         tower.updateStats();
         tower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
         tower.color = TOWER_TYPES.ORBIT.color;
@@ -225,14 +226,16 @@ addRecipe('FORT', 'CASTLE', {
     }
 });
 
+// --- ORBIT UPGRADES (FIXED) ---
+const ORBIT_MAX_UPGRADES = 4;
 
 addRecipe('ORBIT', 'PIN', {
     resultType: 'ORBIT', text: 'Upgrade',
     upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    canApply: (tower) => tower.upgradeCount < ORBIT_MAX_UPGRADES,
     apply: (tower) => {
-        tower.level++;
         tower.damageLevel++;
+        tower.upgradeCount++;
         tower.updateStats();
         tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
     }
@@ -240,12 +243,19 @@ addRecipe('ORBIT', 'PIN', {
 
 addRecipe('ORBIT', 'CASTLE', {
     resultType: 'ORBIT', text: 'Upgrade',
-    upgrade: { text: '+ Dmg/Size', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    upgrade: { text: '+ Orbiter', icon: 'satellite', family: 'material-symbols-outlined' },
+    canApply: (tower) => tower.upgradeCount < ORBIT_MAX_UPGRADES,
     apply: (tower) => {
         tower.level++;
-        tower.damageLevel++;
-        tower.projectileSize += 1;
+        tower.upgradeCount++;
+        // Recalculate angles to space orbiters evenly
+        const currentOrbiterCount = tower.orbiters.length;
+        const newOrbiterCount = currentOrbiterCount + 1;
+        const angleStep = (2 * Math.PI) / newOrbiterCount;
+        for (let i = 0; i < currentOrbiterCount; i++) {
+            tower.orbiters[i].angle = i * angleStep;
+        }
+        tower.orbiters.push(new Projectile(tower, null, currentOrbiterCount * angleStep));
         tower.updateStats();
         tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
     }
@@ -341,7 +351,11 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
         tower.cost = oldCost + costToAdd;
 
         const maxLevel = tower.type === 'FIREPLACE' ? 3 : 5;
-        if (tower.level === maxLevel) {
+        if (tower.type === 'ORBIT') {
+            if (tower.upgradeCount === ORBIT_MAX_UPGRADES) {
+                tower.level = 'MAX LEVEL';
+            }
+        } else if (tower.level === maxLevel) {
             tower.level = 'MAX LEVEL';
             if (tower.damageLevel) tower.damageLevel = 'MAX LEVEL';
         }

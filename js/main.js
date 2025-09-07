@@ -101,7 +101,7 @@ function playWiggleSound() {
 
     // Connect the nodes together
     lfo.connect(lfoGain);
-    lfoGain.gain.connect(osc.frequency); // LFO modulates the oscillator's frequency
+    lfoGain.connect(osc.frequency); // FIX: Connect the gain node itself, not its gain property
     osc.connect(distortion);
     distortion.connect(gainNode);
     gainNode.connect(audioContext.destination);
@@ -430,6 +430,7 @@ function handleProjectileHit(projectile, hitEnemy) {
             }
         });
     } else if (projectile.owner.splashRadius > 0) {
+        // Use the 'explosion' material symbol for Castle and Fort explosions
         gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
@@ -543,6 +544,10 @@ function gameLoop() {
     }
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
+    // Draw the enemies here so they appear on top of the path but behind towers/projectiles
+    gameState.enemies.forEach(enemy => {
+        enemy.draw(ctx);
+    });
     if (placingTower) {
         drawPlacementGrid(ctx, canvasWidth, canvasHeight, gameState.placementGrid, mouse);
     }
@@ -552,8 +557,7 @@ function gameLoop() {
         if (['SUPPORT', 'ENT', 'CAT'].includes(selectedTower.type)) selectedTower.drawBuffEffect(ctx);
     }
     gameState.projectiles.forEach(p => p.draw(ctx));
-    gameState.effects.forEach(effect => effect.update());
-    gameState.enemies.forEach(enemy => enemy.draw(ctx));
+    gameState.effects.forEach(effect => effect.draw(ctx));
     gameState.announcements.forEach(announcement => announcement.draw(ctx));
     if (selectedEnemy) {
         selectedEnemy.drawSelection(ctx);
