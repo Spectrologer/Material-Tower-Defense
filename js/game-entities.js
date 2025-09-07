@@ -14,8 +14,36 @@ export class Projectile {
             this.angle = startAngle;
             this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
         }
+        if (this.owner.type === 'FORT') {
+            this.isMortar = true;
+            this.startX = owner.x;
+            this.startY = owner.y;
+            this.targetX = target.x;
+            this.targetY = target.y;
+            this.totalDist = Math.hypot(this.targetX - this.startX, this.targetY - this.startY);
+            this.travelTime = this.totalDist / this.owner.projectileSpeed;
+            this.life = this.travelTime;
+            this.peakHeight = this.totalDist / 2; // Arc height is half the distance
+        }
     }
     draw(ctx) {
+        if (this.isMortar) {
+            // Draw shadow on the ground
+            const shadowSize = this.owner.projectileSize * 0.75;
+            const shadowOpacity = 0.4 - (this.z / this.peakHeight) * 0.2;
+            ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, shadowSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw projectile "in the air"
+            const scale = 1 + (this.z / this.peakHeight) * 0.5;
+            ctx.fillStyle = this.owner.projectileColor;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y - this.z, this.owner.projectileSize * scale, 0, Math.PI * 2);
+            ctx.fill();
+            return;
+        }
         let iconFamily = 'Material Icons';
         let icon;
         let rotation = 0;
@@ -62,7 +90,20 @@ export class Projectile {
             ctx.fill();
         }
     }
-    update(onHit, enemies, allProjectiles, effects) {
+    update(onHit, enemies, effects) {
+        if (this.isMortar) {
+            this.life--;
+            if (this.life <= 0) {
+                // Explode at target location
+                onHit(this);
+                return false;
+            }
+            const progress = 1 - (this.life / this.travelTime);
+            this.x = this.startX + (this.targetX - this.startX) * progress;
+            this.y = this.startY + (this.targetY - this.startY) * progress;
+            this.z = Math.sin(progress * Math.PI) * this.peakHeight;
+            return true;
+        }
         if (this.owner.type === 'ORBIT') {
             this.angle += this.owner.projectileSpeed / 30;
             this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
@@ -627,6 +668,12 @@ export class Tower {
     }
     shoot(projectiles) {
         if (!this.target) return;
+        if (this.type === 'FORT') {
+            // Mortar targets a location, not the enemy object itself.
+            const locationTarget = { x: this.target.x, y: this.target.y, health: 1 }; // health > 0 to be valid
+            projectiles.push(new Projectile(this, locationTarget));
+            return;
+        }
         if (this.type === 'NINE_PIN') {
             const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
             const fakeTarget = {
@@ -737,6 +784,7 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
 
 
 

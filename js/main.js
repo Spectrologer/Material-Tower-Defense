@@ -362,7 +362,7 @@ function applyAuraEffects() {
 
 function handleProjectileHit(projectile, hitEnemy) {
     const targetEnemy = hitEnemy || projectile.target;
-    if (!targetEnemy || typeof targetEnemy.takeDamage !== 'function') {
+    if (!targetEnemy || (typeof targetEnemy.takeDamage !== 'function' && !projectile.isMortar)) {
         return;
     }
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
@@ -373,6 +373,9 @@ function handleProjectileHit(projectile, hitEnemy) {
         gameState.gold += goldToGive;
         gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
     };
+
+    const splashCenter = projectile.isMortar ? { x: projectile.targetX, y: projectile.targetY } : { x: targetEnemy.x, y: targetEnemy.y };
+
     if (projectile.owner.type === 'FIREPLACE') {
         gameState.effects.push(new Effect(targetEnemy.x, targetEnemy.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
         gameState.enemies.forEach(enemy => {
@@ -386,10 +389,11 @@ function handleProjectileHit(projectile, hitEnemy) {
             }
         });
     } else if (projectile.owner.splashRadius > 0) {
-        gameState.effects.push(new Effect(targetEnemy.x, targetEnemy.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
+        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
         gameState.enemies.forEach(enemy => {
-            if (Math.hypot(targetEnemy.x - enemy.x, targetEnemy.y - enemy.y) <= projectile.owner.splashRadius) {
-                if (enemy === targetEnemy || !enemy.type.splashImmune) {
+            if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
+                const isPrimaryTarget = !projectile.isMortar && enemy === targetEnemy;
+                if (isPrimaryTarget || !enemy.type.splashImmune) {
                     if (enemy.takeDamage(finalDamage)) {
                         awardGold(enemy);
                     }
@@ -418,7 +422,7 @@ function gameLoop() {
         const newlySpawnedEnemies = []; // Create a temporary array for new enemies
 
         gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath));
-        gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.projectiles, gameState.effects));
+        gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects));
         gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
             (e) => { // onFinish
                 // Handle Bitcoin gold stealing separately
@@ -1222,5 +1226,6 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
+
 
 
