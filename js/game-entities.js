@@ -502,7 +502,8 @@ export class Tower {
     findTarget(enemies) {
         this.target = null;
         let potentialTargets = enemies.filter(enemy => this.isInRange(enemy));
-        potentialTargets = potentialTargets.filter(enemy => !(enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT' || this.type === 'FIREPLACE' || this.type === 'NINE_PIN')));
+        // Allow NINE_PIN to target flying units
+        potentialTargets = potentialTargets.filter(enemy => !(enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT' || this.type === 'FIREPLACE')));
         if (potentialTargets.length === 0) return;
         switch (this.targetingMode) {
             case 'strongest':
@@ -717,4 +718,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-

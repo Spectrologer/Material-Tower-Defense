@@ -775,9 +775,6 @@ function checkForAndCreateNinePin(placedGridX, placedGridY) {
                 let totalCost = 0;
                 pinTowersInSquare.forEach(t => {
                     totalCost += t.cost;
-                    const tGridX = Math.floor(t.x / TILE_SIZE);
-                    const tGridY = Math.floor(t.y / TILE_SIZE);
-                    placementGrid[tGridY][tGridX] = GRID_EMPTY;
                 });
                 towers = towers.filter(t => !pinTowersInSquare.some(pin => pin.id === t.id));
 
@@ -787,7 +784,13 @@ function checkForAndCreateNinePin(placedGridX, placedGridY) {
                 const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
                 ninePin.cost = totalCost;
                 towers.push(ninePin);
-                placementGrid[startY + 1][startX + 1] = GRID_TOWER;
+                
+                // Mark the entire 3x3 area as occupied
+                for (let j = 0; j < 3; j++) {
+                    for (let i = 0; i < 3; i++) {
+                        placementGrid[startY + j][startX + i] = GRID_TOWER;
+                    }
+                }
 
                 announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 180, '#FFFFFF', canvasWidth));
                 selectedTower = ninePin;
@@ -855,8 +858,7 @@ function handleCanvasAction(e) {
             actionTaken = true;
         } else if (isValidPlacement(snappedX, snappedY)) {
             const newTowerType = mergingTower.type;
-            towers.push(new Tower(snappedX, snappedY, newTowerType));
-            const newTower = towers[towers.length - 1];
+            const newTower = new Tower(snappedX, snappedY, newTowerType);
             if (mergingFromCloud || mergingFromCanvas) {
                 Object.assign(newTower, mergingTower);
                 newTower.x = snappedX;
@@ -867,7 +869,6 @@ function handleCanvasAction(e) {
                 } else if (mergingFromCanvas) {
                     towers = towers.filter(t => t.id !== mergingTower.id);
                     placementGrid[draggedCanvasTowerOriginalGridPos.y][draggedCanvasTowerOriginalGridPos.x] = GRID_EMPTY;
-                    towers.push(newTower);
                 }
             } else {
                 gold -= costOfPlacingTower;
@@ -877,6 +878,7 @@ function handleCanvasAction(e) {
                 hasPlacedFirstSupport = true;
             }
             placementGrid[gridY][gridX] = GRID_TOWER;
+            towers.push(newTower);
             if (newTowerType === 'PIN') {
                  checkForAndCreateNinePin(gridX, gridY);
             }
@@ -892,6 +894,12 @@ function handleCanvasAction(e) {
         selectedTower = towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
+            // For Nine Pin, check the whole 3x3 area for a click
+            if (t.type === 'NINE_PIN') {
+                 const startX = tGridX - 1;
+                 const startY = tGridY - 1;
+                 return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
+            }
             return tGridX === gridX && tGridY === gridY;
         });
 
@@ -1021,9 +1029,23 @@ uiElements.cloudInventoryPanel.addEventListener('drop', e => {
         if (transferData.source === 'canvas') {
             const towerToMove = towers.find(t => t.id === transferData.towerId);
             if (towerToMove) {
-                const gridX = Math.floor(towerToMove.x / TILE_SIZE);
-                const gridY = Math.floor(towerToMove.y / TILE_SIZE);
-                placementGrid[gridY][gridX] = GRID_EMPTY;
+                if (towerToMove.type === 'NINE_PIN') {
+                    const centerX = Math.floor(towerToMove.x / TILE_SIZE);
+                    const centerY = Math.floor(towerToMove.y / TILE_SIZE);
+                    const startX = centerX - 1;
+                    const startY = centerY - 1;
+                    for (let j = 0; j < 3; j++) {
+                        for (let i = 0; i < 3; i++) {
+                            if (placementGrid[startY + j] && placementGrid[startY + j][startX + i] !== undefined) {
+                                placementGrid[startY + j][startX + i] = GRID_EMPTY;
+                            }
+                        }
+                    }
+                } else {
+                    const gridX = Math.floor(towerToMove.x / TILE_SIZE);
+                    const gridY = Math.floor(towerToMove.y / TILE_SIZE);
+                    placementGrid[gridY][gridX] = GRID_EMPTY;
+                }
                 towers = towers.filter(t => t.id !== towerToMove.id);
                 cloudInventory.push(towerToMove);
                 renderCloudInventory();
@@ -1175,9 +1197,23 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
     resumeAudioContext();
     if (selectedTower) {
         gold += Math.floor(selectedTower.cost * 0.5);
-        const gridX = Math.floor(selectedTower.x / TILE_SIZE);
-        const gridY = Math.floor(selectedTower.y / TILE_SIZE);
-        placementGrid[gridY][gridX] = GRID_EMPTY;
+        if (selectedTower.type === 'NINE_PIN') {
+            const centerX = Math.floor(selectedTower.x / TILE_SIZE);
+            const centerY = Math.floor(selectedTower.y / TILE_SIZE);
+            const startX = centerX - 1;
+            const startY = centerY - 1;
+            for (let j = 0; j < 3; j++) {
+                for (let i = 0; i < 3; i++) {
+                    if (placementGrid[startY + j] && placementGrid[startY + j][startX + i] !== undefined) {
+                        placementGrid[startY + j][startX + i] = GRID_EMPTY;
+                    }
+                }
+            }
+        } else {
+            const gridX = Math.floor(selectedTower.x / TILE_SIZE);
+            const gridY = Math.floor(selectedTower.y / TILE_SIZE);
+            placementGrid[gridY][gridX] = GRID_EMPTY;
+        }
         towers = towers.filter(t => t !== selectedTower);
         selectedTower = null;
         updateUI({ lives, gold, wave, isCloudUnlocked });
@@ -1189,9 +1225,23 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
     resumeAudioContext();
     if (selectedTower && isCloudUnlocked) {
         cloudInventory.push(selectedTower);
-        const gridX = Math.floor(selectedTower.x / TILE_SIZE);
-        const gridY = Math.floor(selectedTower.y / TILE_SIZE);
-        placementGrid[gridY][gridX] = GRID_EMPTY;
+        if (selectedTower.type === 'NINE_PIN') {
+            const centerX = Math.floor(selectedTower.x / TILE_SIZE);
+            const centerY = Math.floor(selectedTower.y / TILE_SIZE);
+            const startX = centerX - 1;
+            const startY = centerY - 1;
+            for (let j = 0; j < 3; j++) {
+                for (let i = 0; i < 3; i++) {
+                     if (placementGrid[startY + j] && placementGrid[startY + j][startX + i] !== undefined) {
+                        placementGrid[startY + j][startX + i] = GRID_EMPTY;
+                    }
+                }
+            }
+        } else {
+            const gridX = Math.floor(selectedTower.x / TILE_SIZE);
+            const gridY = Math.floor(selectedTower.y / TILE_SIZE);
+            placementGrid[gridY][gridX] = GRID_EMPTY;
+        }
         towers = towers.filter(t => t !== selectedTower);
         selectedTower = null;
         renderCloudInventory();
@@ -1330,4 +1380,3 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
-
