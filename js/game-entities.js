@@ -183,37 +183,6 @@ export class Projectile {
         }
         return true;
     }
-    toJSON() {
-        return {
-            x: this.x,
-            y: this.y,
-            ownerId: this.owner.id,
-            targetId: this.target ? this.target.id : null,
-            hitTargetIds: [...this.hitEnemies].map(e => e.id),
-            life: this.life
-        };
-    }
-    static fromJSON(data, towers, enemies) {
-        const owner = towers.find(t => t.id === data.ownerId);
-        const target = enemies.find(e => e.id === data.targetId);
-
-        if (!owner) {
-            console.warn(`Projectile owner with ID ${data.ownerId} not found.`);
-            return null;
-        }
-        if (!target) {
-            console.warn(`Projectile target with ID ${data.targetId} not found.`);
-            return null;
-        }
-
-        const projectile = new Projectile(owner, target);
-        projectile.x = data.x;
-        projectile.y = data.y;
-        projectile.hitEnemies = new Set(enemies.filter(e => data.hitTargetIds.includes(e.id)));
-        projectile.life = data.life;
-
-        return projectile;
-    }
 }
 
 export class Enemy {
@@ -408,26 +377,6 @@ export class Enemy {
         this.health -= amount;
         this.hitTimer = 5;
         return this.health <= 0;
-    }
-    toJSON() {
-        return {
-            id: this.id,
-            typeName: this.typeName,
-            pathIndex: this.pathIndex,
-            health: this.health,
-            type: this.type,
-            id: this.id,
-        };
-    }
-    static fromJSON(data, path) {
-        const enemy = new Enemy(ENEMY_TYPES[data.typeName], path, data.typeName);
-        const pathSquare = path[data.pathIndex] ?? path[0];
-        enemy.id = data.id;
-        enemy.x = pathSquare.x;
-        enemy.y = pathSquare.y;
-        enemy.health = data.health;
-        enemy.pathIndex = data.pathIndex;
-        return enemy;
     }
 }
 

@@ -409,7 +409,6 @@ function handleProjectileHit(projectile, hitEnemy) {
             }
         }
         updateUI(gameState);
-        persistGameState();
         return; // End execution here for this projectile type
     }
 
@@ -445,7 +444,6 @@ function handleProjectileHit(projectile, hitEnemy) {
         }
     }
     updateUI(gameState);
-    persistGameState();
 }
 
 function gameLoop() {
@@ -540,6 +538,8 @@ function gameLoop() {
             }, 1500);
         }
         updateUI(gameState);
+        // Save the game state after each wave finishes
+        persistGameState(0);
     }
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
@@ -710,7 +710,6 @@ function checkForAndCreateNinePin(placedGridX, placedGridY) {
 
                 gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 180, '#FFFFFF', canvasWidth));
                 selectedTower = ninePin;
-                persistGameState();
                 return;
             }
         }
@@ -860,7 +859,6 @@ function handleCanvasAction(e) {
     if (actionTaken) {
         updateUI(gameState);
         updateSellPanel(selectedTower, gameState.isCloudUnlocked);
-        persistGameState();
     }
 }
 canvas.addEventListener('click', handleCanvasAction);
@@ -1092,7 +1090,6 @@ canvas.addEventListener('drop', e => {
     }
     if (actionTaken) {
         renderCloudInventory();
-        persistGameState();
     }
     placingTower = null;
     draggedCloudTower = null;
@@ -1229,7 +1226,6 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
         selectedTower = null;
         updateUI(gameState);
         updateSellPanel(null, gameState.isCloudUnlocked);
-        persistGameState();
     }
 });
 
