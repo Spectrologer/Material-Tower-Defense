@@ -295,46 +295,76 @@ function spawnWave() {
 }
 
 function applyAuraEffects() {
-    towers.forEach(tower => {
-        if (!['SUPPORT', 'ENT', 'CAT'].includes(tower.type)) {
-            tower.fireRate = tower.permFireRate;
-            tower.damageMultiplier = 1;
-            tower.goldBonusMultiplier = 1;
-        }
-    });
+    // Reset enemies' slow multiplier first.
     enemies.forEach(enemy => {
         enemy.slowMultiplier = 1;
     });
-    towers.forEach(auraTower => {
-        if (['SUPPORT', 'ENT', 'CAT'].includes(auraTower.type)) {
-            const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
-            const auraGridY = Math.floor(auraTower.y / TILE_SIZE);
-            towers.forEach(targetTower => {
-                if (!['SUPPORT', 'ENT', 'CAT'].includes(targetTower.type)) {
-                    const targetGridX = Math.floor(targetTower.x / TILE_SIZE);
-                    const targetGridY = Math.floor(targetTower.y / TILE_SIZE);
-                    if (Math.abs(auraGridX - targetGridX) <= 1 && Math.abs(auraGridY - targetGridY) <= 1) {
+
+    // Handle buff applications to towers by finding the single best buff for each stat.
+    towers.forEach(targetTower => {
+        if (!['SUPPORT', 'ENT', 'CAT'].includes(targetTower.type)) {
+            // Reset to base stats before calculating this frame's buffs
+            targetTower.fireRate = targetTower.permFireRate;
+            targetTower.damageMultiplier = 1;
+            targetTower.goldBonusMultiplier = 1;
+
+            let bestSpeedBoost = 1; // 1 means no boost
+            let bestDamageBoost = 1; // 1 means no boost
+            let bestGoldBonus = 1;   // 1 means no bonus
+
+            const targetGridX = Math.floor(targetTower.x / TILE_SIZE);
+            const targetGridY = Math.floor(targetTower.y / TILE_SIZE);
+
+            // Find all adjacent aura towers and determine the best buff they offer
+            towers.forEach(auraTower => {
+                if (['SUPPORT', 'ENT', 'CAT'].includes(auraTower.type)) {
+                    const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
+                    const auraGridY = Math.floor(auraTower.y / TILE_SIZE);
+
+                    let isAdjacent = false;
+                    if (targetTower.type === 'NINE_PIN') {
+                        if (Math.abs(auraGridX - targetGridX) <= 2 && Math.abs(auraGridY - targetGridY) <= 2) {
+                            isAdjacent = true;
+                        }
+                    } else {
+                        if (Math.abs(auraGridX - targetGridX) <= 1 && Math.abs(auraGridY - targetGridY) <= 1) {
+                            isAdjacent = true;
+                        }
+                    }
+
+                    if (isAdjacent) {
                         if (auraTower.type === 'SUPPORT') {
-                            targetTower.fireRate *= auraTower.attackSpeedBoost;
+                            bestSpeedBoost = Math.min(bestSpeedBoost, auraTower.attackSpeedBoost);
                         } else if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'boost') {
-                            targetTower.fireRate *= auraTower.attackSpeedBoost;
-                            targetTower.damageMultiplier = Math.max(targetTower.damageMultiplier, auraTower.damageBoost);
+                            bestSpeedBoost = Math.min(bestSpeedBoost, auraTower.attackSpeedBoost);
+                            bestDamageBoost = Math.max(bestDamageBoost, auraTower.damageBoost);
                         }
                         if (auraTower.type === 'CAT') {
-                            targetTower.goldBonusMultiplier = Math.max(targetTower.goldBonusMultiplier, auraTower.goldBonus);
+                            bestGoldBonus = Math.max(bestGoldBonus, auraTower.goldBonus);
                         }
                     }
                 }
             });
-            if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'slow') {
-                enemies.forEach(enemy => {
-                    const enemyGridX = Math.floor(enemy.x / TILE_SIZE);
-                    const enemyGridY = Math.floor(enemy.y / TILE_SIZE);
-                    if (Math.abs(auraGridX - enemyGridX) <= 1 && Math.abs(auraGridY - enemyGridY) <= 1) {
-                        enemy.slowMultiplier = Math.min(enemy.slowMultiplier, auraTower.enemySlow);
-                    }
-                });
-            }
+
+            // Apply only the single best buff found for each stat category
+            targetTower.fireRate *= bestSpeedBoost;
+            targetTower.damageMultiplier = bestDamageBoost;
+            targetTower.goldBonusMultiplier = bestGoldBonus;
+        }
+    });
+
+    // Handle enemy slowing auras separately, as this is a debuff on enemies, not a tower buff.
+    towers.forEach(auraTower => {
+         if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'slow') {
+            const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
+            const auraGridY = Math.floor(auraTower.y / TILE_SIZE);
+            enemies.forEach(enemy => {
+                const enemyGridX = Math.floor(enemy.x / TILE_SIZE);
+                const enemyGridY = Math.floor(enemy.y / TILE_SIZE);
+                if (Math.abs(auraGridX - enemyGridX) <= 1 && Math.abs(auraGridY - enemyGridY) <= 1) {
+                    enemy.slowMultiplier = Math.min(enemy.slowMultiplier, auraTower.enemySlow);
+                }
+            });
         }
     });
 }
@@ -434,6 +464,12 @@ function gameLoop() {
     }
     effects = effects.filter(effect => effect.update());
     announcements = announcements.filter(announcement => announcement.update());
+
+    // Refresh sell panel if a tower is selected, to show aura effects
+    if (selectedTower) {
+        updateSellPanel(selectedTower, isCloudUnlocked);
+    }
+
     if (waveInProgress && enemies.length === 0 && !spawningEnemies) {
         waveInProgress = false;
         wave++;

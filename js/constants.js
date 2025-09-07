@@ -10,14 +10,14 @@ export const TOWER_TYPES = {
     PIN: { cost: 25, range: 150, damage: 1.2, fireRate: 22, color: '#ffffffff', projectileSpeed: 7, projectileSize: 3, projectileColor: '#00ff88', splashRadius: 0 },
     CASTLE: { cost: 75, range: 100, damage: 5, fireRate: 60, color: '#ff9900', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, },
     FORT: { cost: 100, range: 100, damage: 7, fireRate: 60, color: '#da70d6', projectileSpeed: 6, projectileSize: 5, projectileColor: '#da70d6', splashRadius: 60, },
-    SUPPORT: { cost: 60, range: 100, damage: 0, fireRate: 0, color: '#cf17d8ff', attackSpeedBoost: 0.85, special: 'Speed Aura' },
+    SUPPORT: { cost: 60, range: 100, damage: 0, fireRate: 0, color: '#cf17d8ff', attackSpeedBoost: 0.85, special: 'Non-Stacking Speed Aura' },
     PIN_HEART: { cost: 85, range: 250, damage: 1.3, fireRate: 10, color: '#ff69b4', projectileSpeed: 3, projectileSize: 3, projectileColor: '#ff69b4', splashRadius: 0, special: 'Homing Projectiles' },
     FIREPLACE: { cost: 135, range: 50, damage: 0.1, fireRate: 2, color: '#e11d48', projectileSpeed: 3, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 10, special: 'Lingering Burn' },
     NAT: { cost: 50, range: 300, damage: 8, fireRate: 120, color: '#DEB887', projectileSpeed: 12, projectileSize: 5, projectileColor: '#DEB887', splashRadius: 0, special: 'Sniper' },
-    ENT: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, special: 'Toggle Aura: Boost/Slow' },
+    ENT: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, special: 'Non-Stacking Aura: Boost/Slow' },
     ORBIT: { cost: 150, range: 9999, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters' },
     CAT: { cost: 180, range: 120, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1.2, special: 'Greed Aura & Toggle', iconSize: 0.9 },
-    NINE_PIN: { cost: 225, range: 250, damage: 10, fireRate: 15, color: '#FFFFFF', projectileSpeed: 10, projectileSize: 10, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
+    NINE_PIN: { cost: 225, range: 250, damage: 10, fireRate: 15, color: '#FFFFFF', projectileSpeed: 10, projectileSize: 30, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
 };
 
 // Enemy Configuration
