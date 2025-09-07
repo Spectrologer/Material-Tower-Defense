@@ -254,10 +254,13 @@ export function getTowerIconInfo(type) {
             icon = 'cat';
             className = "fa-solid";
             break;
+        case 'NINE_PIN':
+            icon = 'move_item';
+            className = "material-symbols-outlined";
+            break;
         default:
             icon = 'help';
             break;
     }
     return { icon, className };
 }
-

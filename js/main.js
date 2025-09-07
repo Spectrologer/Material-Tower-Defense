@@ -703,6 +703,9 @@ function performMerge(clickedOnTower, mergingTowerType, costToAdd) {
 }
 
 function getMergeResultInfo(existingTower, placingType) {
+    if (existingTower.type === 'NINE_PIN' || placingType === 'NINE_PIN' || TOWER_TYPES[existingTower.type].unmergeable) {
+        return null;
+    }
     const existingType = existingTower.type;
     let result = { text: null, resultType: null, upgrade: null };
     if ((existingType === 'SUPPORT' && placingType === 'SUPPORT')) { result.resultType = 'ENT'; }
@@ -740,7 +743,59 @@ function getMergeResultInfo(existingTower, placingType) {
     }
     return (result.text && result.resultType) ? result : null;
 }
+function checkForAndCreateNinePin(placedGridX, placedGridY) {
+    for (let dy = -2; dy <= 0; dy++) {
+        for (let dx = -2; dx <= 0; dx++) {
+            const startX = placedGridX + dx;
+            const startY = placedGridY + dy;
 
+            if (startX < 0 || startY < 0 || startX + 2 >= GRID_COLS || startY + 2 >= GRID_ROWS) {
+                continue;
+            }
+
+            let pinTowersInSquare = [];
+            let isComplete = true;
+            for (let j = 0; j < 3; j++) {
+                for (let i = 0; i < 3; i++) {
+                    const checkX = startX + i;
+                    const checkY = startY + j;
+                    const tower = towers.find(t => Math.floor(t.x / TILE_SIZE) === checkX && Math.floor(t.y / TILE_SIZE) === checkY);
+
+                    if (tower && tower.type === 'PIN') {
+                        pinTowersInSquare.push(tower);
+                    } else {
+                        isComplete = false;
+                        break;
+                    }
+                }
+                if (!isComplete) break;
+            }
+
+            if (isComplete) {
+                let totalCost = 0;
+                pinTowersInSquare.forEach(t => {
+                    totalCost += t.cost;
+                    const tGridX = Math.floor(t.x / TILE_SIZE);
+                    const tGridY = Math.floor(t.y / TILE_SIZE);
+                    placementGrid[tGridY][tGridX] = GRID_EMPTY;
+                });
+                towers = towers.filter(t => !pinTowersInSquare.some(pin => pin.id === t.id));
+
+                const centerX = (startX + 1) * TILE_SIZE + TILE_SIZE / 2;
+                const centerY = (startY + 1) * TILE_SIZE + TILE_SIZE / 2;
+
+                const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
+                ninePin.cost = totalCost;
+                towers.push(ninePin);
+                placementGrid[startY + 1][startX + 1] = GRID_TOWER;
+
+                announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 180, '#FFFFFF', canvasWidth));
+                selectedTower = ninePin;
+                return;
+            }
+        }
+    }
+}
 function handleCanvasAction(e) {
     resumeAudioContext();
     const mousePos = getMousePos(canvas, e);
@@ -799,7 +854,8 @@ function handleCanvasAction(e) {
             draggedCloudTower = null;
             actionTaken = true;
         } else if (isValidPlacement(snappedX, snappedY)) {
-            towers.push(new Tower(snappedX, snappedY, mergingTower.type));
+            const newTowerType = mergingTower.type;
+            towers.push(new Tower(snappedX, snappedY, newTowerType));
             const newTower = towers[towers.length - 1];
             if (mergingFromCloud || mergingFromCanvas) {
                 Object.assign(newTower, mergingTower);
@@ -821,6 +877,9 @@ function handleCanvasAction(e) {
                 hasPlacedFirstSupport = true;
             }
             placementGrid[gridY][gridX] = GRID_TOWER;
+            if (newTowerType === 'PIN') {
+                 checkForAndCreateNinePin(gridX, gridY);
+            }
             placingTower = null;
             placingFromCloud = null;
             actionTaken = true;

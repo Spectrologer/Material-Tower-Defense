@@ -1,4 +1,4 @@
-import { TILE_SIZE, TOWER_TYPES, ENEMY_TYPES } from './constants.js';
+import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE } from './constants.js';
 
 export class Projectile {
     constructor(owner, target, startAngle = 0) {
@@ -23,7 +23,7 @@ export class Projectile {
             const angle = Math.atan2(dy, dx);
             rotation = angle;
         }
-        if (this.owner.type === 'PIN') {
+        if (this.owner.type === 'PIN' || this.owner.type === 'NINE_PIN') {
             icon = 'chevron_right';
         } else if (this.owner.type === 'PIN_HEART') {
             icon = 'arrow_shape_up_stack_2';
@@ -40,6 +40,8 @@ export class Projectile {
             let fontSize = 24;
             if (this.owner.type === 'ORBIT') {
                 fontSize = this.owner.projectileSize * 3;
+            } else if (this.owner.type === 'NINE_PIN') {
+                fontSize = 40;
             }
             ctx.font = `${fontSize}px ${iconFamily}`;
             ctx.fillStyle = this.owner.projectileColor;
@@ -70,18 +72,6 @@ export class Projectile {
             }
             return true;
         }
-        if (this.target && typeof this.target.takeDamage !== 'function') {
-            for (const enemy of enemies) {
-                if (enemy.type.isFlying && (this.owner.type === 'CASTLE' || this.owner.type === 'FORT' || this.owner.type === 'FIREPLACE')) {
-                    continue;
-                }
-                const dist = Math.hypot(this.x - enemy.x, this.y - enemy.y);
-                if (dist < enemy.size) {
-                    onHit(this, enemy);
-                    return false;
-                }
-            }
-        }
         if ((!this.target || this.target.health <= 0) && this.owner.type === 'PIN_HEART') {
             let closestEnemy = null;
             let minDistance = Infinity;
@@ -98,15 +88,36 @@ export class Projectile {
             this.target = closestEnemy;
         }
         if (!this.target || this.target.health <= 0) return false;
+        
         const dx = this.target.x - this.x;
         const dy = this.target.y - this.y;
         const distance = Math.hypot(dx, dy);
+
+        if (this.owner.type === 'NINE_PIN') {
+            for (const enemy of enemies) {
+                if (!this.hitEnemies.has(enemy)) {
+                    if (Math.hypot(this.x - enemy.x, this.y - enemy.y) < enemy.size) {
+                        onHit(this, enemy);
+                        this.hitEnemies.add(enemy);
+                    }
+                }
+            }
+        }
+        
         if (distance < this.owner.projectileSpeed) {
-            onHit(this);
+            if (this.owner.type !== 'NINE_PIN') {
+                onHit(this);
+            }
             return false;
         } else {
             this.x += (dx / distance) * this.owner.projectileSpeed;
             this.y += (dy / distance) * this.owner.projectileSpeed;
+            if (this.owner.type !== 'NINE_PIN') {
+                 if (Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size) {
+                    onHit(this);
+                    return false;
+                }
+            }
         }
         return true;
     }
@@ -333,6 +344,10 @@ export class Tower {
                 new Projectile(this, null, Math.PI)
             ];
         }
+        if (this.type === 'NINE_PIN') {
+            this.level = 'MAX LEVEL';
+            this.damageLevel = 'MAX LEVEL';
+        }
     }
     updateStats() {
         const baseStats = TOWER_TYPES[this.type];
@@ -371,6 +386,19 @@ export class Tower {
         }
     }
     draw(ctx) {
+        if (this.type === 'NINE_PIN') {
+            const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : 0;
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(angle);
+            ctx.fillStyle = this.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `900 90px 'Material Symbols Outlined'`;
+            ctx.fillText('move_item', 0, 0);
+            ctx.restore();
+            return;
+        }
         const visualLevel = this.level === 'MAX LEVEL' ? 6 : this.level;
         let iconSize = 28 + (visualLevel * 2);
         ctx.fillStyle = this.color;
@@ -474,7 +502,7 @@ export class Tower {
     findTarget(enemies) {
         this.target = null;
         let potentialTargets = enemies.filter(enemy => this.isInRange(enemy));
-        potentialTargets = potentialTargets.filter(enemy => !(enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT' || this.type === 'FIREPLACE')));
+        potentialTargets = potentialTargets.filter(enemy => !(enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT' || this.type === 'FIREPLACE' || this.type === 'NINE_PIN')));
         if (potentialTargets.length === 0) return;
         switch (this.targetingMode) {
             case 'strongest':
@@ -578,6 +606,17 @@ export class Tower {
         }
     }
     shoot(projectiles) {
+        if (!this.target) return;
+        if (this.type === 'NINE_PIN') {
+            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+            const fakeTarget = {
+                x: this.x + Math.cos(angle) * 2000,
+                y: this.y + Math.sin(angle) * 2000,
+                health: Infinity,
+            };
+            projectiles.push(new Projectile(this, fakeTarget));
+            return;
+        }
         if (this.projectileCount > 1 && this.target) {
             const angleToTarget = Math.atan2(this.target.y - this.y, this.target.x - this.x);
             const spreadAngle = Math.PI / 24;
@@ -678,3 +717,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
