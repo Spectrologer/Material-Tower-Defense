@@ -101,7 +101,7 @@ function playWiggleSound() {
 
     // Connect the nodes together
     lfo.connect(lfoGain);
-    lfoGain.connect(osc.frequency); // LFO modulates the oscillator's frequency
+    lfoGain.gain.connect(osc.frequency); // LFO modulates the oscillator's frequency
     osc.connect(distortion);
     distortion.connect(gainNode);
     gainNode.connect(audioContext.destination);
@@ -562,7 +562,8 @@ function gameLoop() {
         const gridY = Math.floor(mouse.y / TILE_SIZE);
         const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
         const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
-        const tempTower = new Tower(snappedX, snappedY, placingTower);
+        const towerTypeForPlacement = placingFromCloud?.type || draggedCloudTower?.type || draggedCanvasTower?.type || placingTower;
+        const tempTower = new Tower(snappedX, snappedY, towerTypeForPlacement);
         if (placingFromCloud || draggedCloudTower || draggedCanvasTower) {
             Object.assign(tempTower, placingFromCloud || draggedCloudTower || draggedCanvasTower);
             tempTower.x = snappedX;
@@ -570,10 +571,17 @@ function gameLoop() {
         }
         tempTower.draw(ctx);
         tempTower.drawRange(ctx);
-        if (!isValidPlacement(snappedX, snappedY)) {
+        const isNinePin = tempTower.type === 'NINE_PIN';
+        if (!isValidPlacement(snappedX, snappedY, isNinePin)) {
             ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
             ctx.beginPath();
-            ctx.arc(snappedX, snappedY, TILE_SIZE / 2, 0, Math.PI * 2);
+            if (isNinePin) {
+                const drawX = (gridX - 1) * TILE_SIZE;
+                const drawY = (gridY - 1) * TILE_SIZE;
+                ctx.fillRect(drawX, drawY, TILE_SIZE * 3, TILE_SIZE * 3);
+            } else {
+                ctx.arc(snappedX, snappedY, TILE_SIZE / 2, 0, Math.PI * 2);
+            }
             ctx.fill();
         }
     }
@@ -581,9 +589,33 @@ function gameLoop() {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function isValidPlacement(x, y) {
+function isValidNinePinPlacement(gridX, gridY) {
+    // Check the 3x3 area around the clicked center point
+    const startX = gridX - 1;
+    const startY = gridY - 1;
+    for (let j = 0; j < 3; j++) {
+        for (let i = 0; i < 3; i++) {
+            const checkX = startX + i;
+            const checkY = startY + j;
+
+            if (checkX < 0 || checkX >= GRID_COLS || checkY < 0 || checkY >= GRID_ROWS ||
+                gameState.placementGrid[checkY][checkX] !== GRID_EMPTY) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function isValidPlacement(x, y, isNinePin = false) {
     const gridX = Math.floor(x / TILE_SIZE);
     const gridY = Math.floor(y / TILE_SIZE);
+
+    if (isNinePin) {
+        return isValidNinePinPlacement(gridX, gridY);
+    }
+    
+    // For regular towers
     const cols = Math.floor(canvasWidth / TILE_SIZE);
     const rows = Math.floor(canvasHeight / TILE_SIZE);
     if (gridX < 0 || gridX >= cols || gridY < 0 || gridY >= rows) {
@@ -719,9 +751,16 @@ function handleCanvasAction(e) {
         const clickedOnTower = gameState.towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
+            // Check for Nine Pin tower's 3x3 collision area
+            if (t.type === 'NINE_PIN') {
+                const startX = tGridX - 1;
+                const startY = tGridY - 1;
+                return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
+            }
             return tGridX === gridX && tGridY === gridY;
         });
         const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type) : null;
+        const isNinePin = mergingTower.type === 'NINE_PIN';
         if (mergeInfo) {
             pendingMergeState = {
                 existingTower: clickedOnTower,
@@ -742,7 +781,7 @@ function handleCanvasAction(e) {
             draggedCloudTower = null;
             selectedTower = null; // Deselect after a merge is initiated
             actionTaken = true;
-        } else if (isValidPlacement(snappedX, snappedY)) {
+        } else if (isValidPlacement(snappedX, snappedY, isNinePin)) {
             const newTowerType = mergingTower.type;
             const newTower = new Tower(snappedX, snappedY, newTowerType);
             if (mergingFromCloud || mergingFromCanvas) {
@@ -763,7 +802,17 @@ function handleCanvasAction(e) {
                 gameState.announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180, undefined, canvasWidth));
                 gameState.hasPlacedFirstSupport = true;
             }
-            gameState.placementGrid[gridY][gridX] = GRID_TOWER;
+            if (isNinePin) {
+                const startX = gridX - 1;
+                const startY = gridY - 1;
+                for (let j = 0; j < 3; j++) {
+                    for (let i = 0; i < 3; i++) {
+                        gameState.placementGrid[startY + j][startX + i] = GRID_TOWER;
+                    }
+                }
+            } else {
+                gameState.placementGrid[gridY][gridX] = GRID_TOWER;
+            }
             gameState.towers.push(newTower);
             if (newTowerType === 'PIN') {
                 checkForAndCreateNinePin(gridX, gridY);
@@ -962,6 +1011,12 @@ canvas.addEventListener('drop', e => {
     const targetTower = gameState.towers.find(t => {
         const tGridX = Math.floor(t.x / TILE_SIZE);
         const tGridY = Math.floor(t.y / TILE_SIZE);
+        // Check for Nine Pin tower's 3x3 collision area
+        if (t.type === 'NINE_PIN') {
+            const startX = tGridX - 1;
+            const startY = tGridY - 1;
+            return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
+        }
         return tGridX === gridX && tGridY === gridY;
     });
     let sourceTower;
@@ -970,6 +1025,7 @@ canvas.addEventListener('drop', e => {
     } else if (transferData.source === 'canvas') {
         sourceTower = gameState.towers.find(t => t.id === transferData.towerId);
     }
+    const isNinePin = sourceTower?.type === 'NINE_PIN';
     let actionTaken = false;
     if (sourceTower) {
         if (targetTower && targetTower.id !== sourceTower.id) {
@@ -993,18 +1049,40 @@ canvas.addEventListener('drop', e => {
             selectedTower = null; // Deselect after a merge is initiated
             actionTaken = true;
         }
-        else if (!targetTower && isValidPlacement(snappedX, snappedY)) {
+        else if (!targetTower && isValidPlacement(snappedX, snappedY, isNinePin)) {
             if (transferData.source === 'cloud') {
                 sourceTower.x = snappedX;
                 sourceTower.y = snappedY;
                 gameState.towers.push(sourceTower);
                 gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== sourceTower.id);
             } else if (transferData.source === 'canvas') {
-                gameState.placementGrid[Math.floor(sourceTower.y / TILE_SIZE)][Math.floor(sourceTower.x / TILE_SIZE)] = GRID_EMPTY;
+                if (sourceTower.type === 'NINE_PIN') {
+                    const startX = Math.floor(sourceTower.x / TILE_SIZE) - 1;
+                    const startY = Math.floor(sourceTower.y / TILE_SIZE) - 1;
+                    for (let j = 0; j < 3; j++) {
+                        for (let i = 0; i < 3; i++) {
+                            gameState.placementGrid[startY + j][startX + i] = GRID_EMPTY;
+                        }
+                    }
+                } else {
+                    const gridX = Math.floor(sourceTower.x / TILE_SIZE);
+                    const gridY = Math.floor(sourceTower.y / TILE_SIZE);
+                    gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
+                }
                 sourceTower.x = snappedX;
                 sourceTower.y = snappedY;
             }
-            gameState.placementGrid[gridY][gridX] = GRID_TOWER;
+            if (isNinePin) {
+                const startX = gridX - 1;
+                const startY = gridY - 1;
+                for (let j = 0; j < 3; j++) {
+                    for (let i = 0; i < 3; i++) {
+                        gameState.placementGrid[startY + j][startX + i] = GRID_TOWER;
+                    }
+                }
+            } else {
+                gameState.placementGrid[gridY][gridX] = GRID_TOWER;
+            }
             actionTaken = true;
         }
     }
