@@ -256,22 +256,24 @@ function spawnWave() {
         }
 
         let healthMultiplier;
+        let healthBonus = 0;
         if (nextWave <= 10) {
             // Standard health scaling for the first 10 waves
             healthMultiplier = 1 + (nextWave - 1) * 0.15;
         } else if (nextWave >= 11 && nextWave <= 14) {
             // Aggressive health scaling for waves 11-14
-            const baseHealthAtWave10 = 1 + (10 - 1) * 0.15;
+            healthBonus = 10;
             const wavesAfter10 = nextWave - 10;
-            healthMultiplier = baseHealthAtWave10 + (wavesAfter10 * 0.50);
+            healthMultiplier = 1 + (10 - 1) * 0.15 + (wavesAfter10 * 0.50);
         } else {
             // Revert to a less aggressive scale after the transition period.
-            const baseHealthAtWave14 = (1 + (10 - 1) * 0.15) + (4 * 0.50);
+            healthBonus = 10;
+            const wavesAfter10 = 14 - 10;
             const wavesAfter14 = nextWave - 14;
-            healthMultiplier = baseHealthAtWave14 + (wavesAfter14 * 0.30);
+            healthMultiplier = 1 + (10 - 1) * 0.15 + (wavesAfter10 * 0.50) + (wavesAfter14 * 0.30);
         }
 
-        const finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : enemyType.health * healthMultiplier;
+        const finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : (enemyType.health * healthMultiplier) + healthBonus;
         const finalGold = Math.ceil(enemyType.gold * goldMultiplier);
         const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: finalGold };
         gameState.enemies.push(new Enemy(finalEnemyType, gameState.path, enemyTypeName));
@@ -550,7 +552,7 @@ function gameLoop() {
         if (['SUPPORT', 'ENT', 'CAT'].includes(selectedTower.type)) selectedTower.drawBuffEffect(ctx);
     }
     gameState.projectiles.forEach(p => p.draw(ctx));
-    gameState.effects.forEach(effect => effect.draw(ctx));
+    gameState.effects.forEach(effect => effect.update());
     gameState.enemies.forEach(enemy => enemy.draw(ctx));
     gameState.announcements.forEach(announcement => announcement.draw(ctx));
     if (selectedEnemy) {
@@ -1164,8 +1166,10 @@ function init() {
     gameLoop();
 }
 
+const consoleCommands = {}
+
 // Function to spawn Flutterdash from the console
-window.spawnFlutterdash = () => {
+consoleCommands.spawnFlutterdash = () => {
     if (gameState && gameState.path.length > 0) {
         const bossEnemy = new Enemy(ENEMY_TYPES.BOSS, gameState.path, 'BOSS');
         gameState.enemies.push(bossEnemy);
@@ -1176,7 +1180,7 @@ window.spawnFlutterdash = () => {
 };
 
 // Function to add gold from the console
-window.addGold = (value) => {
+consoleCommands.addGold = (value) => {
     if (gameState) {
         gameState.gold += value;
         updateUI(gameState);
@@ -1185,6 +1189,25 @@ window.addGold = (value) => {
         console.error("Game not initialized.");
     }
 }
+
+// Function to set the wave number from the console
+consoleCommands.setWave = (waveNumber) => {
+    if (gameState) {
+        gameState.wave = waveNumber - 1; // Subtract 1 to account for the next wave starting at `waveNumber`.
+        gameState.enemies = [];
+        gameState.projectiles = [];
+        gameState.effects = [];
+        gameState.spawningEnemies = false;
+        gameState.waveInProgress = false;
+        uiElements.startWaveBtn.disabled = false;
+        console.log(`Wave set to ${waveNumber}. Press 'Start Wave' to begin.`);
+        updateUI(gameState);
+    } else {
+        console.error("Game not initialized.");
+    }
+}
+
+window.consoleCommands = consoleCommands;
 
 // Event Listeners
 uiElements.startWaveBtn.addEventListener('click', () => {
