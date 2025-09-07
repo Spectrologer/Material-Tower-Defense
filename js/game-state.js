@@ -5,6 +5,7 @@ import {
     Effect,
     TextAnnouncement,
 } from './game-entities.js'; 
+import { generatePath } from './path-generator.js';
 
 
 /**
@@ -27,11 +28,15 @@ import {
  * @property {boolean} hasPlacedFirstSupport
  * @property {boolean} gameOver
  */
-export let gameState = getGameStateFromStorage();
+export let gameState;
 
 export function resetGameState() {
     clearGameStateFromStorage();
     gameState = getInitialGameState();
+}
+
+export function loadGameStateFromStorage() {
+    gameState = getGameStateFromStorage();
 }
 
 
@@ -60,6 +65,7 @@ function clearGameStateFromStorage() {
 }
 
 function getInitialGameState() {
+    const pathData = generatePath();
     return {
         lives: 20,
         gold: 100,
@@ -76,8 +82,8 @@ function getInitialGameState() {
         gameOver: false,
         isCloudUnlocked: false,
         cloudInventory: [],
-        path: [],
-        placementGrid: []
+        path: pathData.path,
+        placementGrid: pathData.placementGrid
     };
 }
 

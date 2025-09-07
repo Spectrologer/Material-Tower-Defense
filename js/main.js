@@ -4,7 +4,7 @@ import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entit
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
-import { gameState, resetGameState, persistGameState } from './game-state.js';
+import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -1110,7 +1110,7 @@ function getMousePos(canvas, evt) {
     };
 }
 
-function init() {
+function reset() {
     resetGameState();
 
     placingTower = null;
@@ -1126,6 +1126,14 @@ function init() {
     pendingMergeState = null;
     isMergeConfirmationEnabled = true;
 
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+    init()
+}
+
+function init() {
+    loadGameStateFromStorage();
+
     uiElements.speedToggleBtn.textContent = 'x1';
     uiElements.buyPinBtn.classList.remove('selected');
     uiElements.buyCastleBtn.classList.remove('selected');
@@ -1140,11 +1148,8 @@ function init() {
     canvas.height = GRID_ROWS * TILE_SIZE;
     canvasWidth = canvas.width;
     canvasHeight = canvas.height;
-    const pathData = generatePath();
-    gameState.path = pathData.path;
-    gameState.placementGrid = pathData.placementGrid;
+
     resizeCanvas();
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
     gameLoop();
 }
 
@@ -1199,7 +1204,7 @@ uiElements.startWaveBtn.addEventListener('click', () => {
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
 uiElements.buyCastleBtn.addEventListener('click', () => selectTowerToPlace('CASTLE'));
 uiElements.buySupportBtn.addEventListener('click', () => selectTowerToPlace('SUPPORT'));
-uiElements.restartGameBtn.addEventListener('click', init);
+uiElements.restartGameBtn.addEventListener('click', reset);
 
 uiElements.sellTowerBtn.addEventListener('click', () => {
     resumeAudioContext();
@@ -1396,9 +1401,8 @@ window.addEventListener('click', (event) => {
     }
 });
 
-document.fonts.ready.then(() => {
-    init();
-}).catch(err => {
+document.fonts.ready.catch(err => {
     console.error("Font loading failed, starting game anyway.", err);
+}).finally(() => {
     init();
 });
