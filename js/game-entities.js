@@ -714,7 +714,7 @@ export class Tower {
         }
     }
     toJSON() {
-        return {
+        const data = {
             x: this.x,
             y: this.y,
             type: this.type,
@@ -723,25 +723,89 @@ export class Tower {
             damageLevel: this.damageLevel,
             mode: this.mode,
             targetingMode: this.targetingMode,
+            damageMultiplier: this.damageMultiplier,
+            projectileCount: this.projectileCount,
             damageMultiplierFromMerge: this.damageMultiplierFromMerge,
             fragmentBounces: this.fragmentBounces,
             bounceDamageFalloff: this.bounceDamageFalloff,
             hasFragmentingShot: this.hasFragmentingShot,
-            goldBonusMultiplier: this.goldBonusMultiplier
+            goldBonusMultiplier: this.goldBonusMultiplier,
+            splashRadius: this.splashRadius,
+            color: this.color,
+            projectileSize: this.projectileSize
         };
+        
+        // Add tower-type specific properties
+        if (this.type === 'ORBIT') {
+            data.orbitMode = this.orbitMode;
+        }
+        if (this.type === 'FIREPLACE') {
+            data.burnDps = this.burnDps;
+            data.burnDuration = this.burnDuration;
+        }
+        if (this.type === 'ENT') {
+            data.attackSpeedBoost = this.attackSpeedBoost;
+            data.damageBoost = this.damageBoost;
+            data.enemySlow = this.enemySlow;
+        }
+        if (this.type === 'CAT') {
+            data.attackSpeedBoost = this.attackSpeedBoost;
+            data.damageBoost = this.damageBoost;
+            data.enemySlow = this.enemySlow;
+            data.goldBonus = this.goldBonus;
+        }
+        if (this.type === 'SUPPORT') {
+            data.attackSpeedBoost = this.attackSpeedBoost;
+        }
+        
+        return data;
     }
     static fromJSON(data) {
         const tower = new Tower(data.x, data.y, data.type);
-        tower.id = data.id;
-        tower.level = data.level;
-        tower.damageLevel = data.damageLevel;
-        tower.mode = data.mode;
-        tower.targetingMode = data.targetingMode;
-        tower.damageMultiplierFromMerge = data.damageMultiplierFromMerge || 1;
-        tower.fragmentBounces = data.fragmentBounces || 0;
-        tower.bounceDamageFalloff = data.bounceDamageFalloff || 0.5;
-        tower.hasFragmentingShot = data.hasFragmentingShot || false;
-        tower.goldBonusMultiplier = data.goldBonusMultiplier || 1;
+
+        const fields = [
+            "id",
+            "level",
+            "damageLevel",
+            "mode",
+            "targetingMode",
+            "damageMultiplier",
+            "projectileCount",
+            "damageMultiplierFromMerge",
+            "fragmentBounces",
+            "bounceDamageFalloff",
+            "hasFragmentingShot",
+            "goldBonusMultiplier",
+            "splashRadius",
+            "color",
+            "projectileSize",
+            "burnDps",
+            "burnDuration",
+            "attackSpeedBoost",
+            "damageBoost",
+            "enemySlow",
+            "goldBonus",
+            "orbitMode"
+        ];
+
+        for (const field of fields) {
+            if (field in data) {
+                tower[field] = data[field];
+            }
+        }
+
+        // Restore tower-type specific properties
+        if (data.type === 'ORBIT') {
+            // Recreate orbiters
+            tower.orbiters = [
+                new Projectile(tower, null, 0),
+                new Projectile(tower, null, Math.PI)
+            ];
+        }
+
+        // Recalculate stats to ensure everything is properly set up
+        tower.updateStats();
+        
         return tower;
     }
 }
