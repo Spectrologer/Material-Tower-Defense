@@ -41,6 +41,26 @@ export const uiElements = {
     mergeCostInfo: document.getElementById('merge-cost-info'),
     confirmMergeBtn: document.getElementById('confirm-merge-btn'),
     cancelMergeBtn: document.getElementById('cancel-merge-btn'),
+    statDamageP: document.getElementById('stat-damage-p'),
+    statDamage: document.getElementById('stat-damage'),
+    statRangeP: document.getElementById('stat-range-p'),
+    statRange: document.getElementById('stat-range'),
+    statSpeedP: document.getElementById('stat-speed-p'),
+    statSpeed: document.getElementById('stat-speed'),
+    statSplashP: document.getElementById('stat-splash-p'),
+    statSplash: document.getElementById('stat-splash'),
+    statProjectilesP: document.getElementById('stat-projectiles-p'),
+    statProjectiles: document.getElementById('stat-projectiles'),
+    statBoostP: document.getElementById('stat-boost-p'),
+    statBoost: document.getElementById('stat-boost'),
+    statSlowP: document.getElementById('stat-slow-p'),
+    statSlow: document.getElementById('stat-slow'),
+    statGoldP: document.getElementById('stat-gold-p'),
+    statGold: document.getElementById('stat-gold'),
+    statBurnP: document.getElementById('stat-burn-p'),
+    statBurn: document.getElementById('stat-burn'),
+    statSpecialP: document.getElementById('stat-special-p'),
+    statSpecial: document.getElementById('stat-special'),
 };
 
 export function updateUI(state) {
@@ -110,67 +130,74 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
                     break;
             }
         }
-        document.getElementById('stat-damage-p').classList.add('hidden');
-        document.getElementById('stat-speed-p').classList.add('hidden');
-        document.getElementById('stat-splash-p').classList.add('hidden');
-        document.getElementById('stat-boost-p').classList.add('hidden');
-        document.getElementById('stat-slow-p').classList.add('hidden');
-        document.getElementById('stat-gold-p').classList.add('hidden');
-        document.getElementById('stat-burn-p').classList.add('hidden');
-        document.getElementById('stat-special-p').classList.add('hidden');
-        document.getElementById('stat-projectiles-p').classList.add('hidden');
-        document.getElementById('stat-range-p').classList.add('hidden');
+        uiElements.statDamageP.classList.add('hidden');
+        uiElements.statSpeedP.classList.add('hidden');
+        uiElements.statSplashP.classList.add('hidden');
+        uiElements.statBoostP.classList.add('hidden');
+        uiElements.statSlowP.classList.add('hidden');
+        uiElements.statGoldP.classList.add('hidden');
+        uiElements.statBurnP.classList.add('hidden');
+        uiElements.statSpecialP.classList.add('hidden');
+        uiElements.statProjectilesP.classList.add('hidden');
+        uiElements.statRangeP.classList.add('hidden');
         if (selectedTower.type !== 'ORBIT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'CAT') {
-            document.getElementById('stat-range-p').classList.remove('hidden');
-            document.getElementById('stat-range').textContent = Math.round(selectedTower.range);
+            uiElements.statRangeP.classList.remove('hidden');
+            uiElements.statRange.textContent = Math.round(selectedTower.range);
         }
         const baseStats = TOWER_TYPES[selectedTower.type];
-        if (baseStats.special) {
-            document.getElementById('stat-special-p').classList.remove('hidden');
-            document.getElementById('stat-special').textContent = baseStats.special;
+        
+        let specialText = baseStats.special || '';
+        if (selectedTower.fragmentBounces > 0) {
+            specialText += (specialText ? ' & ' : '') + `Fragmenting (${selectedTower.fragmentBounces} bounces)`;
         }
+
+        if (specialText) {
+            uiElements.statSpecialP.classList.remove('hidden');
+            uiElements.statSpecial.textContent = specialText;
+        }
+
         if (selectedTower.type === 'NAT') {
-            document.getElementById('stat-projectiles-p').classList.remove('hidden');
-            document.getElementById('stat-projectiles').textContent = selectedTower.projectileCount || 1;
+            uiElements.statProjectilesP.classList.remove('hidden');
+            uiElements.statProjectiles.textContent = selectedTower.projectileCount || 1;
         }
         if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
             if (selectedTower.type === 'CAT') {
-                document.getElementById('stat-gold-p').classList.remove('hidden');
+                uiElements.statGoldP.classList.remove('hidden');
                 const goldPercent = ((selectedTower.goldBonus - 1) * 100).toFixed(0);
-                document.getElementById('stat-gold').textContent = `${goldPercent}%`;
+                uiElements.statGold.textContent = `${goldPercent}%`;
             }
             if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                 if (selectedTower.mode === 'boost') {
-                    document.getElementById('stat-boost-p').classList.remove('hidden');
+                    uiElements.statBoostP.classList.remove('hidden');
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
-                    document.getElementById('stat-boost').textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
+                    uiElements.statBoost.textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
                 } else {
-                    document.getElementById('stat-slow-p').classList.remove('hidden');
+                    uiElements.statSlowP.classList.remove('hidden');
                     const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
-                    document.getElementById('stat-slow').textContent = `${slowPercent}%`;
+                    uiElements.statSlow.textContent = `${slowPercent}%`;
                 }
             } else {
-                document.getElementById('stat-boost-p').classList.remove('hidden');
+                uiElements.statBoostP.classList.remove('hidden');
                 const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
-                document.getElementById('stat-boost').textContent = `${boostPercent}%`;
+                uiElements.statBoost.textContent = `${boostPercent}%`;
             }
         } else {
-            document.getElementById('stat-damage-p').classList.remove('hidden');
-            document.getElementById('stat-speed-p').classList.remove('hidden');
+            uiElements.statDamageP.classList.remove('hidden');
+            uiElements.statSpeedP.classList.remove('hidden');
             const finalDamage = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
-            document.getElementById('stat-damage').textContent = finalDamage;
+            uiElements.statDamage.textContent = finalDamage;
             if (selectedTower.type !== 'ORBIT') {
-                document.getElementById('stat-speed').textContent = (60 / selectedTower.fireRate).toFixed(2);
+                uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
             } else {
-                document.getElementById('stat-speed-p').classList.add('hidden');
+                uiElements.statSpeedP.classList.add('hidden');
             }
             if (selectedTower.splashRadius > 0) {
-                document.getElementById('stat-splash-p').classList.remove('hidden');
-                document.getElementById('stat-splash').textContent = Math.round(selectedTower.splashRadius);
+                uiElements.statSplashP.classList.remove('hidden');
+                uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius);
             }
             if (selectedTower.type === 'FIREPLACE') {
-                document.getElementById('stat-burn-p').classList.remove('hidden');
-                document.getElementById('stat-burn').textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;
+                uiElements.statBurnP.classList.remove('hidden');
+                uiElements.statBurn.textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;
             }
         }
     } else {
@@ -235,4 +262,5 @@ export function triggerGameOver(isWin, wave) {
         uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }
+
 

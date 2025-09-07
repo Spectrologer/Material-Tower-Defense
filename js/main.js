@@ -140,6 +140,7 @@ let draggedCloudTower = null;
 let draggedCanvasTower = null;
 let draggedCanvasTowerOriginalGridPos = { x: -1, y: -1 };
 let mergeTooltip = { show: false, x: 0, y: 0, info: null };
+let activeMergeState = null; // Holds state for a pending merge confirmation
 let mouse = { x: 0, y: 0 };
 let animationFrameId;
 
@@ -345,7 +346,7 @@ function applyAuraEffects() {
 
     // Handle enemy slowing auras separately, as this is a debuff on enemies, not a tower buff.
     gameState.towers.forEach(auraTower => {
-         if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'slow') {
+        if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'slow') {
             const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
             const auraGridY = Math.floor(auraTower.y / TILE_SIZE);
             gameState.enemies.forEach(enemy => {
@@ -364,7 +365,7 @@ function handleProjectileHit(projectile, hitEnemy) {
     if (!targetEnemy || typeof targetEnemy.takeDamage !== 'function') {
         return;
     }
-    const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier;
+    const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
     const goldMultiplier = projectile.owner.goldBonusMultiplier || 1;
     const awardGold = (enemy) => {
         if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) return;
@@ -417,7 +418,7 @@ function gameLoop() {
         const newlySpawnedEnemies = []; // Create a temporary array for new enemies
 
         gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath));
-        gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies));
+        gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.projectiles, gameState.effects));
         gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
             (e) => { // onFinish
                 // Handle Bitcoin gold stealing separately
@@ -617,7 +618,7 @@ function checkForAndCreateNinePin(placedGridX, placedGridY) {
                 const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
                 ninePin.cost = totalCost;
                 gameState.towers.push(ninePin);
-                
+
                 // Mark the entire 3x3 area as occupied
                 for (let j = 0; j < 3; j++) {
                     for (let i = 0; i < 3; i++) {
@@ -674,7 +675,7 @@ function handleCanvasAction(e) {
         });
         const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type) : null;
         if (mergeInfo) {
-            const mergeState = {
+            activeMergeState = {
                 existingTower: clickedOnTower,
                 mergingTower: mergingTower,
                 placingTowerType: mergingTower.type,
@@ -683,8 +684,7 @@ function handleCanvasAction(e) {
                 mergingFromCanvas: mergingFromCanvas,
                 originalPosition: draggedCanvasTowerOriginalGridPos
             };
-            uiElements.mergeConfirmModal.mergeState = mergeState;
-            showMergeConfirmation(mergeState);
+            showMergeConfirmation(activeMergeState);
             placingTower = null;
             placingFromCloud = null;
             draggedCloudTower = null;
@@ -713,7 +713,7 @@ function handleCanvasAction(e) {
             gameState.placementGrid[gridY][gridX] = GRID_TOWER;
             gameState.towers.push(newTower);
             if (newTowerType === 'PIN') {
-                 checkForAndCreateNinePin(gridX, gridY);
+                checkForAndCreateNinePin(gridX, gridY);
             }
             placingTower = null;
             placingFromCloud = null;
@@ -729,9 +729,9 @@ function handleCanvasAction(e) {
             const tGridY = Math.floor(t.y / TILE_SIZE);
             // For Nine Pin, check the whole 3x3 area for a click
             if (t.type === 'NINE_PIN') {
-                 const startX = tGridX - 1;
-                 const startY = tGridY - 1;
-                 return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
+                const startX = tGridX - 1;
+                const startY = tGridY - 1;
+                return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
             }
             return tGridX === gridX && tGridY === gridY;
         });
@@ -920,7 +920,7 @@ canvas.addEventListener('drop', e => {
     let actionTaken = false;
     if (sourceTower) {
         if (targetTower && targetTower.id !== sourceTower.id) {
-            const mergeState = {
+            activeMergeState = {
                 existingTower: targetTower,
                 mergingTower: sourceTower,
                 placingTowerType: sourceTower.type,
@@ -929,8 +929,7 @@ canvas.addEventListener('drop', e => {
                 mergingFromCanvas: transferData.source === 'canvas',
                 originalPosition: draggedCanvasTowerOriginalGridPos
             };
-            uiElements.mergeConfirmModal.mergeState = mergeState;
-            showMergeConfirmation(mergeState);
+            showMergeConfirmation(activeMergeState);
             actionTaken = true;
         }
         else if (!targetTower && isValidPlacement(snappedX, snappedY)) {
@@ -999,6 +998,7 @@ function init() {
     draggedCanvasTowerOriginalGridPos = { x: -1, y: -1 };
     mergeTooltip.show = false;
     mergeTooltip.info = null;
+    activeMergeState = null;
 
     uiElements.speedToggleBtn.textContent = 'x1';
     uiElements.buyPinBtn.classList.remove('selected');
@@ -1071,7 +1071,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
             const startY = centerY - 1;
             for (let j = 0; j < 3; j++) {
                 for (let i = 0; i < 3; i++) {
-                     if (gameState.placementGrid[startY + j] && gameState.placementGrid[startY + j][startX + i] !== undefined) {
+                    if (gameState.placementGrid[startY + j] && gameState.placementGrid[startY + j][startX + i] !== undefined) {
                         gameState.placementGrid[startY + j][startX + i] = GRID_EMPTY;
                     }
                 }
@@ -1150,12 +1150,13 @@ uiElements.cancelMergeBtn.addEventListener('click', () => {
     draggedCloudTower = null;
     placingTower = null;
     placingFromCloud = null;
+    activeMergeState = null;
     uiElements.mergeConfirmModal.classList.add('hidden');
 });
 
 uiElements.confirmMergeBtn.addEventListener('click', () => {
     resumeAudioContext();
-    const mergeState = uiElements.mergeConfirmModal.mergeState;
+    const mergeState = activeMergeState;
     if (!mergeState) return;
 
     const {
@@ -1177,6 +1178,7 @@ uiElements.confirmMergeBtn.addEventListener('click', () => {
     // Check for sufficient gold only if buying a new tower for the merge
     if (!placingFromCloud && !mergingFromCanvas && gameState.gold < cost) {
         uiElements.mergeConfirmModal.classList.add('hidden');
+        activeMergeState = null;
         return; // Not enough gold
     }
 
@@ -1203,6 +1205,7 @@ uiElements.confirmMergeBtn.addEventListener('click', () => {
     draggedCloudTower = null;
     placingTower = null;
     placingFromCloud = null;
+    activeMergeState = null;
 
     // Update all relevant UI components
     updateUI(gameState);
@@ -1219,4 +1222,5 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
+
 

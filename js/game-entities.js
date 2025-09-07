@@ -8,6 +8,8 @@ export class Projectile {
         this.target = target;
         this.hitEnemies = new Set();
         this.hitCooldown = 0;
+        this.bounces = owner.fragmentBounces || 0;
+        this.damageMultiplier = 1;
         if (this.owner.type === 'ORBIT') {
             this.angle = startAngle;
             this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
@@ -26,9 +28,8 @@ export class Projectile {
         if (this.owner.type === 'PIN' || this.owner.type === 'NINE_PIN') {
             icon = 'chevron_right';
         } else if (this.owner.type === 'PIN_HEART') {
-            icon = 'arrow_shape_up_stack_2';
-            iconFamily = "'Material Symbols Outlined'";
-            rotation += Math.PI / 2;
+            icon = 'favorite';
+            rotation -= Math.PI / 2; // Corrected rotation to point towards the enemy
         } else if (this.owner.type === 'NAT') {
             icon = 'arrow_forward';
             iconFamily = "'Material Symbols Outlined'";
@@ -42,6 +43,8 @@ export class Projectile {
                 fontSize = this.owner.projectileSize * 3;
             } else if (this.owner.type === 'NINE_PIN') {
                 fontSize = 40;
+            } else if (this.owner.type === 'PIN_HEART') {
+                fontSize = 16; // Further reduced the size of the heart projectile
             }
             ctx.font = `${fontSize}px ${iconFamily}`;
             ctx.fillStyle = this.owner.projectileColor;
@@ -59,7 +62,7 @@ export class Projectile {
             ctx.fill();
         }
     }
-    update(onHit, enemies) {
+    update(onHit, enemies, allProjectiles, effects) {
         if (this.owner.type === 'ORBIT') {
             this.angle += this.owner.projectileSpeed / 30;
             this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
@@ -72,23 +75,27 @@ export class Projectile {
             }
             return true;
         }
-        if ((!this.target || this.target.health <= 0) && this.owner.type === 'PIN_HEART') {
+
+        if ((!this.target || this.target.health <= 0) && (this.owner.type === 'PIN_HEART' || this.bounces > 0)) {
             let closestEnemy = null;
             let minDistance = Infinity;
             for (const enemy of enemies) {
-                const distToTower = Math.hypot(this.owner.x - enemy.x, this.owner.y - enemy.y);
-                if (distToTower <= this.owner.range) {
-                    const distToProjectile = Math.hypot(this.x - enemy.x, this.y - enemy.y);
-                    if (distToProjectile < minDistance) {
-                        minDistance = distToProjectile;
-                        closestEnemy = enemy;
+                if (!this.hitEnemies.has(enemy)) {
+                    const distToTower = Math.hypot(this.owner.x - enemy.x, this.owner.y - enemy.y);
+                    if (distToTower <= this.owner.range) {
+                        const distToProjectile = Math.hypot(this.x - enemy.x, this.y - enemy.y);
+                        if (distToProjectile < minDistance) {
+                            minDistance = distToProjectile;
+                            closestEnemy = enemy;
+                        }
                     }
                 }
             }
             this.target = closestEnemy;
         }
+
         if (!this.target || this.target.health <= 0) return false;
-        
+
         const dx = this.target.x - this.x;
         const dy = this.target.y - this.y;
         const distance = Math.hypot(dx, dy);
@@ -104,21 +111,31 @@ export class Projectile {
             }
         }
         
-        if (distance < this.owner.projectileSpeed) {
-            if (this.owner.type !== 'NINE_PIN') {
-                onHit(this);
+        const hitCondition = distance < this.owner.projectileSpeed || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
+
+        if (hitCondition) {
+            onHit(this);
+            this.hitEnemies.add(this.target);
+
+            if (this.bounces > 0) {
+                // Create a visual effect for the fragmentation
+                if (effects) {
+                    effects.push(new Effect(this.x, this.y, 'clear_day', 25, this.owner.projectileColor, 20));
+                }
+
+                // Logic to find a new target and "bounce"
+                this.bounces--;
+                this.damageMultiplier *= this.owner.bounceDamageFalloff;
+                this.target = null; // Clear target to find a new one
+                return true; // Keep the projectile alive to find a new target
             }
-            return false;
+
+            return false; // Destroy projectile if it doesn't fragment
         } else {
             this.x += (dx / distance) * this.owner.projectileSpeed;
             this.y += (dy / distance) * this.owner.projectileSpeed;
-            if (this.owner.type !== 'NINE_PIN') {
-                 if (Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size) {
-                    onHit(this);
-                    return false;
-                }
-            }
         }
+
         return true;
     }
 }
@@ -263,7 +280,7 @@ export class Enemy {
                 hatched.y = this.y;
                 hatched.pathIndex = this.pathIndex; // New enemy starts from egg's path index
                 allEnemies.push(hatched);
-                if(playCrackSound) playCrackSound();
+                if (playCrackSound) playCrackSound();
                 return false; // Remove the egg
             }
         }
@@ -288,8 +305,8 @@ export class Enemy {
 
         const targetIndex = this.pathIndex + this.direction;
         if (targetIndex < 0 || targetIndex >= this.path.length) {
-             // This case should primarily be for the boss turning around
-             return true;
+            // This case should primarily be for the boss turning around
+            return true;
         }
 
         const target = this.path[targetIndex];
@@ -328,6 +345,8 @@ export class Tower {
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1;
         this.goldBonusMultiplier = 1;
+        this.fragmentBounces = 0;
+        this.bounceDamageFalloff = 0.5;
         const baseStats = TOWER_TYPES[type];
         this.splashRadius = baseStats.splashRadius;
         if (type === 'FIREPLACE') {
@@ -718,3 +737,7 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
+
+
+
