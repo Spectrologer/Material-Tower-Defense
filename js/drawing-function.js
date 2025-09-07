@@ -29,7 +29,7 @@ export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid,
 }
 
 export function drawPath(ctx, canvasWidth, path, mazeColor) {
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = '#748275ff';
     ctx.lineWidth = TILE_SIZE;
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'miter';
@@ -243,7 +243,7 @@ export function getTowerIconInfo(type) {
             className = "material-symbols-outlined";
             break;
         case 'ENT':
-            icon = 'psychology';
+            icon = 'ent';
             className = "material-symbols-outlined";
             break;
         case 'ORBIT':

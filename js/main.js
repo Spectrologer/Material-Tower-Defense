@@ -12,7 +12,7 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let isSoundEnabled = true;
 let isAudioResumed = false;
 let isInfiniteGold = false;
-let mazeColor = '#abababff';
+let mazeColor = '#818181ff';
 
 // Game State
 let gameState;

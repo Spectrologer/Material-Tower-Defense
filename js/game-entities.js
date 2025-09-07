@@ -56,10 +56,9 @@ export class Projectile {
         }
         if (this.owner.type === 'PIN' || this.owner.type === 'NINE_PIN') {
             icon = 'chevron_right';
-        } else if (this.owner.type === 'PIN_HEART') {
-            icon = 'favorite';
-            rotation += Math.PI / 2;
-        } else if (this.owner.type === 'NAT') {
+       } else if (this.owner.type === 'PIN_HEART') {
+    icon = 'favorite';
+rotation -= Math.PI / 2;}else if (this.owner.type === 'NAT') {
             icon = 'arrow_forward';
             iconFamily = "'Material Symbols Outlined'";
         } else if (this.owner.type === 'ORBIT') {
@@ -480,7 +479,9 @@ export class Tower {
             case 'FORT': icon = 'fort'; break;
             case 'SUPPORT': icon = 'support_agent'; break;
             case 'PIN_HEART':
-                icon = 'favorite';
+                icon = 'map_pin_heart';
+                iconFamily = "'Material Symbols Outlined'";
+
                 break;
             case 'FIREPLACE':
                 icon = 'fireplace';
@@ -491,7 +492,7 @@ export class Tower {
                 iconFamily = "'Material Symbols Outlined'";
                 break;
             case 'ENT':
-                icon = 'psychology';
+                icon = 'ent';
                 iconFamily = "'Material Symbols Outlined'";
                 if (this.mode === 'boost') {
                     ctx.fillStyle = '#65a30d';
