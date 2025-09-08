@@ -1,0 +1,50 @@
+{
+  // Basic linting rules using VS Code's built-in checker
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
+  "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": false,
+  "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": false,
+  "javascript.format.insertSpaceAfterFunctionKeywordForAnonymousFunctions": true,
+  "javascript.format.insertSpaceAfterKeywordsInControlFlowStatements": true,
+  "javascript.format.insertSpaceBeforeFunctionParenthesis": false,
+  "javascript.format.semicolons": "insert",
+
+  // Show suggestions for common issues
+  "javascript.suggest.names": true,
+  "javascript.suggest.paths": true,
+  "javascript.suggest.autoImports": false,
+  "javascript.suggest.completeJSDocs": true,
+
+  // Indentation settings
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+
+  // Enable format on save (optional - comment out if too intrusive)
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+
+  // Show inline hints for parameters and types
+  "javascript.inlayHints.parameterNames.enabled": "none",
+  "javascript.inlayHints.variableTypes.enabled": false,
+  "javascript.inlayHints.propertyDeclarationTypes.enabled": false,
+  "javascript.inlayHints.parameterTypes.enabled": false,
+  "javascript.inlayHints.functionLikeReturnTypes.enabled": false,
+
+  // Problem reporting
+  "javascript.validate.enable": true,
+  "problems.showCurrentInStatus": true,
+
+  // Optional: Add basic JSDoc checking
+  "javascript.suggest.jsdoc.generateReturns": true,
+  "javascript.preferences.importModuleSpecifier": "relative",
+
+  // Language-specific editor settings
+  "[javascript]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  }
+}
