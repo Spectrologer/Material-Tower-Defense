@@ -80,6 +80,8 @@ export const uiElements = {
     statFrags: document.getElementById('stat-frags'),
     statPinsP: document.getElementById('stat-pins-p'),
     statPins: document.getElementById('stat-pins'),
+    towerKillCount: document.getElementById('tower-kill-count'),
+    killCountValue: document.getElementById('kill-count-value'),
 };
 
 export function updateUI(state) {
@@ -107,6 +109,8 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         uiElements.gameControls.classList.add('hidden');
         uiElements.towersTitle.classList.add('hidden');
         uiElements.sellPanel.classList.remove('hidden');
+        uiElements.towerKillCount.classList.remove('hidden');
+        uiElements.killCountValue.textContent = selectedTower.killCount || 0;
         const sellValue = Math.floor(selectedTower.cost * 0.5);
 
         // Hide the move to cloud button entirely if cloud is not unlocked
@@ -316,6 +320,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         if (uiElements.gameControls) uiElements.gameControls.classList.remove('hidden');
         if (uiElements.towersTitle) uiElements.towersTitle.classList.remove('hidden');
         if (uiElements.sellPanel) uiElements.sellPanel.classList.add('hidden');
+        if (uiElements.towerKillCount) uiElements.towerKillCount.classList.add('hidden');
         if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.textContent = '';
     }
 }
@@ -374,4 +379,5 @@ export function triggerGameOver(isWin, wave) {
         if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }
+
 

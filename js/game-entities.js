@@ -49,7 +49,15 @@ export class Projectile {
 
             // Draw projectile "in the air"
             const scale = 1 + (this.z / this.peakHeight) * 0.5;
-            ctx.fillStyle = this.owner.projectileColor;
+            const gradient = ctx.createRadialGradient(
+                this.x, this.y - this.z, 0,
+                this.x, this.y - this.z, this.owner.projectileSize * scale
+            );
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.5, this.owner.projectileColor);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+
+            ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.arc(this.x, this.y - this.z, this.owner.projectileSize * scale, 0, Math.PI * 2);
             ctx.fill();
@@ -182,8 +190,8 @@ export class Projectile {
 
         let moveDistance;
         if (this.isRocket) {
-            this.currentSpeed += this.acceleration * dt_scaler;
             moveDistance = this.currentSpeed * dt_scaler;
+            this.currentSpeed += this.acceleration * dt_scaler;
         } else {
             moveDistance = this.owner.projectileSpeed * dt_scaler;
         }
@@ -451,6 +459,7 @@ export class Tower {
         this.fragmentBounces = 0;
         this.bounceDamageFalloff = 0.5;
         this.hasFragmentingShot = false;
+        this.killCount = 0;
         const baseStats = TOWER_TYPES[type];
         this.splashRadius = baseStats.splashRadius || 0; // Ensure splashRadius is always a number
         if (type === 'FIREPLACE') {
@@ -742,6 +751,7 @@ export class Tower {
                         if (!orbiter.hitEnemies.has(enemy)) {
                             const finalDamage = this.damage * this.damageMultiplier;
                             if (enemy.takeDamage(finalDamage)) {
+                                this.killCount++;
                                 onEnemyDeath(enemy);
                             }
                             orbiter.hitEnemies.add(enemy);
@@ -815,7 +825,8 @@ export class Tower {
             goldBonusMultiplier: this.goldBonusMultiplier,
             splashRadius: this.splashRadius,
             color: this.color,
-            projectileSize: this.projectileSize
+            projectileSize: this.projectileSize,
+            killCount: this.killCount,
         };
 
         // Add tower-type specific properties
@@ -868,7 +879,8 @@ export class Tower {
             "damageBoost",
             "enemySlow",
             "goldBonus",
-            "orbitMode"
+            "orbitMode",
+            "killCount"
         ];
 
         for (const field of fields) {
@@ -940,7 +952,6 @@ export class TextAnnouncement {
     }
     update(deltaTime) {
         this.life -= deltaTime;
-        this.y -= 30 * deltaTime;
         return this.life > 0;
     }
     draw(ctx) {
@@ -951,7 +962,6 @@ export class TextAnnouncement {
         }
         ctx.save();
         ctx.globalAlpha = opacity;
-        ctx.fillStyle = this.color;
         let fontSize = 16;
         ctx.font = `${fontSize}px 'Press Start 2P'`;
         const lines = this.text.split('\n');
@@ -972,13 +982,25 @@ export class TextAnnouncement {
         }
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 5;
         const lineHeight = fontSize * 1.25;
         const startY = this.y - ((lines.length - 1) * lineHeight) / 2;
+
+        // --- Drop Shadow ---
+        const shadowOffsetX = 2;
+        const shadowOffsetY = 2;
+        ctx.fillStyle = 'black';
         lines.forEach((line, index) => {
-            ctx.fillText(line, this.x, startY + (index * lineHeight));
+            const yPos = startY + (index * lineHeight);
+            ctx.fillText(line, this.x + shadowOffsetX, yPos + shadowOffsetY);
         });
+
+        // --- Main Text ---
+        ctx.fillStyle = this.color;
+        lines.forEach((line, index) => {
+            const yPos = startY + (index * lineHeight);
+            ctx.fillText(line, this.x, yPos);
+        });
+
         ctx.restore();
     }
 }

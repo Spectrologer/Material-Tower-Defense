@@ -4,6 +4,7 @@ import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfir
 import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
+import { waveDefinitions } from './wave-definitions.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
@@ -210,79 +211,63 @@ function spawnWave() {
     updateUI(gameState);
     uiElements.startWaveBtn.disabled = true;
     const nextWave = gameState.wave;
+    const waveDef = waveDefinitions[nextWave - 1];
 
-    if (nextWave === 15) {
-        gameState.enemies.push(new Enemy(ENEMY_TYPES.BOSS, gameState.path, 'BOSS'));
+    if (!waveDef) {
+        console.log("All waves completed!");
         gameState.spawningEnemies = false;
+        triggerGameOver(true, gameState.wave - 1);
         return;
     }
 
-    const isSwarmWave = nextWave > 0 && nextWave % 4 === 0;
-    const enemyCount = isSwarmWave ? 15 + nextWave * 5 : 5 + nextWave * 3;
-    const spawnRate = isSwarmWave ? 150 : 500;
+    const enemiesToSpawn = [];
+    waveDef.composition.forEach(comp => {
+        for (let i = 0; i < comp.count; i++) {
+            enemiesToSpawn.push(comp.type);
+        }
+    });
+
     let spawned = 0;
-    const spawnInterval = setInterval(() => {
-        if (spawned >= enemyCount) {
-            clearInterval(spawnInterval);
+    const spawnNextEnemy = () => {
+        if (spawned >= enemiesToSpawn.length) {
             gameState.spawningEnemies = false;
             return;
         }
-        let enemyType;
-        if (isSwarmWave) {
-            enemyType = ENEMY_TYPES.SWARM;
-        } else if (nextWave === 10) {
-            enemyType = ENEMY_TYPES.BITCOIN;
-        } else {
-            const rand = Math.random();
-            // From wave 4, introduce Flying enemies
-            if (nextWave >= 4 && rand < 0.2) {
-                enemyType = ENEMY_TYPES.FLYING;
-                // From wave 6, introduce Heavy enemies
-            } else if (nextWave >= 6 && rand < 0.4) {
-                enemyType = ENEMY_TYPES.HEAVY;
-            } else if (nextWave >= 3 && rand < 0.7) {
-                enemyType = ENEMY_TYPES.NORMAL;
-            } else {
-                enemyType = ENEMY_TYPES.NORMAL;
-            }
-        }
+
+        const enemyType = enemiesToSpawn[spawned];
         const enemyTypeName = Object.keys(ENEMY_TYPES).find(key => ENEMY_TYPES[key] === enemyType);
+
         if (enemyTypeName && !gameState.introducedEnemies.has(enemyTypeName)) {
             gameState.introducedEnemies.add(enemyTypeName);
             const displayName = enemyType.icon.replace(/_/g, ' ');
             gameState.announcements.push(new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 3, undefined, canvasWidth));
         }
 
-        let healthMultiplier;
-        let healthBonus = 0;
-        if (nextWave <= 10) {
-            // Standard health scaling for the first 10 waves
-            healthMultiplier = 1 + (nextWave - 1) * 0.15;
-        } else if (nextWave >= 11 && nextWave <= 14) {
-            // Aggressive health scaling for waves 11-14
-            healthBonus = 10;
-            const wavesAfter10 = nextWave - 10;
-            healthMultiplier = 1 + (10 - 1) * 0.15 + (wavesAfter10 * 0.50);
+        let finalHealth;
+        if (waveDef.isBoss) {
+            finalHealth = enemyType.health;
         } else {
-            // Revert to a less aggressive scale after the transition period.
-            healthBonus = 10;
-            const wavesAfter10 = 14 - 10;
-            const wavesAfter14 = nextWave - 14;
-            healthMultiplier = 1 + (10 - 1) * 0.15 + (wavesAfter10 * 0.50) + (wavesAfter14 * 0.30);
+            finalHealth = (enemyType.health * waveDef.healthMultiplier) + (waveDef.healthBonus || 0);
         }
 
-        let finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : (enemyType.health * healthMultiplier) + healthBonus;
-
-        // Universal health increase after wave 5
-        if (nextWave > 5) {
-            finalHealth += 10;
-        }
-
-        const finalGold = enemyType.gold;
-        const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: finalGold };
+        const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: enemyType.gold };
         gameState.enemies.push(new Enemy(finalEnemyType, gameState.path, enemyTypeName));
         spawned++;
-    }, spawnRate);
+
+        // --- Dynamic Spawn Rate Logic ---
+        let nextSpawnDelay;
+        if (waveDef.isSwarm) {
+            nextSpawnDelay = 150;
+        } else if (enemyType === ENEMY_TYPES.HEAVY) {
+            nextSpawnDelay = 1200; // Increased delay for heavy enemies
+        } else {
+            nextSpawnDelay = 500; // Standard delay for other enemies
+        }
+
+        setTimeout(spawnNextEnemy, nextSpawnDelay);
+    };
+
+    spawnNextEnemy(); // Start the spawning loop
 }
 
 function applyAuraEffects() {
@@ -398,6 +383,7 @@ function handleProjectileHit(projectile, hitEnemy) {
                 damage: projectile.owner.damage / 2,
                 damageMultiplier: projectile.owner.damageMultiplier,
                 goldBonusMultiplier: projectile.owner.goldBonusMultiplier,
+                killCount: 0, // Pins from mortars don't track kills to the main tower
                 // Pin-specific properties
                 projectileSpeed: 7, // Using standard PIN speed
                 projectileSize: 18, // Making them large and visible
@@ -429,6 +415,7 @@ function handleProjectileHit(projectile, hitEnemy) {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 if (enemy === targetEnemy || !enemy.type.splashImmune) {
                     if (enemy.takeDamage(finalDamage)) {
+                        projectile.owner.killCount++;
                         awardGold(enemy);
                     }
                     enemy.applyBurn(projectile.owner.burnDps, projectile.owner.burnDuration);
@@ -440,8 +427,9 @@ function handleProjectileHit(projectile, hitEnemy) {
         gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 0.33));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
-                if (enemy === targetEnemy || !enemy.type.splashImmune || projectile.isMortar) {
+                if (enemy === targetEnemy || !enemy.type.splashImmune) {
                     if (enemy.takeDamage(finalDamage)) {
+                        projectile.owner.killCount++;
                         awardGold(enemy);
                     }
                 }
@@ -449,6 +437,7 @@ function handleProjectileHit(projectile, hitEnemy) {
         });
     } else {
         if (targetEnemy && targetEnemy.takeDamage(finalDamage)) {
+            projectile.owner.killCount++;
             awardGold(targetEnemy);
         }
     }
@@ -531,6 +520,16 @@ function gameLoop(currentTime) {
 
     if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.spawningEnemies) {
         gameState.waveInProgress = false;
+
+        // Check for an announcement for the *next* wave from the wave that just ended.
+        const completedWaveDef = waveDefinitions[gameState.wave - 1];
+        if (completedWaveDef && completedWaveDef.endOfWaveAnnouncement) {
+            const announcement = completedWaveDef.endOfWaveAnnouncement;
+            setTimeout(() => {
+                gameState.announcements.push(new TextAnnouncement(announcement.text, canvasWidth / 2, canvasHeight / 2, 5, announcement.color, canvasWidth));
+            }, 1500);
+        }
+
         gameState.wave++;
         uiElements.startWaveBtn.disabled = false;
         if (gameState.wave > 1) {
@@ -542,21 +541,7 @@ function gameLoop(currentTime) {
         }
         const waveBonus = 20 + gameState.wave;
         gameState.gold += waveBonus;
-        if (gameState.wave === 3) {
-            setTimeout(() => {
-                gameState.announcements.push(new TextAnnouncement("Warning:\nFlying enemies incoming!", canvasWidth / 2, canvasHeight / 2, 5, '#ff4d4d', canvasWidth));
-            }, 1500);
-        }
-        if (gameState.wave === 9) { // Wave before Bitcoin
-            setTimeout(() => {
-                gameState.announcements.push(new TextAnnouncement("Warning:\nBitcoin enemies steal gold!", canvasWidth / 2, canvasHeight / 2, 5, '#F7931A', canvasWidth));
-            }, 1500);
-        }
-        if (gameState.wave === 14) { // Wave before Boss
-            setTimeout(() => {
-                gameState.announcements.push(new TextAnnouncement("Warning:\nBOSS INCOMING!", canvasWidth / 2, canvasHeight / 2, 5, '#42A5F5', canvasWidth));
-            }, 1500);
-        }
+
         updateUI(gameState);
         persistGameState(0);
     }
@@ -1505,3 +1490,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+
