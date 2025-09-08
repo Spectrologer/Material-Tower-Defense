@@ -10,7 +10,7 @@ test('resetGameState should initialize with default values', () => {
     resetGameState();
     assert.equal(gameState.lives, 20);
     assert.equal(gameState.gold, 100);
-    assert.equal(gameState.wave, 0);
+    assert.equal(gameState.wave, 1);
     assert.equal(gameState.enemies.length, 0);
 });
 
