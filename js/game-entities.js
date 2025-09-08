@@ -58,10 +58,11 @@ export class Projectile {
             icon = 'arrow_upward';
             iconFamily = "'Material Symbols Outlined'";
             rotation += Math.PI / 2;
-       } else if (this.owner.type === 'PIN_HEART') {
-              icon = 'favorite';
-            rotation -= Math.PI / 2;}
-         else if (this.owner.type === 'NAT') {
+        } else if (this.owner.type === 'PIN_HEART') {
+            icon = 'favorite';
+            rotation -= Math.PI / 2;
+        }
+        else if (this.owner.type === 'NAT') {
             icon = 'arrow_forward';
             iconFamily = "'Material Symbols Outlined'";
         } else if (this.owner.type === 'ORBIT') {
@@ -215,7 +216,7 @@ export class Enemy {
         }
 
         if (this.type.hatchTime) {
-            this.hatchTimer = this.type.hatchTime; 
+            this.hatchTimer = this.type.hatchTime;
         }
     }
     applyBurn(dps, durationInSeconds) {
@@ -392,7 +393,9 @@ export class Tower {
         this.y = y;
         this.type = type;
         this.id = crypto.randomUUID();
+        /** @type {"MAX LEVEL" | number} */
         this.level = 1;
+        /** @type {"MAX LEVEL" | number} */
         this.damageLevel = 1;
         this.mode = 'boost';
         this.targetingMode = (type === 'PIN') ? 'weakest' : 'strongest'; // CASTLE now defaults to strongest
@@ -425,11 +428,17 @@ export class Tower {
             this.damageLevel = 'MAX LEVEL';
         }
     }
+    get maxLevel() {
+        return this.type === 'FIREPLACE' ? 3 : 5;
+    }
+    get levelForCalc() {
+        return this.level === 'MAX LEVEL' ? this.maxLevel : this.level;
+    }
+    get damageLevelForCalc() {
+        return this.damageLevel === 'MAX LEVEL' ? this.maxLevel : this.damageLevel;
+    }
     updateStats() {
         const baseStats = TOWER_TYPES[this.type];
-        const maxLevel = this.type === 'FIREPLACE' ? 3 : 5;
-        const levelForCalc = this.level === 'MAX LEVEL' ? maxLevel : this.level;
-        const damageLevelForCalc = this.damageLevel === 'MAX LEVEL' ? maxLevel : this.damageLevel;
         if (this.type === 'ENT' || this.type === 'CAT') {
             this.level = 'MAX LEVEL';
             this.cost = baseStats.cost;
@@ -442,14 +451,14 @@ export class Tower {
             }
             return;
         }
-        this.cost = baseStats.cost * levelForCalc;
+        this.cost = baseStats.cost * this.levelForCalc;
         this.range = baseStats.range;
         if (this.type === 'FIREPLACE') {
             this.damage = baseStats.damage;
         } else {
-            this.damage = baseStats.damage * (1 + (damageLevelForCalc - 1) * 0.5) * (this.damageMultiplierFromMerge || 1);
+            this.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (this.damageMultiplierFromMerge || 1);
         }
-        this.permFireRate = baseStats.fireRate * Math.pow(0.9, levelForCalc - 1);
+        this.permFireRate = baseStats.fireRate * Math.pow(0.9, this.levelForCalc - 1);
         this.fireRate = this.permFireRate;
         this.color = this.color || baseStats.color;
         this.projectileSpeed = baseStats.projectileSpeed;
@@ -458,7 +467,7 @@ export class Tower {
         }
         this.projectileColor = baseStats.projectileColor;
         if (this.type === 'SUPPORT') {
-            this.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, levelForCalc - 1);
+            this.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, this.levelForCalc - 1);
         }
     }
     draw(ctx) {
@@ -532,7 +541,7 @@ export class Tower {
         ctx.translate(this.x, this.y);
         if (this.type === 'NAT') {
             if (this.target && this.cooldown > 0 && this.cooldown < 0.33) {
-                const quiverAmount = this.level > 5 ? 2.5 : 1.5;
+                const quiverAmount = this.levelForCalc > 5 ? 2.5 : 1.5;
                 ctx.translate((Math.random() - 0.5) * quiverAmount, (Math.random() - 0.5) * quiverAmount);
             }
             ctx.rotate(angle);
@@ -741,7 +750,7 @@ export class Tower {
             color: this.color,
             projectileSize: this.projectileSize
         };
-        
+
         // Add tower-type specific properties
         if (this.type === 'ORBIT') {
             data.orbitMode = this.orbitMode;
@@ -764,7 +773,7 @@ export class Tower {
         if (this.type === 'SUPPORT') {
             data.attackSpeedBoost = this.attackSpeedBoost;
         }
-        
+
         return data;
     }
     static fromJSON(data) {
@@ -812,7 +821,7 @@ export class Tower {
 
         // Recalculate stats to ensure everything is properly set up
         tower.updateStats();
-        
+
         return tower;
     }
 }

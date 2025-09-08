@@ -1,15 +1,14 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
-import { generatePath } from './path-generator.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 
-const canvas = document.getElementById('gameCanvas');
+const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
 let canvasWidth, canvasHeight;
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const audioContext = new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)();
 let isSoundEnabled = true;
 let isAudioResumed = false;
 let isInfiniteGold = false;
@@ -238,7 +237,7 @@ function spawnWave() {
             // From wave 4, introduce Flying enemies
             if (nextWave >= 4 && rand < 0.2) {
                 enemyType = ENEMY_TYPES.FLYING;
-            // From wave 6, introduce Heavy enemies
+                // From wave 6, introduce Heavy enemies
             } else if (nextWave >= 6 && rand < 0.4) {
                 enemyType = ENEMY_TYPES.HEAVY;
             } else if (nextWave >= 3 && rand < 0.7) {
@@ -278,7 +277,7 @@ function spawnWave() {
         if (nextWave > 5) {
             finalHealth += 10;
         }
-        
+
         const finalGold = enemyType.gold;
         const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: finalGold };
         gameState.enemies.push(new Enemy(finalEnemyType, gameState.path, enemyTypeName));
@@ -414,7 +413,6 @@ function handleProjectileHit(projectile, hitEnemy) {
                     health: Infinity
                 };
                 const newProjectile = new Projectile(fakePinOwner, fakeTarget);
-                newProjectile.isRadialPin = true;
                 gameState.projectiles.push(newProjectile);
             }
         }
@@ -519,7 +517,7 @@ function gameLoop(currentTime) {
     ));
 
     gameState.enemies.push(...newlySpawnedEnemies);
-    
+
     gameState.effects = gameState.effects.filter(effect => effect.update(effectiveDeltaTime));
     gameState.announcements = gameState.announcements.filter(announcement => announcement.update(effectiveDeltaTime));
 
@@ -639,7 +637,7 @@ function isValidPlacement(x, y, isNinePin = false) {
     if (isNinePin) {
         return isValidNinePinPlacement(gridX, gridY);
     }
-    
+
     // For regular towers
     const cols = Math.floor(canvasWidth / TILE_SIZE);
     const rows = Math.floor(canvasHeight / TILE_SIZE);
@@ -693,7 +691,7 @@ function checkForNinePinOnBoard() {
     if (pinTowers.length < 9) return;
 
     const pinGrid = Array(GRID_ROWS).fill(null).map(() => Array(GRID_COLS).fill(false));
-    
+
     // Create a map of where pins are for quick lookup
     pinTowers.forEach(pin => {
         const gridX = Math.floor(pin.x / TILE_SIZE);
@@ -722,7 +720,7 @@ function checkForNinePinOnBoard() {
                 let totalCost = 0;
                 for (let j = 0; j < 3; j++) {
                     for (let i = 0; i < 3; i++) {
-                        const tower = gameState.towers.find(t => 
+                        const tower = gameState.towers.find(t =>
                             t.type === 'PIN' &&
                             Math.floor(t.x / TILE_SIZE) === (x + i) &&
                             Math.floor(t.y / TILE_SIZE) === (y + j)
@@ -887,8 +885,8 @@ function handleCanvasAction(e) {
             return tGridX === gridX && tGridY === gridY;
         });
 
-        
-        console.log("Selected tower", selectedTower)
+
+        console.log("Selected tower", selectedTower);
 
         if (selectedTower) {
             selectedEnemy = null; // Deselect any enemy if a tower is selected
@@ -1142,7 +1140,7 @@ canvas.addEventListener('drop', e => {
             } else {
                 gameState.placementGrid[gridY][gridX] = GRID_TOWER;
             }
-            
+
             if (sourceTower.type === 'PIN') {
                 checkForNinePinOnBoard();
             }
@@ -1189,12 +1187,12 @@ function reset() {
 
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-    init()
+    init();
 }
 
 function init() {
     loadGameStateFromStorage();
-    
+
     // Load saved settings
     const savedMergeConfirm = localStorage.getItem('mergeConfirmation');
     isMergeConfirmationEnabled = savedMergeConfirm === null ? true : JSON.parse(savedMergeConfirm);
@@ -1222,7 +1220,7 @@ function init() {
     requestAnimationFrame(gameLoop);
 }
 
-const consoleCommands = {}
+const consoleCommands = {};
 
 // Function to spawn Flutterdash from the console
 consoleCommands.spawnFlutterdash = () => {
@@ -1244,7 +1242,7 @@ consoleCommands.addGold = (value) => {
     } else {
         console.error("Game not initialized.");
     }
-}
+};
 
 // Function to set the wave number from the console
 consoleCommands.setWave = (waveNumber) => {
@@ -1261,9 +1259,11 @@ consoleCommands.setWave = (waveNumber) => {
     } else {
         console.error("Game not initialized.");
     }
-}
+};
 
-window.consoleCommands = consoleCommands;
+/** @type {typeof window & { consoleCommands: typeof consoleCommands }} */(
+    window
+).consoleCommands = consoleCommands;
 
 // Event Listeners
 uiElements.startWaveBtn.addEventListener('click', () => {
@@ -1473,7 +1473,7 @@ uiElements.optionsBtn.addEventListener('click', () => {
 
 if (uiElements.toggleMergeConfirm) {
     uiElements.toggleMergeConfirm.addEventListener('change', (e) => {
-        isMergeConfirmationEnabled = e.target.checked;
+        isMergeConfirmationEnabled = /** @type {HTMLInputElement} */ (e.target).checked;
         localStorage.setItem('mergeConfirmation', JSON.stringify(isMergeConfirmationEnabled));
     });
 }
@@ -1482,7 +1482,8 @@ window.addEventListener('resize', resizeCanvas);
 window.addEventListener('click', (event) => {
     // Check if the options menu is visible
     if (!uiElements.optionsMenu.classList.contains('hidden')) {
-        const isClickInsideMenu = uiElements.optionsMenu.contains(event.target) || uiElements.optionsBtn.contains(event.target);
+        const target = /** @type {Node} */ (event.target);
+        const isClickInsideMenu = uiElements.optionsMenu.contains(target) || uiElements.optionsBtn.contains(target);
         if (!isClickInsideMenu) {
             uiElements.optionsMenu.classList.add('hidden');
         }
