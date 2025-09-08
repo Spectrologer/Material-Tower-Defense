@@ -12,7 +12,7 @@ function blendColors(colorA, colorB) {
     const [rB, gB, bB] = colorB.match(/\w\w/g).map((c) => parseInt(c, 16));
     const r = Math.round(rA * 0.5 + rB * 0.5).toString(16).padStart(2, '0');
     const g = Math.round(gA * 0.5 + gB * 0.5).toString(16).padStart(2, '0');
-    const b = Math.round(bA * 0.5 + bB * 0.5).toString(16).padStart(2, '0');
+    const b = Math.round(gA * 0.5 + gB * 0.5).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
 }
 
@@ -43,8 +43,8 @@ addRecipe('SUPPORT', 'SUPPORT', {
     resultType: 'ENT',
     apply: (tower) => {
         tower.type = 'ENT';
-        tower.level = 'MAX LEVEL';
-        tower.damageLevel = 'MAX LEVEL';
+        tower.level = 1;
+        tower.damageLevel = 1;
         tower.updateStats();
         tower.color = TOWER_TYPES.ENT.color;
     }
@@ -54,8 +54,8 @@ addRecipe('ENT', 'SUPPORT', {
     resultType: 'CAT',
     apply: (tower) => {
         tower.type = 'CAT';
-        tower.level = 'MAX LEVEL';
-        tower.damageLevel = 'MAX LEVEL';
+        tower.level = 1;
+        tower.damageLevel = 1;
         tower.updateStats();
         tower.color = TOWER_TYPES.CAT.color;
     }
@@ -84,6 +84,7 @@ addRecipe('CASTLE', 'CASTLE', {
         tower.orbitMode = 'far';
         tower.level = existingTowerLevel;
         tower.damageLevel = existingTowerLevel;
+        tower.upgradeCount = 0; // Fix: Initialize upgrade count on merge.
         tower.updateStats();
         tower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
         tower.color = TOWER_TYPES.ORBIT.color;
@@ -128,8 +129,8 @@ addRecipe('CASTLE', 'PIN', {
     resultType: 'FORT',
     apply: (tower, { existingTowerLevel }) => {
         tower.type = 'FORT';
-        tower.level = existingTowerLevel;
-        tower.damageLevel = existingTowerLevel;
+        tower.level = 1;
+        tower.damageLevel = 1;
         tower.updateStats();
         tower.splashRadius = TOWER_TYPES.FORT.splashRadius;
         tower.color = TOWER_TYPES.FORT.color;
@@ -202,9 +203,11 @@ addRecipe('PIN_HEART', 'CASTLE', {
 addRecipe('FORT', 'PIN', {
     resultType: 'FORT', text: 'Upgrade',
     upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    canApply: (tower) => {
+        const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel -1);
+        return visualLevel < 5;
+    },
     apply: (tower) => {
-        // Only increase the damage level, not the main level.
         tower.damageLevel++;
         tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.1;
         tower.updateStats();
@@ -212,12 +215,15 @@ addRecipe('FORT', 'PIN', {
     }
 });
 
+// Upgrade Fort with a Castle to increase its splash radius.
 addRecipe('FORT', 'CASTLE', {
     resultType: 'FORT', text: 'Upgrade',
     upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    canApply: (tower) => {
+        const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel - 1);
+        return visualLevel < 5;
+    },
     apply: (tower) => {
-        // Only increase the main level, not the damage level.
         tower.level++;
         tower.splashRadius += 10;
         tower.updateStats();
@@ -225,14 +231,16 @@ addRecipe('FORT', 'CASTLE', {
     }
 });
 
+// --- ORBIT UPGRADES (FIXED) ---
+const ORBIT_MAX_UPGRADES = 4;
 
 addRecipe('ORBIT', 'PIN', {
     resultType: 'ORBIT', text: 'Upgrade',
     upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    canApply: (tower) => tower.upgradeCount < ORBIT_MAX_UPGRADES,
     apply: (tower) => {
-        tower.level++;
         tower.damageLevel++;
+        tower.upgradeCount++;
         tower.updateStats();
         tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
     }
@@ -240,12 +248,19 @@ addRecipe('ORBIT', 'PIN', {
 
 addRecipe('ORBIT', 'CASTLE', {
     resultType: 'ORBIT', text: 'Upgrade',
-    upgrade: { text: '+ Dmg/Size', icon: 'bolt', family: 'material-icons' },
-    canApply: (tower) => tower.level < 5,
+    upgrade: { text: '+ Orbiter', icon: 'satellite', family: 'material-symbols-outlined' },
+    canApply: (tower) => tower.upgradeCount < ORBIT_MAX_UPGRADES,
     apply: (tower) => {
         tower.level++;
-        tower.damageLevel++;
-        tower.projectileSize += 1;
+        tower.upgradeCount++;
+        // Recalculate angles to space orbiters evenly
+        const currentOrbiterCount = tower.orbiters.length;
+        const newOrbiterCount = currentOrbiterCount + 1;
+        const angleStep = (2 * Math.PI) / newOrbiterCount;
+        for (let i = 0; i < currentOrbiterCount; i++) {
+            tower.orbiters[i].angle = i * angleStep;
+        }
+        tower.orbiters.push(new Projectile(tower, null, currentOrbiterCount * angleStep));
         tower.updateStats();
         tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
     }
@@ -341,10 +356,23 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
         tower.cost = oldCost + costToAdd;
 
         const maxLevel = tower.type === 'FIREPLACE' ? 3 : 5;
-        if (tower.level === maxLevel) {
+        if (tower.type === 'ORBIT') {
+            if (tower.upgradeCount === ORBIT_MAX_UPGRADES) {
+                tower.level = 'MAX LEVEL';
+            }
+        } else if (tower.level === maxLevel) {
             tower.level = 'MAX LEVEL';
             if (tower.damageLevel) tower.damageLevel = 'MAX LEVEL';
         }
+
+        // Fort-specific MAX LEVEL check
+        if (tower.type === 'FORT') {
+             const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel - 1);
+             if (visualLevel >= 5) {
+                 tower.level = 'MAX LEVEL';
+             }
+        }
+
         return true;
     }
 
