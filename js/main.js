@@ -210,7 +210,7 @@ function spawnWave() {
     gameState.spawningEnemies = true;
     updateUI(gameState);
     uiElements.startWaveBtn.disabled = true;
-    const nextWave = gameState.wave + 1;
+    const nextWave = gameState.wave;
 
     if (nextWave === 15) {
         gameState.enemies.push(new Enemy(ENEMY_TYPES.BOSS, gameState.path, 'BOSS'));
@@ -273,7 +273,13 @@ function spawnWave() {
             healthMultiplier = 1 + (10 - 1) * 0.15 + (wavesAfter10 * 0.50) + (wavesAfter14 * 0.30);
         }
 
-        const finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : (enemyType.health * healthMultiplier) + healthBonus;
+        let finalHealth = isSwarmWave ? enemyType.health * (1 + (nextWave - 1) * 0.05) : (enemyType.health * healthMultiplier) + healthBonus;
+
+        // Universal health increase after wave 5
+        if (nextWave > 5) {
+            finalHealth += 10;
+        }
+        
         const finalGold = Math.ceil(enemyType.gold * goldMultiplier);
         const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: finalGold };
         gameState.enemies.push(new Enemy(finalEnemyType, gameState.path, enemyTypeName));
@@ -490,7 +496,7 @@ function gameLoop() {
                     updateUI(gameState);
                     if (gameState.lives <= 0) {
                         gameState.gameOver = true;
-                        triggerGameOver(false, gameState.wave);
+                        triggerGameOver(false, gameState.wave - 1);
                     }
                 }
             },
@@ -1154,7 +1160,7 @@ function init() {
     gameState = {
         lives: 20,
         gold: 100,
-        wave: 0,
+        wave: 1,
         enemies: [],
         towers: [],
         projectiles: [],
@@ -1182,7 +1188,15 @@ function init() {
     mergeTooltip.show = false;
     mergeTooltip.info = null;
     pendingMergeState = null;
-    isMergeConfirmationEnabled = true;
+    
+    // Load saved settings
+    const savedMergeConfirm = localStorage.getItem('mergeConfirmation');
+    isMergeConfirmationEnabled = savedMergeConfirm === null ? true : JSON.parse(savedMergeConfirm);
+    
+    if (uiElements.toggleMergeConfirm) {
+        uiElements.toggleMergeConfirm.checked = isMergeConfirmationEnabled;
+    }
+
 
     uiElements.speedToggleBtn.textContent = 'x1';
     uiElements.buyPinBtn.classList.remove('selected');
@@ -1439,9 +1453,12 @@ uiElements.optionsBtn.addEventListener('click', () => {
     uiElements.optionsMenu.classList.remove('hidden');
 });
 
-uiElements.toggleMergeConfirm.addEventListener('change', (e) => {
-    isMergeConfirmationEnabled = e.target.checked;
-});
+if (uiElements.toggleMergeConfirm) {
+    uiElements.toggleMergeConfirm.addEventListener('change', (e) => {
+        isMergeConfirmationEnabled = e.target.checked;
+        localStorage.setItem('mergeConfirmation', JSON.stringify(isMergeConfirmationEnabled));
+    });
+}
 
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('click', (event) => {

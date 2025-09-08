@@ -45,7 +45,7 @@ export const uiElements = {
     optionsBtn: document.getElementById('options-btn'),
     optionsMenu: document.getElementById('options-menu'),
     closeOptionsBtn: document.getElementById('close-options-btn'),
-    toggleMergeConfirm: document.getElementById('toggle-merge-confirm'),
+    toggleMergeConfirm: document.getElementById('toggle-merge-confirm-checkbox'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),

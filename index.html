@@ -211,6 +211,48 @@
             border-color: #00ff88;
             box-shadow: 0 0 8px #00ff88;
         }
+
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border: 2px solid #888;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #e0e0e0;
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: #00ff88;
+            border-color: #00ff88;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: #1a1a1a;
+        }
     </style>
 
 </head>
@@ -250,8 +292,11 @@
             <h3 class="text-lg text-green-400 mb-2">OPTIONS</h3>
             <!-- New controls for the options menu -->
             <div id="merge-confirm-toggle-container" class="flex items-center justify-between text-xs py-2">
-                <label for="toggle-merge-confirm" class="text-white cursor-pointer">Confirm Merges?</label>
-                <input type="checkbox" id="toggle-merge-confirm" class="form-checkbox h-4 w-4 text-green-500" checked>
+                <label for="toggle-merge-confirm-checkbox" class="text-white cursor-pointer">Confirm Merges</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-merge-confirm-checkbox">
+                    <span class="slider"></span>
+                </label>
             </div>
             <a href="https://github.com/Spectrologer" target="_blank"
                 class="pixel-button bg-blue-700 text-white border-blue-500 shadow-[0_4px_0_#1e40af] text-sm py-2 text-center mt-auto">
