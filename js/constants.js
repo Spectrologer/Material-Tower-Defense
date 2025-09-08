@@ -17,7 +17,8 @@ export const TOWER_TYPES = {
     ENT: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, special: 'Non-Stacking Aura: Boost/Slow' },
     ORBIT: { cost: 150, range: 9999, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters' },
     CAT: { cost: 180, range: 120, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1.2, special: 'Greed Aura & Toggle', iconSize: 0.9 },
-    NINE_PIN: { cost: 119, range: 249, damage: 9, fireRate: 29, color: '#FFFFFF', projectileSpeed: 9, projectileSize: 39, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
+    NINE_PIN: { cost: 119, range: 249, damage: 4.9, fireRate: 69, color: '#FFFFFF', projectileSpeed: 6, projectileSize: 39, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
+    ANTI_AIR: { cost: 110, range: 350, damage: 100, fireRate: 180, color: '#a9a9a9', projectileSpeed: .1, projectileSize: 24, projectileColor: '#cccccc', special: 'Air units only' },
 };
 
 // Enemy Configuration
@@ -32,4 +33,3 @@ export const ENEMY_TYPES = {
     EGG: { speed: 0, health: 200, color: '#ffedceff', size: 12, gold: 0, icon: 'egg', iconFamily: 'Material Symbols Outlined', damagesLives: false, hatchTime: 5, hatchesTo: 'HATCHED', isStationary: true },
     HATCHED: { speed: 2.5, health: 200, color: '#90CAF9', size: 14, gold: 0, icon: 'boy', iconFamily: 'Material Symbols Outlined', damagesLives: true }
 };
-

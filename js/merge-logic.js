@@ -12,7 +12,7 @@ function blendColors(colorA, colorB) {
     const [rB, gB, bB] = colorB.match(/\w\w/g).map((c) => parseInt(c, 16));
     const r = Math.round(rA * 0.5 + rB * 0.5).toString(16).padStart(2, '0');
     const g = Math.round(gA * 0.5 + gB * 0.5).toString(16).padStart(2, '0');
-    const b = Math.round(gA * 0.5 + gB * 0.5).toString(16).padStart(2, '0');
+    const b = Math.round(bA * 0.5 + bB * 0.5).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
 }
 
@@ -58,6 +58,17 @@ addRecipe('ENT', 'SUPPORT', {
         tower.damageLevel = 1;
         tower.updateStats();
         tower.color = TOWER_TYPES.CAT.color;
+    }
+});
+
+addRecipe('SUPPORT', 'NAT', {
+    resultType: 'ANTI_AIR',
+    apply: (tower) => {
+        tower.type = 'ANTI_AIR';
+        tower.level = 1;
+        tower.damageLevel = 1;
+        tower.updateStats();
+        tower.color = TOWER_TYPES.ANTI_AIR.color;
     }
 });
 

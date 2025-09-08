@@ -26,6 +26,16 @@ export class Projectile {
             this.life = this.travelTime;
             this.peakHeight = this.totalDist / 2;
         }
+        if (this.owner.type === 'ANTI_AIR') {
+            this.isRocket = true;
+            this.currentSpeed = this.owner.projectileSpeed;
+            this.acceleration = 0.1;
+            this.smokeTrailCooldown = 0.05; // seconds
+            this.smokeTrailTimer = 0;
+            this.isEmerging = true;
+            this.emergeDuration = 0.2;
+            this.emergeTimer = this.emergeDuration;
+        }
     }
     draw(ctx) {
         if (this.isMortar) {
@@ -65,6 +75,10 @@ export class Projectile {
         else if (this.owner.type === 'NAT') {
             icon = 'arrow_forward';
             iconFamily = "'Material Symbols Outlined'";
+        } else if (this.owner.type === 'ANTI_AIR') {
+            icon = 'rocket';
+            iconFamily = "'Material Symbols Outlined'";
+            rotation += Math.PI / 2;
         } else if (this.owner.type === 'ORBIT') {
             icon = 'circle';
             iconFamily = "'Material Symbols Outlined'";
@@ -77,6 +91,14 @@ export class Projectile {
                 fontSize = 40;
             } else if (this.owner.type === 'PIN_HEART') {
                 fontSize = 16;
+            } else if (this.owner.type === 'ANTI_AIR') {
+                const baseFontSize = 32;
+                if (this.isEmerging) {
+                    const emergeProgress = Math.max(0, 1 - (this.emergeTimer / this.emergeDuration));
+                    fontSize = baseFontSize * emergeProgress;
+                } else {
+                    fontSize = baseFontSize;
+                }
             }
             ctx.font = `${fontSize}px ${iconFamily}`;
             ctx.fillStyle = this.owner.projectileColor;
@@ -95,7 +117,23 @@ export class Projectile {
         }
     }
     update(onHit, enemies, effects, deltaTime) {
+        if (this.isEmerging) {
+            this.emergeTimer -= deltaTime;
+            if (this.emergeTimer <= 0) {
+                this.isEmerging = false;
+            }
+            return true; // Wait until fully emerged to do anything else
+        }
+
         const dt_scaler = deltaTime * 60;
+
+        if (this.isRocket) {
+            this.smokeTrailTimer -= deltaTime;
+            if (this.smokeTrailTimer <= 0) {
+                effects.push(new Effect(this.x, this.y, 'lens', 10, '#808080', 0.5));
+                this.smokeTrailTimer = this.smokeTrailCooldown;
+            }
+        }
 
         if (this.isMortar) {
             this.life -= deltaTime;
@@ -122,11 +160,11 @@ export class Projectile {
             return true;
         }
 
-        if ((!this.target || this.target.health <= 0) && (this.owner.type === 'PIN_HEART' || this.owner.type === 'NAT')) {
+        if ((!this.target || this.target.health <= 0) && (this.owner.type === 'PIN_HEART' || this.owner.type === 'NAT' || this.owner.type === 'ANTI_AIR')) {
             let closestEnemy = null;
             let minDistance = Infinity;
             for (const enemy of enemies) {
-                if (!this.hitEnemies.has(enemy)) {
+                if (!this.hitEnemies.has(enemy) && (this.owner.type !== 'ANTI_AIR' || enemy.type.isFlying)) {
                     const distToProjectile = Math.hypot(this.x - enemy.x, this.y - enemy.y);
                     if (distToProjectile < minDistance) {
                         minDistance = distToProjectile;
@@ -141,7 +179,14 @@ export class Projectile {
         const dx = this.target.x - this.x;
         const dy = this.target.y - this.y;
         const distance = Math.hypot(dx, dy);
-        const moveDistance = this.owner.projectileSpeed * dt_scaler;
+
+        let moveDistance;
+        if (this.isRocket) {
+            this.currentSpeed += this.acceleration * dt_scaler;
+            moveDistance = this.currentSpeed * dt_scaler;
+        } else {
+            moveDistance = this.owner.projectileSpeed * dt_scaler;
+        }
 
         if (this.owner.type === 'NINE_PIN') {
             for (const enemy of enemies) {
@@ -534,20 +579,33 @@ export class Tower {
                     ctx.fillStyle = '#0891b2';
                 }
                 break;
+            case 'ANTI_AIR':
+                icon = 'open_jam';
+                iconFamily = "'Material Symbols Outlined'";
+                break;
         }
         ctx.font = `${fontWeight} ${iconSize}px ${iconFamily}`;
         const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : 0;
         ctx.save();
         ctx.translate(this.x, this.y);
-        if (this.type === 'NAT') {
+
+        // Quiver effect for certain towers
+        if (this.type === 'NAT' || this.type === 'ANTI_AIR') {
             if (this.target && this.cooldown > 0 && this.cooldown < 0.33) {
                 const quiverAmount = this.levelForCalc > 5 ? 2.5 : 1.5;
                 ctx.translate((Math.random() - 0.5) * quiverAmount, (Math.random() - 0.5) * quiverAmount);
             }
+        }
+
+        // Rotation logic
+        if (this.type === 'NAT') {
             ctx.rotate(angle);
         } else if (this.type === 'PIN' || this.type === 'PIN_HEART') {
             ctx.rotate(angle - Math.PI / 2);
+        } else if (this.type === 'ANTI_AIR') {
+            ctx.rotate(angle + Math.PI / 2);
         }
+
         ctx.fillText(icon, 0, 0);
         ctx.restore();
         if (this.type === 'ORBIT') {
@@ -588,8 +646,17 @@ export class Tower {
     findTarget(enemies) {
         this.target = null;
         let potentialTargets = enemies.filter(enemy => this.isInRange(enemy));
-        // Allow NINE_PIN to target flying units
-        potentialTargets = potentialTargets.filter(enemy => !(enemy.type.isFlying && (this.type === 'CASTLE' || this.type === 'FORT' || this.type === 'ORBIT' || this.type === 'FIREPLACE')));
+
+        // Special targeting rules
+        if (this.type === 'ANTI_AIR') {
+            potentialTargets = potentialTargets.filter(enemy => enemy.type.isFlying);
+        } else {
+            const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
+            if (groundOnlyTowers.includes(this.type)) {
+                potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
+            }
+        }
+
         if (potentialTargets.length === 0) return;
         switch (this.targetingMode) {
             case 'strongest':
@@ -840,7 +907,7 @@ export class Effect {
         let opacity = 1 - progress;
 
         let iconFamily = '';
-        if (['explosion', 'gps_fixed'].includes(this.icon) || this.icon === 'attach_money') {
+        if (['explosion', 'gps_fixed'].includes(this.icon) || this.icon === 'attach_money' || this.icon === 'lens') {
             iconFamily = 'Material Symbols Outlined';
         } else {
             iconFamily = 'Material Icons';

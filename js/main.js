@@ -372,6 +372,8 @@ function handleProjectileHit(projectile, hitEnemy) {
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
     const goldMultiplier = projectile.owner.goldBonusMultiplier || 1;
 
+    console.log(`Projectile hit: Base Damage=${projectile.owner.damage}, Owner Multiplier=${projectile.owner.damageMultiplier}, Projectile Multiplier=${projectile.damageMultiplier}, Final Damage=${finalDamage}`);
+
     const awardGold = (enemy) => {
         if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) return;
         const goldToGive = Math.ceil(enemy.gold * goldMultiplier);
@@ -1233,6 +1235,16 @@ consoleCommands.spawnFlutterdash = () => {
     }
 };
 
+consoleCommands.spawnHelicopter = () => {
+    if (gameState && gameState.path.length > 0) {
+        const helicopter = new Enemy(ENEMY_TYPES.FLYING, gameState.path, 'FLYING');
+        gameState.enemies.push(helicopter);
+        console.log("Helicopter spawned!");
+    } else {
+        console.error("Game not initialized or path is not available.");
+    }
+};
+
 // Function to add gold from the console
 consoleCommands.addGold = (value) => {
     if (gameState) {
@@ -1495,4 +1507,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-

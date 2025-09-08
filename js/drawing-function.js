@@ -1,4 +1,4 @@
-import { TILE_SIZE, GRID_EMPTY, TOWER_TYPES, ENEMY_TYPES } from './constants.js';
+import { TILE_SIZE, GRID_EMPTY, TOWER_TYPES } from './constants.js';
 
 export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid, mouse) {
     const cols = Math.floor(canvasWidth / TILE_SIZE);
@@ -258,9 +258,14 @@ export function getTowerIconInfo(type) {
             icon = 'move_item';
             className = "material-symbols-outlined";
             break;
+        case 'ANTI_AIR':
+            icon = 'open_jam';
+            className = "material-symbols-outlined";
+            break;
         default:
             icon = 'help';
             break;
     }
     return { icon, className };
 }
+
