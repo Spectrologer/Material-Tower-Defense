@@ -27,6 +27,7 @@ let draggedCanvasTowerOriginalGridPos = { x: -1, y: -1 };
 let mergeTooltip = { show: false, x: 0, y: 0, info: null };
 let mouse = { x: 0, y: 0 };
 let animationFrameId;
+let lastTime = 0;
 let pendingMergeState = null;
 let isMergeConfirmationEnabled = true;
 let isSellConfirmPending = false;
@@ -220,7 +221,6 @@ function spawnWave() {
     const isSwarmWave = nextWave > 0 && nextWave % 4 === 0;
     const enemyCount = isSwarmWave ? 15 + nextWave * 5 : 5 + nextWave * 3;
     const spawnRate = isSwarmWave ? 150 : 500;
-    const goldMultiplier = 1 + 0.1 * (nextWave - 1);
     let spawned = 0;
     const spawnInterval = setInterval(() => {
         if (spawned >= enemyCount) {
@@ -251,7 +251,7 @@ function spawnWave() {
         if (enemyTypeName && !gameState.introducedEnemies.has(enemyTypeName)) {
             gameState.introducedEnemies.add(enemyTypeName);
             const displayName = enemyType.icon.replace(/_/g, ' ');
-            gameState.announcements.push(new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 180, undefined, canvasWidth));
+            gameState.announcements.push(new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 3, undefined, canvasWidth));
         }
 
         let healthMultiplier;
@@ -279,7 +279,7 @@ function spawnWave() {
             finalHealth += 10;
         }
         
-        const finalGold = Math.ceil(enemyType.gold * goldMultiplier);
+        const finalGold = enemyType.gold;
         const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: finalGold };
         gameState.enemies.push(new Enemy(finalEnemyType, gameState.path, enemyTypeName));
         spawned++;
@@ -379,7 +379,7 @@ function handleProjectileHit(projectile, hitEnemy) {
         // FIX: Only show gold effect if gold is actually awarded.
         if (goldToGive > 0) {
             gameState.gold += goldToGive;
-            gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
+            gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 0.5));
         }
     };
 
@@ -387,7 +387,7 @@ function handleProjectileHit(projectile, hitEnemy) {
 
     // Handle mortar with radial pin upgrade: only fires pins, no splash damage.
     if (projectile.isMortar && projectile.owner.mortarReplacedByPins) {
-        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'adjust', projectile.owner.splashRadius * 2, '#FFFFFF', 20)); // Visual for pin burst
+        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'adjust', projectile.owner.splashRadius * 2, '#FFFFFF', 0.33)); // Visual for pin burst
         if (projectile.owner.radialPinCount > 0) {
             const pinCount = projectile.owner.radialPinCount;
             // Create a temporary "owner" for the pins at the impact location
@@ -426,7 +426,7 @@ function handleProjectileHit(projectile, hitEnemy) {
     if (!splashCenter) return; // Should not happen if not a mortar
 
     if (projectile.owner.type === 'FIREPLACE') {
-        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
+        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 0.33));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 if (enemy === targetEnemy || !enemy.type.splashImmune) {
@@ -439,7 +439,7 @@ function handleProjectileHit(projectile, hitEnemy) {
         });
     } else if (projectile.owner.splashRadius > 0) {
         // Use the 'explosion' material symbol for Castle and Fort explosions
-        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 20));
+        gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 0.33));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 if (enemy === targetEnemy || !enemy.type.splashImmune || projectile.isMortar) {
@@ -457,71 +457,76 @@ function handleProjectileHit(projectile, hitEnemy) {
     updateUI(gameState);
 }
 
-function gameLoop() {
-    if (gameState.gameOver) return;
-    for (let i = 0; i < gameSpeed; i++) {
-        applyAuraEffects();
-        const onEnemyDeath = (enemy) => {
-            if (selectedEnemy === enemy) {
-                selectedEnemy = null;
+function gameLoop(currentTime) {
+    if (!lastTime) {
+        lastTime = currentTime;
+    }
+    const deltaTime = (currentTime - lastTime) / 1000; // Delta time in seconds
+    lastTime = currentTime;
+
+    if (gameState.gameOver) {
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    const effectiveDeltaTime = deltaTime * gameSpeed;
+
+    applyAuraEffects();
+    const onEnemyDeath = (enemy) => {
+        if (selectedEnemy === enemy) {
+            selectedEnemy = null;
+        }
+        if (enemy.gold > 0) {
+            playMoneySound();
+        }
+    };
+
+    const newlySpawnedEnemies = [];
+
+    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime));
+    gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects, effectiveDeltaTime));
+    gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
+        (e) => { // onFinish
+            if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
+                gameState.gold = Math.max(0, gameState.gold - 1);
+                updateUI(gameState);
+                const goldCounterRect = uiElements.goldEl.getBoundingClientRect();
+                const goldX = goldCounterRect.left + (goldCounterRect.width / 3);
+                const goldY = goldCounterRect.top + (goldCounterRect.height / 3);
+                const canvasGoldX = (goldX / window.innerWidth) * canvasWidth;
+                const canvasGoldY = (goldY / window.innerHeight) * canvasHeight;
+                gameState.announcements.push(new TextAnnouncement("-$", canvasGoldX, canvasGoldY, 1, '#ff4d4d', canvasWidth));
             }
-            // FIX: Only play money sound if the enemy gives gold.
-            if (enemy.gold > 0) {
+
+            if (e.type.damagesLives) {
+                gameState.lives--;
+                updateUI(gameState);
+                if (gameState.lives <= 0) {
+                    gameState.gameOver = true;
+                    triggerGameOver(false, gameState.wave - 1);
+                }
+            }
+        },
+        (dyingEnemy) => { // onDeath
+            if (dyingEnemy.gold > 0) {
                 playMoneySound();
             }
-        };
+        },
+        newlySpawnedEnemies,
+        playWiggleSound,
+        playCrackSound,
+        effectiveDeltaTime
+    ));
 
-        const newlySpawnedEnemies = []; // Create a temporary array for new enemies
+    gameState.enemies.push(...newlySpawnedEnemies);
+    
+    gameState.effects = gameState.effects.filter(effect => effect.update(effectiveDeltaTime));
+    gameState.announcements = gameState.announcements.filter(announcement => announcement.update(effectiveDeltaTime));
 
-        gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath));
-        gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects));
-        gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
-            (e) => { // onFinish
-                // Handle Bitcoin gold stealing separately
-                if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
-                    gameState.gold = Math.max(0, gameState.gold - 1);
-                    updateUI(gameState);
-                    const goldCounterRect = uiElements.goldEl.getBoundingClientRect();
-                    const goldX = goldCounterRect.left + (goldCounterRect.width / 3);
-                    const goldY = goldCounterRect.top + (goldCounterRect.height / 3);
-                    const canvasGoldX = (goldX / window.innerWidth) * canvasWidth;
-                    const canvasGoldY = (goldY / window.innerHeight) * canvasHeight;
-                    gameState.announcements.push(new TextAnnouncement("-$", canvasGoldX, canvasGoldY, 60, '#ff4d4d', canvasWidth));
-                }
-
-                // Handle life damage for other enemies
-                if (e.type.damagesLives) {
-                    gameState.lives--;
-                    updateUI(gameState);
-                    if (gameState.lives <= 0) {
-                        gameState.gameOver = true;
-                        triggerGameOver(false, gameState.wave - 1);
-                    }
-                }
-            },
-            (dyingEnemy) => { // onDeath
-                // FIX: Only play money sound if the enemy gives gold.
-                if (dyingEnemy.gold > 0) {
-                    playMoneySound();
-                }
-            },
-            newlySpawnedEnemies, // Pass the temporary array for spawning
-            playWiggleSound, // Pass the wiggle sound function
-            playCrackSound // Pass the crack sound function
-        ));
-
-        gameState.enemies.push(...newlySpawnedEnemies); // Add the newly spawned enemies to the main list
-    }
-    // Corrected line: removed the redundant forEach update, now only the filter call updates the effects.
-    gameState.effects = gameState.effects.filter(effect => effect.update());
-    gameState.announcements = gameState.announcements.filter(announcement => announcement.update());
-
-    // Check for infinite gold toggle
     if (isInfiniteGold) {
         gameState.gold = 99999;
     }
 
-    // Refresh sell panel if a tower is selected, to show aura effects
     if (selectedTower) {
         updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending);
     }
@@ -534,33 +539,31 @@ function gameLoop() {
             const interestEarned = Math.floor(gameState.gold * 0.05);
             if (interestEarned > 0) {
                 gameState.gold += interestEarned;
-                gameState.announcements.push(new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 180, undefined, canvasWidth));
+                gameState.announcements.push(new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 3, undefined, canvasWidth));
             }
         }
         const waveBonus = 20 + gameState.wave;
         gameState.gold += waveBonus;
         if (gameState.wave === 3) {
             setTimeout(() => {
-                gameState.announcements.push(new TextAnnouncement("Warning:\nFlying enemies incoming!", canvasWidth / 2, canvasHeight / 2, 300, '#ff4d4d', canvasWidth));
+                gameState.announcements.push(new TextAnnouncement("Warning:\nFlying enemies incoming!", canvasWidth / 2, canvasHeight / 2, 5, '#ff4d4d', canvasWidth));
             }, 1500);
         }
         if (gameState.wave === 9) { // Wave before Bitcoin
             setTimeout(() => {
-                gameState.announcements.push(new TextAnnouncement("Warning:\nBitcoin enemies steal gold!", canvasWidth / 2, canvasHeight / 2, 300, '#F7931A', canvasWidth));
+                gameState.announcements.push(new TextAnnouncement("Warning:\nBitcoin enemies steal gold!", canvasWidth / 2, canvasHeight / 2, 5, '#F7931A', canvasWidth));
             }, 1500);
         }
         if (gameState.wave === 14) { // Wave before Boss
             setTimeout(() => {
-                gameState.announcements.push(new TextAnnouncement("Warning:\nBOSS INCOMING!", canvasWidth / 2, canvasHeight / 2, 300, '#42A5F5', canvasWidth));
+                gameState.announcements.push(new TextAnnouncement("Warning:\nBOSS INCOMING!", canvasWidth / 2, canvasHeight / 2, 5, '#42A5F5', canvasWidth));
             }, 1500);
         }
         updateUI(gameState);
-        // Save the game state after each wave finishes
         persistGameState(0);
     }
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
-    // Draw the enemies here so they appear on top of the path but behind towers/projectiles
     gameState.enemies.forEach(enemy => {
         enemy.draw(ctx);
     });
@@ -749,7 +752,7 @@ function checkForNinePinOnBoard() {
                         }
                     }
 
-                    gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 180, '#FFFFFF', canvasWidth));
+                    gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 3, '#FFFFFF', canvasWidth));
                     selectedTower = ninePin;
                     return; // Found and created one, so we are done.
                 }
@@ -845,7 +848,7 @@ function handleCanvasAction(e) {
                 gameState.gold -= costOfPlacingTower;
             }
             if (newTower.type === 'SUPPORT' && !gameState.hasPlacedFirstSupport) {
-                gameState.announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 180, undefined, canvasWidth));
+                gameState.announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 3, undefined, canvasWidth));
                 gameState.hasPlacedFirstSupport = true;
             }
             if (isNinePin) {
@@ -1215,7 +1218,8 @@ function init() {
     canvasHeight = canvas.height;
 
     resizeCanvas();
-    gameLoop();
+    lastTime = 0;
+    requestAnimationFrame(gameLoop);
 }
 
 const consoleCommands = {}
@@ -1393,7 +1397,7 @@ uiElements.cloudButton.addEventListener('click', () => {
             gameState.isCloudUnlocked = true;
             uiElements.cloudInventoryPanel.classList.remove('hidden');
             updateUI(gameState);
-            gameState.announcements.push(new TextAnnouncement("Cloud Storage Unlocked!", canvasWidth / 2, 50, 180, undefined, canvasWidth));
+            gameState.announcements.push(new TextAnnouncement("Cloud Storage Unlocked!", canvasWidth / 2, 50, 3, undefined, canvasWidth));
         }
     } else {
         uiElements.cloudInventoryPanel.classList.toggle('hidden');

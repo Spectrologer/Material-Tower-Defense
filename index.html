@@ -323,26 +323,26 @@
         </div>
 
         <!-- This is the control panel at the bottom of the screen -->
-        <div class="game-ui-panel p-4 w-full max-w-[440px] flex-shrink-0 flex flex-col gap-4">
+        <div class="game-ui-panel p-2 sm:p-4 w-full max-w-[440px] flex-shrink-0 flex flex-col gap-2 sm:gap-4">
 
             <div id="tower-buttons-group">
-                <h2 id="towers-title" class="text-xl text-green-400">TOWERS</h2>
+                <h2 id="towers-title" class="text-base sm:text-xl text-green-400">TOWERS</h2>
                 <!-- Buttons to buy the different towers -->
                 <div id="tower-buttons" class="grid grid-cols-3 gap-2 mt-2">
-                    <button id="buy-pin" class="pixel-button tower-button text-xs sm:text-sm flex items-center justify-center text-center">PIN (25G)</button>
-                    <button id="buy-castle" class="pixel-button tower-button text-xs sm:text-sm flex items-center justify-center text-center">CASTLE (75G)</button>
-                    <button id="buy-support" class="pixel-button tower-button text-xs sm:text-sm flex items-center justify-center text-center">SUPPORT (60G)</button>
+                    <button id="buy-pin" class="pixel-button tower-button text-[10px] sm:text-sm flex items-center justify-center text-center h-12 sm:h-auto">PIN (25G)</button>
+                    <button id="buy-castle" class="pixel-button tower-button text-[10px] sm:text-sm flex items-center justify-center text-center h-12 sm:h-auto">CASTLE (75G)</button>
+                    <button id="buy-support" class="pixel-button tower-button text-[10px] sm:text-sm flex items-center justify-center text-center h-12 sm:h-auto">SUPPORT (60G)</button>
                 </div>
             </div>
 
             <!-- This panel appears when you select a tower you've already placed -->
             <div id="sell-panel" class="hidden flex flex-col gap-2">
                 <hr class="border-gray-600" />
-                <h3 class="text-lg text-center text-green-400">SELECTED</h3>
-                <h4 id="selected-tower-info" class="text-center text-yellow-400 text-sm h-4 mb-2"></h4>
+                <h3 class="text-base sm:text-lg text-center text-green-400">SELECTED</h3>
+                <h4 id="selected-tower-info" class="text-center text-yellow-400 text-xs sm:text-sm h-4 mb-2"></h4>
                 <!-- Shows the stats of the selected tower -->
                 <div id="tower-stats-panel"
-                    class="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs sm:text-sm mb-2">
+                    class="flex flex-wrap justify-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] sm:text-sm mb-2">
                     <p id="stat-damage-p" class="flex items-center gap-1"><span
                             class="material-icons text-base align-bottom" title="Damage">bolt</span> Dmg: <span
                             id="stat-damage">0</span></p>
@@ -382,31 +382,31 @@
                 </div>
                 <div class="flex flex-col gap-2 mt-2">
                     <button id="toggle-mode"
-                        class="pixel-button bg-purple-800 text-yellow-300 border-yellow-300 hidden">MODE: </button>
+                        class="pixel-button bg-purple-800 text-yellow-300 border-yellow-300 hidden text-xs sm:text-sm">MODE: </button>
                     <button id="toggle-targeting"
-                        class="pixel-button bg-blue-800 text-cyan-300 border-cyan-300 hidden">TARGET: </button>
+                        class="pixel-button bg-blue-800 text-cyan-300 border-cyan-300 hidden text-xs sm:text-sm">TARGET: </button>
                 </div>
                 <div id="selected-tower-actions" class="grid grid-cols-2 gap-2 mt-2">
                     <!-- Button to sell the selected tower -->
                     <button id="sell-tower-btn"
-                        class="pixel-button bg-red-700 text-yellow-300 border-yellow-400 shadow-[0_4px_0_#9a3412] text-sm py-2">SELL</button>
+                        class="pixel-button bg-red-700 text-yellow-300 border-yellow-400 shadow-[0_4px_0_#9a3412] text-xs sm:text-sm py-2">SELL</button>
                     <!-- Button to move the selected tower to the cloud -->
                     <button id="move-to-cloud-btn"
-                        class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] text-sm py-2 hidden items-center justify-center gap-1 sm:flex">
+                        class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] text-xs sm:text-sm py-2 hidden items-center justify-center gap-1 sm:flex">
                         <span class="material-symbols-outlined !text-base">cloud_upload</span>
-                        <span class="hidden sm:inline">MOVE TO CLOUD</span>
+                        <span class="hidden sm:inline">MOVE</span>
                     </button>
                 </div>
             </div>
 
             <!-- Buttons for starting the next wave, changing game speed, and the new debug button -->
             <div id="game-controls" class="flex gap-2 mt-auto">
-                <button id="start-wave" class="pixel-button flex-auto">START WAVE</button>
-                <button id="speed-toggle" class="pixel-button flex-auto">x1</button>
+                <button id="start-wave" class="pixel-button flex-auto text-xs sm:text-sm">START WAVE</button>
+                <button id="speed-toggle" class="pixel-button flex-auto text-xs sm:text-sm">x1</button>
                 <button id="cloud-button"
                     class="pixel-button flex-auto flex items-center justify-center !p-2 text-xs">
                     <span id="cloud-icon" class="material-symbols-outlined !text-lg">cloud</span>
-                    <span id="cloud-text" class="ml-1">(100G)</span>
+                    <span id="cloud-text" class="ml-1 text-[10px] sm:text-xs">(100G)</span>
                 </button>
             </div>
         </div>

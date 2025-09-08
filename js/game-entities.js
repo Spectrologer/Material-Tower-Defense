@@ -22,7 +22,7 @@ export class Projectile {
             this.targetX = target.x;
             this.targetY = target.y;
             this.totalDist = Math.hypot(this.targetX - this.startX, this.targetY - this.startY);
-            this.travelTime = this.totalDist / this.owner.projectileSpeed;
+            this.travelTime = this.totalDist / (this.owner.projectileSpeed * 60); // In seconds
             this.life = this.travelTime;
             this.peakHeight = this.totalDist / 2;
         }
@@ -93,9 +93,11 @@ export class Projectile {
             ctx.fill();
         }
     }
-    update(onHit, enemies, effects) {
+    update(onHit, enemies, effects, deltaTime) {
+        const dt_scaler = deltaTime * 60;
+
         if (this.isMortar) {
-            this.life--;
+            this.life -= deltaTime;
             if (this.life <= 0) {
                 onHit(this);
                 return false;
@@ -107,12 +109,12 @@ export class Projectile {
             return true;
         }
         if (this.owner.type === 'ORBIT') {
-            this.angle += this.owner.projectileSpeed / 30;
+            this.angle += (this.owner.projectileSpeed / 30) * dt_scaler;
             this.orbitRadius = this.owner.orbitMode === 'far' ? 40 : 60;
             this.x = this.owner.x + Math.cos(this.angle) * this.orbitRadius;
             this.y = this.owner.y + Math.sin(this.angle) * this.orbitRadius;
             if (this.hitCooldown > 0) {
-                this.hitCooldown--;
+                this.hitCooldown -= deltaTime;
             } else {
                 this.hitEnemies.clear();
             }
@@ -138,6 +140,7 @@ export class Projectile {
         const dx = this.target.x - this.x;
         const dy = this.target.y - this.y;
         const distance = Math.hypot(dx, dy);
+        const moveDistance = this.owner.projectileSpeed * dt_scaler;
 
         if (this.owner.type === 'NINE_PIN') {
             for (const enemy of enemies) {
@@ -150,7 +153,7 @@ export class Projectile {
             }
         }
 
-        const hitCondition = distance < this.owner.projectileSpeed || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
+        const hitCondition = distance < moveDistance || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
 
         if (hitCondition) {
             onHit(this);
@@ -172,14 +175,14 @@ export class Projectile {
                     this.target = nextTarget;
                     this.bounces--;
                     this.damageMultiplier *= this.owner.bounceDamageFalloff;
-                    effects.push(new Effect(this.x, this.y, 'gps_fixed', 20, '#ff69b4', 15));
+                    effects.push(new Effect(this.x, this.y, 'gps_fixed', 20, '#ff69b4', 0.25));
                     return true;
                 }
             }
             return false;
         } else {
-            this.x += (dx / distance) * this.owner.projectileSpeed;
-            this.y += (dy / distance) * this.owner.projectileSpeed;
+            this.x += (dx / distance) * moveDistance;
+            this.y += (dy / distance) * moveDistance;
         }
         return true;
     }
@@ -212,22 +215,22 @@ export class Enemy {
         }
 
         if (this.type.hatchTime) {
-            this.hatchTimer = this.type.hatchTime * 60; // seconds to frames
+            this.hatchTimer = this.type.hatchTime; 
         }
     }
     applyBurn(dps, durationInSeconds) {
         const existingBurn = this.burns.find(b => b.dps >= dps);
         if (existingBurn) {
-            existingBurn.ticksLeft = Math.max(existingBurn.ticksLeft, durationInSeconds * 60);
+            existingBurn.duration = Math.max(existingBurn.duration, durationInSeconds);
         } else {
-            this.burns = [{ dps, ticksLeft: durationInSeconds * 60 }];
+            this.burns.push({ dps, duration: durationInSeconds });
         }
     }
     draw(ctx) {
         ctx.save();
         if (this.wiggleTimer > 0) {
             const wiggleAmount = 3;
-            const wiggleSpeed = 0.5;
+            const wiggleSpeed = 30; // Radians per second
             ctx.translate(this.x + Math.sin(this.wiggleTimer * wiggleSpeed) * wiggleAmount, this.y);
         } else {
             ctx.translate(this.x, this.y);
@@ -255,7 +258,6 @@ export class Enemy {
             ctx.textBaseline = 'middle';
             ctx.fillText(this.type.icon, this.x, this.y);
             ctx.restore();
-            this.hitTimer--;
         }
         if (this.burns.length > 0) {
             ctx.globalAlpha = 0.5;
@@ -272,13 +274,17 @@ export class Enemy {
         ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
         ctx.stroke();
     }
-    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound) {
+    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime) {
+        if (this.hitTimer > 0) {
+            this.hitTimer -= deltaTime;
+        }
+
         // --- Health & Burn Damage ---
         if (this.burns.length > 0) {
             const burn = this.burns[0];
-            this.health -= burn.dps / 60;
-            burn.ticksLeft--;
-            if (burn.ticksLeft <= 0) this.burns.shift();
+            this.health -= burn.dps * deltaTime;
+            burn.duration -= deltaTime;
+            if (burn.duration <= 0) this.burns.shift();
         }
         if (this.health <= 0) {
             onDeath(this);
@@ -287,7 +293,7 @@ export class Enemy {
 
         // --- Special Behaviors ---
         if (this.type.hatchTime) {
-            this.hatchTimer--;
+            this.hatchTimer -= deltaTime;
             if (this.hatchTimer <= 0) {
                 const hatched = new Enemy(ENEMY_TYPES[this.type.hatchesTo], this.path, this.type.hatchesTo);
                 hatched.x = this.x;
@@ -307,10 +313,10 @@ export class Enemy {
         if (this.type.laysEggs) {
             if (this.isLayingEgg) {
                 // We are currently in the egg-laying state
-                this.stopTimer--;
+                this.stopTimer -= deltaTime;
                 if (this.wiggleTimer > 0) {
-                    this.wiggleTimer--;
-                    if (this.wiggleTimer % 20 === 0) {
+                    this.wiggleTimer -= deltaTime;
+                    if (this.wiggleTimer % 0.33 < deltaTime) { // roughly every 20 frames
                         playWiggleSound();
                     }
                 }
@@ -325,7 +331,7 @@ export class Enemy {
                 }
             } else {
                 // We are moving, but checking to start the egg-laying state
-                this.timeUntilLay--;
+                this.timeUntilLay -= deltaTime;
                 if (this.timeUntilLay <= 0) {
                     this.isLayingEgg = true;
                     this.stopTimer = this.type.eggLayStopTime;
@@ -360,13 +366,13 @@ export class Enemy {
             const dx = target.x - this.x;
             const dy = target.y - this.y;
             const distance = Math.hypot(dx, dy);
-            const currentSpeed = this.speed * this.slowMultiplier;
+            const moveDistance = this.speed * this.slowMultiplier * 60 * deltaTime;
 
-            if (distance < currentSpeed) {
+            if (distance < moveDistance) {
                 this.pathIndex += this.direction;
             } else {
-                this.x += (dx / distance) * currentSpeed;
-                this.y += (dy / distance) * currentSpeed;
+                this.x += (dx / distance) * moveDistance;
+                this.y += (dy / distance) * moveDistance;
             }
         }
 
@@ -375,7 +381,7 @@ export class Enemy {
     }
     takeDamage(amount) {
         this.health -= amount;
-        this.hitTimer = 5;
+        this.hitTimer = 0.08; // seconds
         return this.health <= 0;
     }
 }
@@ -525,7 +531,7 @@ export class Tower {
         ctx.save();
         ctx.translate(this.x, this.y);
         if (this.type === 'NAT') {
-            if (this.target && this.cooldown > 0 && this.cooldown < 20) {
+            if (this.target && this.cooldown > 0 && this.cooldown < 0.33) {
                 const quiverAmount = this.level > 5 ? 2.5 : 1.5;
                 ctx.translate((Math.random() - 0.5) * quiverAmount, (Math.random() - 0.5) * quiverAmount);
             }
@@ -646,13 +652,13 @@ export class Tower {
     isInRange(enemy) {
         return Math.hypot(this.x - enemy.x, this.y - enemy.y) <= this.range;
     }
-    update(enemies, projectiles, onEnemyDeath) {
+    update(enemies, projectiles, onEnemyDeath, deltaTime) {
         if (this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') {
             return;
         }
         if (this.type === 'ORBIT') {
             this.orbiters.forEach(orbiter => {
-                orbiter.update();
+                orbiter.update(null, null, null, deltaTime);
                 enemies.forEach(enemy => {
                     if (enemy.type.isFlying) return;
                     const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
@@ -663,7 +669,7 @@ export class Tower {
                                 onEnemyDeath(enemy);
                             }
                             orbiter.hitEnemies.add(enemy);
-                            orbiter.hitCooldown = 15;
+                            orbiter.hitCooldown = 0.25; // seconds
                         }
                     }
                 });
@@ -671,10 +677,10 @@ export class Tower {
             return;
         }
         this.findTarget(enemies);
-        if (this.cooldown > 0) this.cooldown--;
+        if (this.cooldown > 0) this.cooldown -= deltaTime;
         if (this.target && this.cooldown <= 0) {
             this.shoot(projectiles);
-            this.cooldown = this.fireRate;
+            this.cooldown = this.fireRate / 60; // Cooldown in seconds
         }
     }
     shoot(projectiles) {
@@ -815,8 +821,8 @@ export class Effect {
     constructor(x, y, icon, size, color, duration) {
         this.x = x; this.y = y; this.icon = icon; this.size = size; this.color = color; this.life = duration; this.maxLife = duration;
     }
-    update() {
-        this.life--;
+    update(deltaTime) {
+        this.life -= deltaTime;
         return this.life > 0;
     }
     draw(ctx) {
@@ -856,9 +862,9 @@ export class TextAnnouncement {
         this.color = color;
         this.maxWidth = maxWidth;
     }
-    update() {
-        this.life--;
-        this.y -= 0.5;
+    update(deltaTime) {
+        this.life -= deltaTime;
+        this.y -= 30 * deltaTime;
         return this.life > 0;
     }
     draw(ctx) {
@@ -900,3 +906,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
