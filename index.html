@@ -11,6 +11,7 @@
 
     <!-- This adds a favicon to the webpage, using a Google Material Icon -->
     <link rel="icon" href="images/rook.svg">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 
     <!-- This script brings in TailwindCSS for easy styling -->
@@ -458,6 +459,13 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
 </body>
 
 </html>
