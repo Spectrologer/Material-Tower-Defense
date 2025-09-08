@@ -1,5 +1,5 @@
 import { TOWER_TYPES } from './constants.js';
-import { Projectile } from './game-entities.js';
+import { Projectile, Tower } from './game-entities.js';
 
 /**
  * Blends two hexadecimal colors.
@@ -204,7 +204,7 @@ addRecipe('FORT', 'PIN', {
     resultType: 'FORT', text: 'Upgrade',
     upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
     canApply: (tower) => {
-        const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel -1);
+        const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel - 1);
         return visualLevel < 5;
     },
     apply: (tower) => {
@@ -367,10 +367,10 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
 
         // Fort-specific MAX LEVEL check
         if (tower.type === 'FORT') {
-             const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.level + tower.damageLevel - 1);
-             if (visualLevel >= 5) {
-                 tower.level = 'MAX LEVEL';
-             }
+            const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.levelForCalc + tower.damageLevelForCalc - 1);
+            if (visualLevel >= 5) {
+                tower.level = 'MAX LEVEL';
+            }
         }
 
         return true;
@@ -379,7 +379,7 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
     // 2. If no specific recipe, handle same-type level up as a fallback
     if (tower.type === mergingTowerType && tower.level !== 'MAX LEVEL' && tower.level < 5) {
         tower.level++;
-        if (tower.damageLevel) tower.damageLevel++;
+        if (tower.damageLevel && tower.damageLevel !== 'MAX LEVEL') tower.damageLevel++;
         tower.updateStats();
         tower.cost += costToAdd;
         if (tower.level === 5) {

@@ -1,30 +1,38 @@
 import { TOWER_TYPES } from './constants.js';
 import { getTowerIconInfo } from './drawing-function.js';
 
+/**
+ * @param {string} id
+ * @returns {HTMLButtonElement}
+ */
+function getButton(id) {
+    return /** @type {HTMLButtonElement} */ (document.getElementById(id));
+}
+
 export const uiElements = {
     livesEl: document.getElementById('lives'),
     goldEl: document.getElementById('gold'),
     waveEl: document.getElementById('wave'),
-    startWaveBtn: document.getElementById('start-wave'),
-    buyPinBtn: document.getElementById('buy-pin'),
-    buyCastleBtn: document.getElementById('buy-castle'),
-    buySupportBtn: document.getElementById('buy-support'),
+    startWaveBtn: getButton('start-wave'),
+    buyPinBtn: getButton('buy-pin'),
+    buyCastleBtn: getButton('buy-castle'),
+    buySupportBtn: getButton('buy-support'),
     gameOverModal: document.getElementById('game-over-modal'),
     gameOverTitle: document.getElementById('game-over-title'),
     gameOverMessage: document.getElementById('game-over-message'),
-    restartGameBtn: document.getElementById('restart-game'),
+    restartGameBtn: getButton('restart-game'),
     sellPanel: document.getElementById('sell-panel'),
-    sellTowerBtn: document.getElementById('sell-tower-btn'),
-    moveToCloudBtn: document.getElementById('move-to-cloud-btn'),
-    toggleModeBtn: document.getElementById('toggle-mode'),
-    toggleTargetingBtn: document.getElementById('toggle-targeting'),
-    speedToggleBtn: document.getElementById('speed-toggle'),
+    sellTowerBtn: getButton('sell-tower-btn'),
+    moveToCloudBtn: getButton('move-to-cloud-btn'),
+    toggleModeBtn: getButton('toggle-mode'),
+    toggleTargetingBtn: getButton('toggle-targeting'),
+    speedToggleBtn: getButton('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
-    soundToggleBtn: document.getElementById('sound-toggle-btn'),
+    soundToggleBtn: getButton('sound-toggle-btn'),
     towerButtons: document.getElementById('tower-buttons'),
     gameControls: document.getElementById('game-controls'),
     towersTitle: document.getElementById('towers-title'),
-    cloudButton: document.getElementById('cloud-button'),
+    cloudButton: getButton('cloud-button'),
     cloudIcon: document.getElementById('cloud-icon'),
     cloudText: document.getElementById('cloud-text'),
     cloudInventoryPanel: document.getElementById('cloud-inventory-panel'),
@@ -39,14 +47,14 @@ export const uiElements = {
     mergeResultTowerName: document.getElementById('merge-result-tower-name'),
     mergeResultBenefitText: document.getElementById('merge-result-benefit-text'),
     mergeCostInfo: document.getElementById('merge-cost-info'),
-    confirmMergeBtn: document.getElementById('confirm-merge-btn'),
-    cancelMergeBtn: document.getElementById('cancel-merge-btn'),
+    confirmMergeBtn: getButton('confirm-merge-btn'),
+    cancelMergeBtn: getButton('cancel-merge-btn'),
     // New options menu elements
-    optionsBtn: document.getElementById('options-btn'),
+    optionsBtn: getButton('options-btn'),
     optionsMenu: document.getElementById('options-menu'),
-    closeOptionsBtn: document.getElementById('close-options-btn'),
-    toggleMergeConfirm: document.getElementById('toggle-merge-confirm-checkbox'),
-    resetGameBtn: document.getElementById('reset-game-btn'),
+    closeOptionsBtn: document.getElementById('close-options-btn'), // Note: This element doesn't exist in HTML
+    toggleMergeConfirm: /** @type {HTMLInputElement} */ (document.getElementById('toggle-merge-confirm-checkbox')),
+    resetGameBtn: getButton('reset-game-btn'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
@@ -61,6 +69,7 @@ export const uiElements = {
     statBoostP: document.getElementById('stat-boost-p'),
     statBoost: document.getElementById('stat-boost'), // FIX: Added the missing element
     statSlowP: document.getElementById('stat-slow-p'),
+    statSlow: document.getElementById('stat-slow'),
     statGoldP: document.getElementById('stat-gold-p'),
     statGold: document.getElementById('stat-gold'),
     statBurnP: document.getElementById('stat-burn-p'),
@@ -108,7 +117,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'none';
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.add('col-span-2');
         }
-        
+
         let levelText;
         if (selectedTower.type === 'ORBIT') {
             const totalUpgrades = selectedTower.upgradeCount;
@@ -144,7 +153,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             const visualLevel = selectedTower.level;
             levelText = `LVL ${visualLevel}`;
         }
-        
+
         // Fort-specific level display logic
         if (selectedTower.type === 'FORT') {
             if (selectedTower.level === 'MAX LEVEL') {
@@ -154,7 +163,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 levelText = `LVL ${visualLevel}`;
             }
         }
-        
+
         // Hide all stat paragraphs by default
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
@@ -166,7 +175,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         });
 
         if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
-        
+
         if (uiElements.sellTowerBtn) {
             if (!isSellConfirmPending) {
                 uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
@@ -175,7 +184,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 uiElements.sellTowerBtn.classList.add('bg-red-700', 'text-yellow-300', 'border-yellow-400', 'shadow-[0_4px_0_#9a3412]');
             }
         }
-        
+
         if (isCloudUnlocked) {
             if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'flex';
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.remove('col-span-2');
@@ -211,11 +220,11 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 }
             }
         }
-        
+
         // Display stats based on tower type
         if (selectedTower.type !== 'ORBIT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'CAT') {
             if (uiElements.statRangeP) uiElements.statRangeP.classList.remove('hidden');
-            if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range);
+            if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
         }
         const baseStats = TOWER_TYPES[selectedTower.type];
         if (baseStats.special) {
@@ -239,17 +248,17 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
 
             if (uiElements.statProjectilesP) uiElements.statProjectilesP.classList.remove('hidden');
             if (uiElements.statProjectiles) uiElements.statProjectiles.textContent = selectedTower.orbiters.length;
-            
+
             if (uiElements.statRangeP) uiElements.statRangeP.classList.add('hidden');
             if (uiElements.statSpeedP) uiElements.statSpeedP.classList.add('hidden');
         }
-     // The core logic fix for the splash stat display.
-     if (selectedTower.splashRadius > 0) {
-        if (uiElements.statSplashP) uiElements.statSplashP.classList.remove('hidden');
-        if (uiElements.statSplash) {
-            uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius);
+        // The core logic fix for the splash stat display.
+        if (selectedTower.splashRadius > 0) {
+            if (uiElements.statSplashP) uiElements.statSplashP.classList.remove('hidden');
+            if (uiElements.statSplash) {
+                uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius).toString();
+            }
         }
-    }
 
 
         if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
@@ -296,7 +305,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             } else {
                 if (uiElements.statSpeedP) uiElements.statSpeedP.classList.add('hidden');
             }
-            
+
             if (selectedTower.type === 'FIREPLACE') {
                 if (uiElements.statBurnP) uiElements.statBurnP.classList.remove('hidden');
                 if (uiElements.statBurn) uiElements.statBurn.textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;

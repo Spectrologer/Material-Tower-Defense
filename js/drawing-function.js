@@ -206,12 +206,12 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     // Draw Stats
     stats.forEach((stat, index) => {
         const statY = rectY + padding + (lineHeight * 1.5) + (index * lineHeight);
-        
+
         // Draw Icon
         ctx.font = `${iconSize}px 'Material Symbols Outlined'`;
         ctx.fillStyle = stat.color;
         ctx.fillText(stat.icon, rectX + padding, statY);
-        
+
         // Draw Text
         ctx.font = "10px 'Press Start 2P'";
         ctx.fillStyle = '#e0e0e0';

@@ -1,12 +1,5 @@
-import {
-    Enemy,
-    Tower,
-    Projectile,
-    Effect,
-    TextAnnouncement,
-} from './game-entities.js'; 
-import { generatePath } from './path-generator.js';
-
+import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from "./game-entities.js";
+import { generatePath } from "./path-generator.js";
 
 /**
  * @typedef {Object} GameState
@@ -43,7 +36,6 @@ export function loadGameStateFromStorage() {
     gameState = getGameStateFromStorage();
 }
 
-
 let lastSaveTime = null;
 export function resetLastSaveTime() {
     lastSaveTime = null;
@@ -64,11 +56,11 @@ export function persistGameState(throttleMs = 1000) {
 }
 
 function saveGameStateToStorage() {
-    localStorage.setItem('gameState', serializeGameState(gameState));
+    localStorage.setItem("gameState", getSerializedGameState());
 }
 
 function clearGameStateFromStorage() {
-    localStorage.removeItem('gameState');
+    localStorage.removeItem("gameState");
 }
 
 function getInitialGameState() {
@@ -90,16 +82,16 @@ function getInitialGameState() {
         isCloudUnlocked: false,
         cloudInventory: [],
         path: pathData.path,
-        placementGrid: pathData.placementGrid
+        placementGrid: pathData.placementGrid,
     };
 }
 
 function getGameStateFromStorage() {
-    const value = localStorage.getItem('gameState');
+    const value = localStorage.getItem("gameState");
     return value ? deserializeGameState(value) : getInitialGameState();
 }
 
-function serializeGameState() {
+function getSerializedGameState() {
     return JSON.stringify({
         lives: gameState.lives,
         gold: gameState.gold,
@@ -111,32 +103,27 @@ function serializeGameState() {
         isCloudUnlocked: gameState.isCloudUnlocked,
         path: gameState.path,
         placementGrid: gameState.placementGrid,
-        
+
         // Things that we need to serialize/deserialize
-        towers: gameState.towers.map(t => t.toJSON()),
-        cloudInventory: gameState.cloudInventory.map(t => t.toJSON()),
+        towers: gameState.towers.map((t) => t.toJSON()),
+        cloudInventory: gameState.cloudInventory.map((t) => t.toJSON()),
         introducedEnemies: Array.from(gameState.introducedEnemies),
     });
 }
 
 /**
- * @param {string} serializedGameState 
- * @returns {GameState} 
+ * @param {string} serializedGameState
+ * @returns {GameState}
  */
 function deserializeGameState(serializedGameState) {
     try {
-        const {
-            towers,
-            cloudInventory,
-            introducedEnemies,
-            ...basicData
-        } = JSON.parse(serializedGameState);
+        const { towers, cloudInventory, introducedEnemies, ...basicData } = JSON.parse(serializedGameState);
 
         return {
             ...getInitialGameState(),
             ...basicData,
-            cloudInventory: cloudInventory.map(data => Tower.fromJSON(data)),
-            towers: towers.map(data => Tower.fromJSON(data)),
+            cloudInventory: cloudInventory.map((data) => Tower.fromJSON(data)),
+            towers: towers.map((data) => Tower.fromJSON(data)),
             introducedEnemies: new Set(introducedEnemies),
         };
     } catch (e) {
