@@ -92,7 +92,7 @@ export function updateUI(state) {
     }
 }
 
-export function updateSellPanel(selectedTower, isCloudUnlocked) {
+export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPending) {
     if (selectedTower) {
         uiElements.towerButtons.classList.add('hidden');
         uiElements.gameControls.classList.add('hidden');
@@ -166,7 +166,16 @@ export function updateSellPanel(selectedTower, isCloudUnlocked) {
         });
 
         if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
-        if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
+        
+        if (uiElements.sellTowerBtn) {
+            if (!isSellConfirmPending) {
+                uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
+                // This resets the button to its default appearance, canceling any pending confirmation.
+                uiElements.sellTowerBtn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-600', 'shadow-[0_4px_0_#ca8a04]');
+                uiElements.sellTowerBtn.classList.add('bg-red-700', 'text-yellow-300', 'border-yellow-400', 'shadow-[0_4px_0_#9a3412]');
+            }
+        }
+        
         if (isCloudUnlocked) {
             if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'flex';
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.remove('col-span-2');
