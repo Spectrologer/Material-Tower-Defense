@@ -371,8 +371,11 @@ function handleProjectileHit(projectile, hitEnemy) {
     const awardGold = (enemy) => {
         if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) return;
         const goldToGive = Math.ceil(enemy.gold * goldMultiplier);
-        gameState.gold += goldToGive;
-        gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
+        // FIX: Only show gold effect if gold is actually awarded.
+        if (goldToGive > 0) {
+            gameState.gold += goldToGive;
+            gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 30));
+        }
     };
 
     const splashCenter = projectile.isMortar ? { x: projectile.targetX, y: projectile.targetY } : (targetEnemy ? { x: targetEnemy.x, y: targetEnemy.y } : null);
@@ -457,7 +460,10 @@ function gameLoop() {
             if (selectedEnemy === enemy) {
                 selectedEnemy = null;
             }
-            playMoneySound();
+            // FIX: Only play money sound if the enemy gives gold.
+            if (enemy.gold > 0) {
+                playMoneySound();
+            }
         };
 
         const newlySpawnedEnemies = []; // Create a temporary array for new enemies
@@ -488,8 +494,11 @@ function gameLoop() {
                     }
                 }
             },
-            () => { // onDeath
-                playMoneySound();
+            (dyingEnemy) => { // onDeath
+                // FIX: Only play money sound if the enemy gives gold.
+                if (dyingEnemy.gold > 0) {
+                    playMoneySound();
+                }
             },
             newlySpawnedEnemies, // Pass the temporary array for spawning
             playWiggleSound, // Pass the wiggle sound function
@@ -663,27 +672,30 @@ function handleCloudTowerClick(towerToPlace) {
     renderCloudInventory();
 }
 
-function checkForAndCreateNinePin(placedGridX, placedGridY) {
-    for (let dy = -2; dy <= 0; dy++) {
-        for (let dx = -2; dx <= 0; dx++) {
-            const startX = placedGridX + dx;
-            const startY = placedGridY + dy;
+/**
+ * A robust function to check the entire board for a 3x3 square of PIN towers.
+ * If found, it replaces them with a NINE_PIN tower.
+ */
+function checkForNinePinOnBoard() {
+    const pinTowers = gameState.towers.filter(t => t.type === 'PIN');
+    if (pinTowers.length < 9) return;
 
-            if (startX < 0 || startY < 0 || startX + 2 >= GRID_COLS || startY + 2 >= GRID_ROWS) {
-                continue;
-            }
+    const pinGrid = Array(GRID_ROWS).fill(null).map(() => Array(GRID_COLS).fill(false));
+    
+    // Create a map of where pins are for quick lookup
+    pinTowers.forEach(pin => {
+        const gridX = Math.floor(pin.x / TILE_SIZE);
+        const gridY = Math.floor(pin.y / TILE_SIZE);
+        pinGrid[gridY][gridX] = true;
+    });
 
-            let pinTowersInSquare = [];
+    // Check for any 3x3 square from the top-left
+    for (let y = 0; y <= GRID_ROWS - 3; y++) {
+        for (let x = 0; x <= GRID_COLS - 3; x++) {
             let isComplete = true;
             for (let j = 0; j < 3; j++) {
                 for (let i = 0; i < 3; i++) {
-                    const checkX = startX + i;
-                    const checkY = startY + j;
-                    const tower = gameState.towers.find(t => Math.floor(t.x / TILE_SIZE) === checkX && Math.floor(t.y / TILE_SIZE) === checkY);
-
-                    if (tower && tower.type === 'PIN') {
-                        pinTowersInSquare.push(tower);
-                    } else {
+                    if (!pinGrid[y + j][x + i]) {
                         isComplete = false;
                         break;
                     }
@@ -692,33 +704,51 @@ function checkForAndCreateNinePin(placedGridX, placedGridY) {
             }
 
             if (isComplete) {
+                // Found a 3x3 square starting at (x, y)
+                // Now, find the actual tower objects to remove them
+                let towersToRemove = [];
                 let totalCost = 0;
-                pinTowersInSquare.forEach(t => {
-                    totalCost += t.cost;
-                });
-                gameState.towers = gameState.towers.filter(t => !pinTowersInSquare.some(pin => pin.id === t.id));
-
-                const centerX = (startX + 1) * TILE_SIZE + TILE_SIZE / 2;
-                const centerY = (startY + 1) * TILE_SIZE + TILE_SIZE / 2;
-
-                const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
-                ninePin.cost = totalCost;
-                gameState.towers.push(ninePin);
-
-                // Mark the entire 3x3 area as occupied
                 for (let j = 0; j < 3; j++) {
                     for (let i = 0; i < 3; i++) {
-                        gameState.placementGrid[startY + j][startX + i] = GRID_TOWER;
+                        const tower = gameState.towers.find(t => 
+                            t.type === 'PIN' &&
+                            Math.floor(t.x / TILE_SIZE) === (x + i) &&
+                            Math.floor(t.y / TILE_SIZE) === (y + j)
+                        );
+                        if (tower) {
+                            towersToRemove.push(tower);
+                            totalCost += tower.cost;
+                        }
                     }
                 }
 
-                gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 180, '#FFFFFF', canvasWidth));
-                selectedTower = ninePin;
-                return;
+                if (towersToRemove.length === 9) {
+                    // Remove old pins
+                    gameState.towers = gameState.towers.filter(t => !towersToRemove.some(rem => rem.id === t.id));
+
+                    // Create and add new Nine Pin
+                    const centerX = (x + 1) * TILE_SIZE + TILE_SIZE / 2;
+                    const centerY = (y + 1) * TILE_SIZE + TILE_SIZE / 2;
+                    const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
+                    ninePin.cost = totalCost;
+                    gameState.towers.push(ninePin);
+
+                    // Update placement grid for the new tower
+                    for (let j = 0; j < 3; j++) {
+                        for (let i = 0; i < 3; i++) {
+                            gameState.placementGrid[y + j][x + i] = GRID_TOWER;
+                        }
+                    }
+
+                    gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 180, '#FFFFFF', canvasWidth));
+                    selectedTower = ninePin;
+                    return; // Found and created one, so we are done.
+                }
             }
         }
     }
 }
+
 function handleCanvasAction(e) {
     resumeAudioContext();
     const mousePos = getMousePos(canvas, e);
@@ -821,7 +851,7 @@ function handleCanvasAction(e) {
             }
             gameState.towers.push(newTower);
             if (newTowerType === 'PIN') {
-                checkForAndCreateNinePin(gridX, gridY);
+                checkForNinePinOnBoard();
             }
             placingTower = null;
             placingFromCloud = null;
@@ -1074,9 +1104,8 @@ canvas.addEventListener('drop', e => {
                         }
                     }
                 } else {
-                    const gridX = Math.floor(sourceTower.x / TILE_SIZE);
-                    const gridY = Math.floor(sourceTower.y / TILE_SIZE);
-                    gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
+                    // FIX: Clear the original grid position of the dragged tower.
+                    gameState.placementGrid[draggedCanvasTowerOriginalGridPos.y][draggedCanvasTowerOriginalGridPos.x] = GRID_EMPTY;
                 }
                 sourceTower.x = snappedX;
                 sourceTower.y = snappedY;
@@ -1091,6 +1120,10 @@ canvas.addEventListener('drop', e => {
                 }
             } else {
                 gameState.placementGrid[gridY][gridX] = GRID_TOWER;
+            }
+            
+            if (sourceTower.type === 'PIN') {
+                checkForNinePinOnBoard();
             }
             actionTaken = true;
         }
@@ -1427,3 +1460,4 @@ document.fonts.ready.then(() => {
     console.error("Font loading failed, starting game anyway.", err);
     init();
 });
+
