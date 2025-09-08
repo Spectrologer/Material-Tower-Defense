@@ -46,6 +46,7 @@ export const uiElements = {
     optionsMenu: document.getElementById('options-menu'),
     closeOptionsBtn: document.getElementById('close-options-btn'),
     toggleMergeConfirm: document.getElementById('toggle-merge-confirm-checkbox'),
+    resetGameBtn: document.getElementById('reset-game-btn'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
@@ -355,3 +356,4 @@ export function triggerGameOver(isWin, wave) {
         if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }
+

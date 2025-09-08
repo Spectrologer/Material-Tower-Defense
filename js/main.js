@@ -1264,6 +1264,11 @@ uiElements.buyCastleBtn.addEventListener('click', () => selectTowerToPlace('CAST
 uiElements.buySupportBtn.addEventListener('click', () => selectTowerToPlace('SUPPORT'));
 uiElements.restartGameBtn.addEventListener('click', reset);
 
+uiElements.resetGameBtn.addEventListener('click', () => {
+    reset();
+    uiElements.optionsMenu.classList.add('hidden');
+});
+
 uiElements.sellTowerBtn.addEventListener('click', () => {
     resumeAudioContext();
     if (selectedTower) {
