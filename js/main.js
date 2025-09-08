@@ -372,8 +372,6 @@ function handleProjectileHit(projectile, hitEnemy) {
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
     const goldMultiplier = projectile.owner.goldBonusMultiplier || 1;
 
-    console.log(`Projectile hit: Base Damage=${projectile.owner.damage}, Owner Multiplier=${projectile.owner.damageMultiplier}, Projectile Multiplier=${projectile.damageMultiplier}, Final Damage=${finalDamage}`);
-
     const awardGold = (enemy) => {
         if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) return;
         const goldToGive = Math.ceil(enemy.gold * goldMultiplier);
