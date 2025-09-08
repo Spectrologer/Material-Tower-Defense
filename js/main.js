@@ -1183,15 +1183,6 @@ function reset() {
     mergeTooltip.info = null;
     pendingMergeState = null;
     isSellConfirmPending = false;
-    
-    // Load saved settings
-    const savedMergeConfirm = localStorage.getItem('mergeConfirmation');
-    isMergeConfirmationEnabled = savedMergeConfirm === null ? true : JSON.parse(savedMergeConfirm);
-    
-    if (uiElements.toggleMergeConfirm) {
-        uiElements.toggleMergeConfirm.checked = isMergeConfirmationEnabled;
-    }
-
 
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
@@ -1200,6 +1191,13 @@ function reset() {
 
 function init() {
     loadGameStateFromStorage();
+    
+    // Load saved settings
+    const savedMergeConfirm = localStorage.getItem('mergeConfirmation');
+    isMergeConfirmationEnabled = savedMergeConfirm === null ? true : JSON.parse(savedMergeConfirm);
+    if (uiElements.toggleMergeConfirm) {
+        uiElements.toggleMergeConfirm.checked = isMergeConfirmationEnabled;
+    }
 
     uiElements.speedToggleBtn.textContent = 'x1';
     uiElements.buyPinBtn.classList.remove('selected');
