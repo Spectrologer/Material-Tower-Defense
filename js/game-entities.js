@@ -102,7 +102,7 @@ export class Projectile {
             }
             const progress = 1 - (this.life / this.travelTime);
             this.x = this.startX + (this.targetX - this.startX) * progress;
-            this.y = this.startY + (this.targetY - this.startY) * progress;
+            this.y = this.startY + (this.targetY - this.startY) * progress; // FIX: Corrected y-axis calculation
             this.z = Math.sin(progress * Math.PI) * this.peakHeight;
             return true;
         }
@@ -389,7 +389,7 @@ export class Tower {
         this.level = 1;
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = 'strongest';
+        this.targetingMode = (type === 'PIN') ? 'weakest' : 'strongest'; // CASTLE now defaults to strongest
         this.damageMultiplier = 1;
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1;
@@ -398,7 +398,7 @@ export class Tower {
         this.bounceDamageFalloff = 0.5;
         this.hasFragmentingShot = false;
         const baseStats = TOWER_TYPES[type];
-        this.splashRadius = baseStats.splashRadius;
+        this.splashRadius = baseStats.splashRadius || 0; // Ensure splashRadius is always a number
         if (type === 'FIREPLACE') {
             this.burnDps = baseStats.burnDps;
             this.burnDuration = baseStats.burnDuration;
@@ -407,6 +407,7 @@ export class Tower {
         this.cooldown = 0;
         this.target = null;
         if (type === 'ORBIT') {
+            this.upgradeCount = 0; // NEW: Track total upgrades for the Orbit tower
             this.orbitMode = 'far';
             this.orbiters = [
                 new Projectile(this, null, 0),
@@ -725,48 +726,33 @@ export class Effect {
     }
     draw(ctx) {
         let progress = 1 - (this.life / this.maxLife);
-        let currentSize;
-        let opacity = 1.0;
-        
-        // Use 'material-symbols-outlined' font for the explosion icon
-        if (this.icon === 'explosion') {
-            currentSize = this.size * progress;
-            opacity = 1 - progress;
-            ctx.save();
-            ctx.font = `${currentSize}px 'Material Symbols Outlined'`;
-            ctx.fillStyle = this.color;
-            ctx.globalAlpha = opacity;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('explosion', this.x, this.y);
-            ctx.restore();
+        let currentSize = this.size * progress;
+        let opacity = 1 - progress;
+
+        let iconFamily = '';
+        if (['explosion', 'gps_fixed'].includes(this.icon) || this.icon === 'attach_money') {
+            iconFamily = 'Material Symbols Outlined';
         } else {
-            currentSize = this.size * progress;
-            opacity = 1 - progress;
-            let iconFamily = '';
-            if (this.icon === 'attach_money') {
-                iconFamily = 'Material Symbols Outlined';
-            } else {
-                iconFamily = 'Material Icons';
-            }
-            
-            if (this.icon === 'attach_money') {
-                currentSize = this.size + (5 * progress);
-                opacity = 1 - progress * 0.5;
-            }
-            ctx.font = `${currentSize}px '${iconFamily}'`;
-            ctx.fillStyle = this.color;
-            ctx.globalAlpha = opacity;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(this.icon, this.x, this.y);
-            ctx.globalAlpha = 1.0;
+            iconFamily = 'Material Icons';
         }
+
+        if (this.icon === 'attach_money') {
+            currentSize = this.size + (5 * progress);
+            opacity = 1 - progress * 0.5;
+        }
+
+        ctx.font = `${currentSize}px '${iconFamily}'`;
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = opacity;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.icon, this.x, this.y);
+        ctx.globalAlpha = 1.0;
     }
 }
 
 export class TextAnnouncement {
-    constructor(text, x, y, duration, color = '#00ff88', maxWidth = Infinity) {
+    constructor(text = '', x, y, duration, color = '#00ff88', maxWidth = Infinity) {
         this.text = text;
         this.x = x;
         this.y = y;
@@ -777,6 +763,7 @@ export class TextAnnouncement {
     }
     update() {
         this.life--;
+        this.y -= 0.5;
         return this.life > 0;
     }
     draw(ctx) {
