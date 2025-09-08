@@ -860,6 +860,10 @@ function handleCanvasAction(e) {
         updateUI(gameState);
         updateSellPanel(selectedTower, gameState.isCloudUnlocked);
     }
+
+    if (actionTaken) {
+        persistGameState(0);
+    }
 }
 canvas.addEventListener('click', handleCanvasAction);
 canvas.addEventListener('mousemove', e => {

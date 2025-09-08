@@ -14,7 +14,7 @@ test('resetGameState should initialize with default values', () => {
     assert.equal(gameState.enemies.length, 0);
 });
 
-test('persistGameState should throttle saves', () => {
+test('persistGameState should throttle saves and not save if wave is running', () => {
     localStorage.clear();
     resetLastSaveTime();
     
@@ -41,6 +41,14 @@ test('persistGameState should throttle saves', () => {
     currentTime = 1150; // 150ms after first save
     persistGameState(100); // Should save again
     assert.equal(saveCount, 2, "Should save again after throttle period");
+
+    // no time passed
+    persistGameState(0);
+    assert.equal(saveCount, 3, "Should save if throttle is 0");
+
+    gameState.waveInProgress = true;
+    persistGameState(0);
+    assert.equal(saveCount, 3, "Should not save if wave is in progress");
 
     // Restore
     Date.now = originalDateNow;

@@ -28,6 +28,10 @@ import { generatePath } from './path-generator.js';
  * @property {boolean} hasPlacedFirstSupport
  * @property {boolean} gameOver
  */
+
+/**
+ * @type {GameState}
+ */
 export let gameState;
 
 export function resetGameState() {
@@ -50,6 +54,9 @@ export function resetLastSaveTime() {
  * @param {number} throttleMs - Minimum time in milliseconds since the last save to perform a new save.
  */
 export function persistGameState(throttleMs = 1000) {
+    // only allow saving between waves for now
+    if (gameState.waveInProgress) return;
+
     const timeSinceLastSave = lastSaveTime ? Date.now() - lastSaveTime : Infinity;
     if (timeSinceLastSave < throttleMs) return;
     lastSaveTime = Date.now();
@@ -126,6 +133,7 @@ function deserializeGameState(serializedGameState) {
         } = JSON.parse(serializedGameState);
 
         return {
+            ...getInitialGameState(),
             ...basicData,
             cloudInventory: cloudInventory.map(data => Tower.fromJSON(data)),
             towers: towers.map(data => Tower.fromJSON(data)),
