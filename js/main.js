@@ -1440,6 +1440,12 @@ function performPendingMerge() {
     placingTower = null;
     placingFromCloud = null;
     pendingMergeState = null;
+
+    // FIX: Explicitly remove 'selected' class from tower buttons after merge.
+    uiElements.buyPinBtn.classList.remove('selected');
+    uiElements.buyCastleBtn.classList.remove('selected');
+    uiElements.buySupportBtn.classList.remove('selected');
+
     updateUI(gameState);
     updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending);
     renderCloudInventory();
@@ -1490,4 +1496,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-
