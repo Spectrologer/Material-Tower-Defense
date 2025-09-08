@@ -1,17 +1,16 @@
+// This file defines exactly what enemies appear in each wave of the game.
+
 import { ENEMY_TYPES } from './constants.js';
 
-// A helper function to make wave compositions more readable.
+// A little helper to make the wave composition easier to read.
 const comp = (type, count) => ({ type, count });
 
-/**
- * Defines the properties for each wave in the game.
- * - isSwarm: (Optional) Boolean, true if it's a high-density, fast-spawning wave.
- * - isBoss: (Optional) Boolean, true if it's a boss wave.
- * - composition: An array of enemy types and their counts for the wave.
- * - healthMultiplier: A multiplier applied to the base health of enemies.
- * - healthBonus: A flat health bonus added after the multiplier.
- * - endOfWaveAnnouncement: (Optional) An object to configure a warning message for the *next* wave.
- */
+// This is the main list of all the waves in the game.
+// Each wave is an object with a few properties:
+// - composition: Which enemies to spawn and how many of them.
+// - healthMultiplier/healthBonus: Makes enemies tougher in later waves.
+// - isSwarm/isBoss: Special flags for swarm or boss waves.
+// - endOfWaveAnnouncement: A message to show the player to warn them about the *next* wave.
 export const waveDefinitions = [
     // Wave 1
     {
@@ -28,7 +27,7 @@ export const waveDefinitions = [
     {
         composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 5)],
         healthMultiplier: 1.30, healthBonus: 0,
-        endOfWaveAnnouncement: { text: "Warning:\Swarm incoming!", color: '#ffb84d' }
+        endOfWaveAnnouncement: { text: "Warning:\nSwarm incoming!", color: '#ffb84d' }
 
     },
     // Wave 4 (Swarm)
@@ -67,7 +66,7 @@ export const waveDefinitions = [
         healthMultiplier: 2.20, healthBonus: 10,
         endOfWaveAnnouncement: { text: "Warning:\nUpcoming enemies will steal gold!", color: '#f7e51aff' }
     },
-    // Wave 10 (Special)
+    // Wave 10 (Special Gold-Stealing Wave)
     {
         composition: [comp(ENEMY_TYPES.BITCOIN, 25)],
         healthMultiplier: 2.35, healthBonus: 10,
@@ -100,3 +99,4 @@ export const waveDefinitions = [
         composition: [comp(ENEMY_TYPES.BOSS, 1)],
     },
 ];
+

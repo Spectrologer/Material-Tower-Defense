@@ -1,11 +1,17 @@
+// holds all the core numbers and settings for the game.
+// central place to easily tweak the game's balance and layout.
+
+// Sets up the size of the game grid.
 export const GRID_COLS = 11;
 export const GRID_ROWS = 18;
-export const TILE_SIZE = 40;
-export const GRID_EMPTY = 0;
-export const GRID_PATH = 1;
-export const GRID_TOWER = 2;
+export const TILE_SIZE = 40; // The size of each square in pixels.
 
-// Tower Configuration
+// These are used to mark what's on each grid square.
+export const GRID_EMPTY = 0; // An empty spot where you can build.
+export const GRID_PATH = 1;  // Part of the enemy path.
+export const GRID_TOWER = 2; // A spot where a tower is already built.
+
+// All the stats for each type of tower you can build.
 export const TOWER_TYPES = {
     PIN: { cost: 25, range: 150, damage: 1.2, fireRate: 22, color: '#ffffffff', projectileSpeed: 7, projectileSize: 3, projectileColor: '#ffffffff', splashRadius: 0 },
     CASTLE: { cost: 75, range: 100, damage: 6, fireRate: 60, color: '#525252ff', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, },
@@ -21,11 +27,11 @@ export const TOWER_TYPES = {
     ANTI_AIR: { cost: 110, range: 350, damage: 50, fireRate: 180, color: '#a9a9a9', projectileSpeed: .1, projectileSize: 24, projectileColor: '#cccccc', special: 'Air units only' },
 };
 
-// Enemy Configuration
+// All the stats for each type of enemy that can spawn.
 export const ENEMY_TYPES = {
     NORMAL: { speed: 1.5, health: 10, color: '#ae2f2fff', size: 16, gold: 1, icon: 'person', iconFamily: "'Material Symbols Outlined'", damagesLives: true },
     FAST: { speed: 2.5, health: 8, color: '#ffb84d', size: 14, gold: 1, icon: 'pest_control_rodent', iconFamily: 'Material Icons', damagesLives: true },
-    HEAVY: { speed: 1, health: 30, color: '#3446ceff', size: 20, gold: 3, icon: 'guardian', iconFamily: 'Material Symbols Outlined', damagesLives: true },
+    HEAVY: { speed: 1, health: 30, color: '#3446ceff', size: 20, gold: 3, icon: 'guardian', iconFamily: 'Material Symbols Outlined', splashImmune: true, damagesLives: true },
     SWARM: { speed: 3.0, health: 4, color: '#00e6e6', size: 10, gold: 1, icon: 'bug_report', iconFamily: 'Material Icons', damagesLives: true },
     FLYING: { speed: 2.0, health: 15, color: '#5e359fff', size: 16, gold: 2, icon: 'helicopter', iconFamily: "'Material Symbols Outlined'", isFlying: true, splashImmune: true, damagesLives: true },
     BITCOIN: { speed: 2.0, health: 50, color: '#F7931A', size: 20, gold: 0, icon: 'currency_bitcoin', iconFamily: 'Material Symbols Outlined', isFlying: false, splashImmune: false, damagesLives: false },

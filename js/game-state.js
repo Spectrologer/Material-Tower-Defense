@@ -1,37 +1,24 @@
-import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from "./game-entities.js";
+// This file handles all the data about the current game session,
+// like how much gold you have, what wave you're on, and where all the towers are.
+// It also takes care of saving and loading your progress to your browser's storage.
+
+import { Tower, } from "./game-entities.js";
 import { generatePath } from "./path-generator.js";
 
-/**
- * @typedef {Object} GameState
- * @property {number} gold
- * @property {number} lives
- * @property {number} wave
- * @property {boolean} waveInProgress
- * @property {boolean} spawningEnemies
- * @property {Array<Enemy>} enemies
- * @property {Array<Tower>} towers
- * @property {Array<Projectile>} projectiles
- * @property {Array<Effect>} effects
- * @property {Array<TextAnnouncement>} announcements
- * @property {Array<Array<number>>} placementGrid
- * @property {Array<Tower>} cloudInventory
- * @property {boolean} isCloudUnlocked
- * @property {Set<string>} introducedEnemies
- * @property {Array<{x: number, y: number}>} path
- * @property {boolean} hasPlacedFirstSupport
- * @property {boolean} gameOver
- */
-
-/**
- * @type {GameState}
- */
+// This is a list of everything that makes up the game's state.
+// - gold, lives, wave: Your basic resources and progress.
+// - enemies, towers, projectiles, etc.: Arrays holding all the active things in the game.
+// - placementGrid: A 2D array representing the game board and where you can build.
+// - cloudInventory: Towers you've stored for later use.
 export let gameState;
 
+// Wipes the slate clean and starts a brand new game.
 export function resetGameState() {
     clearGameStateFromStorage();
     gameState = getInitialGameState();
 }
 
+// Loads the last saved game from the browser's local storage.
 export function loadGameStateFromStorage() {
     gameState = getGameStateFromStorage();
 }
@@ -41,12 +28,10 @@ export function resetLastSaveTime() {
     lastSaveTime = null;
 }
 
-/**
- * Saves the current game state to localStorage so that it can be restored later.
- * @param {number} throttleMs - Minimum time in milliseconds since the last save to perform a new save.
- */
+// Saves your current progress to the browser's storage.
+// It won't save constantly, just every so often to avoid performance issues.
 export function persistGameState(throttleMs = 1000) {
-    // only allow saving between waves for now
+    // For now, it only saves when a wave is not in progress.
     if (gameState.waveInProgress) return;
 
     const timeSinceLastSave = lastSaveTime ? Date.now() - lastSaveTime : Infinity;
@@ -63,6 +48,7 @@ function clearGameStateFromStorage() {
     localStorage.removeItem("gameState");
 }
 
+// This sets up all the default values for a new game.
 function getInitialGameState() {
     const pathData = generatePath();
     return {
@@ -86,11 +72,13 @@ function getInitialGameState() {
     };
 }
 
+// Grabs the saved game data from local storage. If there's no save, it starts a new game.
 function getGameStateFromStorage() {
     const value = localStorage.getItem("gameState");
     return value ? deserializeGameState(value) : getInitialGameState();
 }
 
+// Packages up the current game state into a string so it can be saved.
 function getSerializedGameState() {
     return JSON.stringify({
         lives: gameState.lives,
@@ -103,18 +91,13 @@ function getSerializedGameState() {
         isCloudUnlocked: gameState.isCloudUnlocked,
         path: gameState.path,
         placementGrid: gameState.placementGrid,
-
-        // Things that we need to serialize/deserialize
         towers: gameState.towers.map((t) => t.toJSON()),
         cloudInventory: gameState.cloudInventory.map((t) => t.toJSON()),
         introducedEnemies: Array.from(gameState.introducedEnemies),
     });
 }
 
-/**
- * @param {string} serializedGameState
- * @returns {GameState}
- */
+// Takes a saved game string and turns it back into a usable game state object.
 function deserializeGameState(serializedGameState) {
     try {
         const { towers, cloudInventory, introducedEnemies, ...basicData } = JSON.parse(serializedGameState);
@@ -127,7 +110,7 @@ function deserializeGameState(serializedGameState) {
             introducedEnemies: new Set(introducedEnemies),
         };
     } catch (e) {
-        console.error("Failed to deserialize game state:", e);
+        console.error("Failed to load saved game state:", e);
         return getInitialGameState();
     }
 }
