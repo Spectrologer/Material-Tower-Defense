@@ -76,7 +76,7 @@ function getInitialGameState() {
     return {
         lives: 20,
         gold: 100,
-        wave: 0,
+        wave: 1,
         enemies: [],
         towers: [],
         projectiles: [],
