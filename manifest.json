@@ -1,12 +1,12 @@
 {
   "name": "Iconic Tower Defense",
-  "short_name": "ITD",
+  "short_name": "Iconic TD",
   "description": "A tower defense game using icons",
-  "start_url": "/",
+  "start_url": "/Material-Tower-Defense",
   "display": "standalone",
   "background_color": "#2c2c2c",
   "theme_color": "#4CAF50",
-  "orientation": "landscape",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "images/rook-192.png",
