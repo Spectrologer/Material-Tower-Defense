@@ -73,7 +73,7 @@ export const waveDefinitions = [
     },
     // Wave 11
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 5)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.NORMAL, 8), comp(ENEMY_TYPES.FAST, 5)],
         healthMultiplier: 2.85, healthBonus: 10,
     },
     // Wave 12 (Swarm)
