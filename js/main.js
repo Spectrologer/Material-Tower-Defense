@@ -1,6 +1,6 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
@@ -31,6 +31,9 @@ let lastTime = 0;
 let pendingMergeState = null;
 let isMergeConfirmationEnabled = true;
 let isSellConfirmPending = false;
+let libraryCurrentIndex = 0;
+let libraryEnemyCurrentIndex = 0;
+let libraryActiveTab = 'towers';
 
 
 // This function will be called on the first user interaction to enable audio.
@@ -551,6 +554,9 @@ function gameLoop(currentTime) {
     const onEnemyDeath = (enemy, payload = {}) => {
         if (selectedEnemy === enemy) {
             selectedEnemy = null;
+        }
+        if (enemy.typeName) {
+            gameState.killedEnemies.add(enemy.typeName);
         }
         if (enemy.gold > 0) {
             playMoneySound();
@@ -1587,6 +1593,91 @@ if (uiElements.toggleMergeConfirm) {
         localStorage.setItem('mergeConfirmation', JSON.stringify(isMergeConfirmationEnabled));
     });
 }
+
+function updateLibraryView() {
+    if (libraryActiveTab === 'towers') {
+        const cards = uiElements.towerLibraryRolodex.querySelectorAll('.tower-card-container');
+        if (cards.length === 0) return;
+        cards.forEach((card, index) => {
+            card.classList.toggle('hidden', index !== libraryCurrentIndex);
+        });
+        uiElements.libraryCounter.textContent = `${libraryCurrentIndex + 1} / ${cards.length}`;
+    } else { // enemies
+        const cards = uiElements.enemyLibraryRolodex.querySelectorAll('.enemy-card-container');
+        if (cards.length === 0) return;
+        cards.forEach((card, index) => {
+            card.classList.toggle('hidden', index !== libraryEnemyCurrentIndex);
+        });
+        uiElements.libraryCounter.textContent = `${libraryEnemyCurrentIndex + 1} / ${cards.length}`;
+    }
+}
+
+function updateLibraryTabState() {
+    const isTowers = libraryActiveTab === 'towers';
+    uiElements.towerLibraryRolodex.classList.toggle('hidden', !isTowers);
+    uiElements.enemyLibraryRolodex.classList.toggle('hidden', isTowers);
+    uiElements.libraryTowersTab.classList.toggle('bg-gray-600', isTowers);
+    uiElements.libraryTowersTab.classList.toggle('bg-gray-800', !isTowers);
+    uiElements.libraryEnemiesTab.classList.toggle('bg-gray-600', !isTowers);
+    uiElements.libraryEnemiesTab.classList.toggle('bg-gray-800', isTowers);
+    updateLibraryView();
+}
+
+
+uiElements.libraryBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    populateLibraries(gameState);
+    libraryCurrentIndex = 0;
+    libraryEnemyCurrentIndex = 0;
+    libraryActiveTab = 'towers';
+    updateLibraryTabState();
+    uiElements.libraryModal.classList.remove('hidden');
+    uiElements.optionsMenu.classList.add('hidden');
+});
+
+uiElements.libraryCloseBtn.addEventListener('click', () => {
+    uiElements.libraryModal.classList.add('hidden');
+});
+
+uiElements.libraryNextBtn.addEventListener('click', () => {
+    if (libraryActiveTab === 'towers') {
+        const cards = uiElements.towerLibraryRolodex.querySelectorAll('.tower-card-container');
+        if (cards.length > 0) {
+            libraryCurrentIndex = (libraryCurrentIndex + 1) % cards.length;
+        }
+    } else {
+        const cards = uiElements.enemyLibraryRolodex.querySelectorAll('.enemy-card-container');
+        if (cards.length > 0) {
+            libraryEnemyCurrentIndex = (libraryEnemyCurrentIndex + 1) % cards.length;
+        }
+    }
+    updateLibraryView();
+});
+
+uiElements.libraryPrevBtn.addEventListener('click', () => {
+    if (libraryActiveTab === 'towers') {
+        const cards = uiElements.towerLibraryRolodex.querySelectorAll('.tower-card-container');
+        if (cards.length > 0) {
+            libraryCurrentIndex = (libraryCurrentIndex - 1 + cards.length) % cards.length;
+        }
+    } else {
+        const cards = uiElements.enemyLibraryRolodex.querySelectorAll('.enemy-card-container');
+        if (cards.length > 0) {
+            libraryEnemyCurrentIndex = (libraryEnemyCurrentIndex - 1 + cards.length) % cards.length;
+        }
+    }
+    updateLibraryView();
+});
+
+uiElements.libraryTowersTab.addEventListener('click', () => {
+    libraryActiveTab = 'towers';
+    updateLibraryTabState();
+});
+
+uiElements.libraryEnemiesTab.addEventListener('click', () => {
+    libraryActiveTab = 'enemies';
+    updateLibraryTabState();
+});
 
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('click', (event) => {

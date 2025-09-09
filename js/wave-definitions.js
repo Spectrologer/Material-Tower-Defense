@@ -62,7 +62,7 @@ export const waveDefinitions = [
     },
     // Wave 9
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 10), comp(ENEMY_TYPES.FLYING, 10)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.FLYING, 5)],
         healthMultiplier: 2.20, healthBonus: 10,
         endOfWaveAnnouncement: { text: "Warning:\nUpcoming enemies will steal gold!", color: '#f7e51aff' }
     },
@@ -73,13 +73,13 @@ export const waveDefinitions = [
     },
     // Wave 11
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.NORMAL, 8), comp(ENEMY_TYPES.FAST, 5)],
-        healthMultiplier: 2.85, healthBonus: 20,
+        composition: [comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.NORMAL, 5), comp(ENEMY_TYPES.FAST, 5)],
+        healthMultiplier: 2.35, healthBonus: 20,
     },
     // Wave 12 (Swarm)
     {
         isSwarm: true,
-        composition: [comp(ENEMY_TYPES.SWARM, 65)],
+        composition: [comp(ENEMY_TYPES.SWARM, 35)],
         healthMultiplier: 1.55, healthBonus: 10,
     },
     // Wave 13

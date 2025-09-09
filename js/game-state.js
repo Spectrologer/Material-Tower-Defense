@@ -17,6 +17,9 @@ export function resetGameState() {
     // Get the current persistent settings before wiping the state
     const discoveredMerges = gameState ? gameState.discoveredMerges : new Set();
     const onboardingTipDismissed = gameState ? gameState.onboardingTipDismissed : false;
+    const discoveredTowerTypes = gameState ? gameState.discoveredTowerTypes : new Set(['PIN', 'CASTLE', 'SUPPORT']);
+    const killedEnemies = gameState ? gameState.killedEnemies : new Set();
+
 
     // This just removes the 'gameState' item from local storage
     clearGameStateFromStorage();
@@ -27,6 +30,8 @@ export function resetGameState() {
     // Now, apply the persistent settings to the fresh object
     newGameState.discoveredMerges = discoveredMerges;
     newGameState.onboardingTipDismissed = onboardingTipDismissed;
+    newGameState.discoveredTowerTypes = discoveredTowerTypes;
+    newGameState.killedEnemies = killedEnemies;
 
     // Set the module's gameState to the newly prepared state
     gameState = newGameState;
@@ -81,10 +86,12 @@ function getInitialGameState() {
         effects: [],
         announcements: [],
         introducedEnemies: new Set(),
+        killedEnemies: new Set(),
         hasPlacedFirstSupport: false,
         hasPerformedFirstMerge: false,
         onboardingTipDismissed: false,
         discoveredMerges: new Set(),
+        discoveredTowerTypes: new Set(['PIN', 'CASTLE', 'SUPPORT']),
         waveInProgress: false,
         spawningEnemies: false,
         gameOver: false,
@@ -119,14 +126,16 @@ function getSerializedGameState() {
         towers: gameState.towers.map((t) => t.toJSON()),
         cloudInventory: gameState.cloudInventory.map((t) => t.toJSON()),
         introducedEnemies: Array.from(gameState.introducedEnemies),
+        killedEnemies: Array.from(gameState.killedEnemies),
         discoveredMerges: Array.from(gameState.discoveredMerges),
+        discoveredTowerTypes: Array.from(gameState.discoveredTowerTypes),
     });
 }
 
 // Takes a saved game string and turns it back into a usable game state object.
 function deserializeGameState(serializedGameState) {
     try {
-        const { towers, cloudInventory, introducedEnemies, discoveredMerges, ...basicData } = JSON.parse(serializedGameState);
+        const { towers, cloudInventory, introducedEnemies, killedEnemies, discoveredMerges, discoveredTowerTypes, ...basicData } = JSON.parse(serializedGameState);
 
         return {
             ...getInitialGameState(),
@@ -134,8 +143,10 @@ function deserializeGameState(serializedGameState) {
             cloudInventory: cloudInventory.map((data) => Tower.fromJSON(data)),
             towers: towers.map((data) => Tower.fromJSON(data)),
             introducedEnemies: new Set(introducedEnemies),
+            killedEnemies: new Set(killedEnemies || []),
             onboardingTipDismissed: basicData.onboardingTipDismissed || false,
             discoveredMerges: new Set(discoveredMerges || []),
+            discoveredTowerTypes: new Set(discoveredTowerTypes || ['PIN', 'CASTLE', 'SUPPORT']),
         };
     } catch (e) {
         console.error("Failed to load saved game state:", e);

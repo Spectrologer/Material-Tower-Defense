@@ -1,4 +1,4 @@
-import { TOWER_TYPES } from './constants.js';
+import { TOWER_TYPES, ENEMY_TYPES } from './constants.js';
 import { getTowerIconInfo } from './drawing-function.js';
 
 /**
@@ -57,6 +57,16 @@ export const uiElements = {
     closeOptionsBtn: document.getElementById('close-options-btn'), // Note: This element doesn't exist in HTML
     toggleMergeConfirm: /** @type {HTMLInputElement} */ (document.getElementById('toggle-merge-confirm-checkbox')),
     resetGameBtn: getButton('reset-game-btn'),
+    libraryBtn: getButton('library-btn'),
+    libraryModal: document.getElementById('library-modal'),
+    libraryTowersTab: getButton('library-towers-tab'),
+    libraryEnemiesTab: getButton('library-enemies-tab'),
+    towerLibraryRolodex: document.getElementById('tower-library-rolodex'),
+    enemyLibraryRolodex: document.getElementById('enemy-library-rolodex'),
+    libraryPrevBtn: getButton('library-prev-btn'),
+    libraryNextBtn: getButton('library-next-btn'),
+    libraryCounter: document.getElementById('library-counter'),
+    libraryCloseBtn: getButton('library-close-btn'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
@@ -229,6 +239,9 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         const baseStats = TOWER_TYPES[selectedTower.type];
         if (baseStats.special) {
             let specialText = baseStats.special;
+            if (selectedTower.type === 'FORT' && selectedTower.hasShrapnel) {
+                specialText += " + AA Shrapnel";
+            }
             if (uiElements.statSpecialP) {
                 uiElements.statSpecialP.classList.remove('hidden');
                 const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
@@ -430,5 +443,127 @@ export function triggerGameOver(isWin, wave) {
         if (uiElements.gameOverTitle) uiElements.gameOverTitle.textContent = "GAME OVER";
         if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
+}
+
+function createTowerCardHTML(type, isDiscovered) {
+    const stats = TOWER_TYPES[type];
+    if (!stats) return '';
+
+    const iconInfo = getTowerIconInfo(type);
+    let iconHTML;
+    if (iconInfo.className.startsWith('fa-')) {
+        iconHTML = `<i class="${iconInfo.className} fa-${iconInfo.icon}" style="font-size: 48px; color: ${stats.color};"></i>`;
+    } else {
+        iconHTML = `<span class="${iconInfo.className}" style="font-size: 64px; color: ${stats.color}; font-variation-settings: 'FILL' 1;">${iconInfo.icon}</span>`;
+    }
+
+    if (!isDiscovered) {
+        return `
+            <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-center text-center">
+                <span class="material-symbols-outlined" style="font-size: 64px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
+                <h4 class="text-xl mt-2 text-white">???</h4>
+            </div>
+        `;
+    }
+
+    const name = type.replace('_', ' ');
+
+    let statsHTML = `<p class="text-xs text-yellow-400 mt-2">${stats.special || 'No special ability'}</p>`;
+
+    return `
+        <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
+            <div>
+                ${iconHTML}
+                <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
+            </div>
+            <div class="text-left text-xs w-full grid grid-cols-2 gap-x-4 gap-y-1">
+                ${stats.damage > 0 ? `<p>Dmg: ${stats.damage}</p>` : ''}
+                ${stats.range > 0 ? `<p>Rng: ${stats.range}</p>` : ''}
+                ${stats.fireRate > 0 ? `<p>Spd: ${(60 / stats.fireRate).toFixed(2)}/s</p>` : ''}
+                ${stats.splashRadius > 0 ? `<p>Spl: ${stats.splashRadius}</p>` : ''}
+                ${stats.attackSpeedBoost ? `<p>Spd Aura: +${((1 - stats.attackSpeedBoost) * 100).toFixed(0)}%</p>` : ''}
+                ${stats.damageBoost ? `<p>Dmg Aura: +${((stats.damageBoost - 1) * 100).toFixed(0)}%</p>` : ''}
+                ${stats.enemySlow ? `<p>Slow Aura: -${((1 - stats.enemySlow) * 100).toFixed(0)}%</p>` : ''}
+                ${stats.goldBonus ? `<p>Gold Aura: +${stats.goldBonus}G</p>` : ''}
+                ${stats.burnDps ? `<p>Burn: ${stats.burnDps}/s</p>` : ''}
+            </div>
+             ${statsHTML}
+        </div>
+    `;
+}
+
+function createEnemyCardHTML(type, isDiscovered) {
+    const stats = ENEMY_TYPES[type];
+    if (!stats) return '';
+
+    const iconHTML = `<span class="${stats.iconFamily || 'material-icons'}" style="font-size: 64px; color: ${stats.color};">${stats.icon}</span>`;
+
+    if (!isDiscovered) {
+        return `
+            <div class="enemy-card absolute inset-0 p-4 flex flex-col items-center justify-center text-center">
+                <span class="material-symbols-outlined" style="font-size: 64px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
+                <h4 class="text-xl mt-2 text-white">???</h4>
+            </div>
+        `;
+    }
+
+    const name = type.replace('_', ' ');
+
+    let specialText = '';
+    if (stats.isFlying) specialText += 'Flying, ';
+    if (stats.splashImmune) specialText += 'Splash Immune, ';
+    if (stats.laysEggs) specialText += 'Lays Eggs, ';
+    if (specialText) specialText = specialText.slice(0, -2); // Remove trailing comma and space
+    else specialText = 'No special abilities';
+
+    let statsHTML = `<p class="text-xs text-yellow-400 mt-2">${specialText}</p>`;
+
+    return `
+        <div class="enemy-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
+            <div>
+                ${iconHTML}
+                <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
+            </div>
+            <div class="text-left text-xs w-full grid grid-cols-2 gap-x-4 gap-y-1">
+                <p>Health: ${stats.health}</p>
+                <p>Speed: ${stats.speed}</p>
+                <p>Gold: ${stats.gold}</p>
+            </div>
+             ${statsHTML}
+        </div>
+    `;
+}
+
+function populateTowerLibrary(gameState) {
+    const allTowerTypes = Object.keys(TOWER_TYPES);
+    uiElements.towerLibraryRolodex.innerHTML = '';
+
+    allTowerTypes.forEach(type => {
+        const isDiscovered = gameState.discoveredTowerTypes.has(type);
+        const cardHTML = createTowerCardHTML(type, isDiscovered);
+        const cardContainer = document.createElement('div');
+        cardContainer.className = 'tower-card-container w-full h-full absolute hidden';
+        cardContainer.innerHTML = cardHTML;
+        uiElements.towerLibraryRolodex.appendChild(cardContainer);
+    });
+}
+
+function populateEnemyLibrary(gameState) {
+    const allEnemyTypes = Object.keys(ENEMY_TYPES);
+    uiElements.enemyLibraryRolodex.innerHTML = '';
+
+    allEnemyTypes.forEach(type => {
+        const isDiscovered = gameState.killedEnemies.has(type);
+        const cardHTML = createEnemyCardHTML(type, isDiscovered);
+        const cardContainer = document.createElement('div');
+        cardContainer.className = 'enemy-card-container w-full h-full absolute hidden';
+        cardContainer.innerHTML = cardHTML;
+        uiElements.enemyLibraryRolodex.appendChild(cardContainer);
+    });
+}
+
+export function populateLibraries(gameState) {
+    populateTowerLibrary(gameState);
+    populateEnemyLibrary(gameState);
 }
 

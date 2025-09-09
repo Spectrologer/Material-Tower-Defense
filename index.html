@@ -304,6 +304,7 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <button id="library-btn" class="pixel-button text-sm py-2 text-center mt-2">LIBRARY</button>
             <button id="reset-game-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] text-sm py-2 text-center mt-2">RESET
                 GAME</button>
@@ -489,14 +490,40 @@
         </div>
     </div>
 
+    <!-- Library Modal -->
+    <div id="library-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
+        <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
+            <h3 class="text-lg sm:text-xl text-green-400 mb-2 text-center">LIBRARY</h3>
+            <!-- Tabs -->
+            <div class="flex border-b-2 border-gray-600 mb-2">
+                <button id="library-towers-tab"
+                    class="pixel-button flex-1 !rounded-b-none border-b-0 bg-gray-600 text-sm py-2">TOWERS</button>
+                <button id="library-enemies-tab"
+                    class="pixel-button flex-1 !rounded-b-none border-b-0 text-sm py-2">ENEMIES</button>
+            </div>
+
+            <!-- Rolodex Container -->
+            <div class="flex-grow relative bg-black/20 p-2 border border-gray-600 overflow-hidden">
+                <div id="tower-library-rolodex" class="w-full h-full">
+                    <!-- Tower Cards will be generated here -->
+                </div>
+                <div id="enemy-library-rolodex" class="w-full h-full hidden">
+                    <!-- Enemy Cards will be generated here -->
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mt-4">
+                <button id="library-prev-btn" class="pixel-button text-sm p-2">&lt; PREV</button>
+                <span id="library-counter" class="text-white text-sm">1 / X</span>
+                <button id="library-next-btn" class="pixel-button text-sm p-2">NEXT &gt;</button>
+            </div>
+            <button id="library-close-btn"
+                class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
+        </div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js');
-            });
-        }
-    </script>
+
 </body>
 
 </html>
