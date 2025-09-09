@@ -343,6 +343,36 @@ function spawnWave() {
     spawnNextEnemy(); // Start the spawning loop
 }
 
+function updateStealthVisibility() {
+    const supportTowers = gameState.towers.filter(t => ['SUPPORT', 'ENT', 'CAT'].includes(t.type));
+    const stealthEnemies = gameState.enemies.filter(e => e.type.isInvisible);
+
+    if (stealthEnemies.length === 0) return;
+
+    if (supportTowers.length === 0) {
+        stealthEnemies.forEach(enemy => enemy.isVisible = false);
+        return;
+    }
+
+    stealthEnemies.forEach(enemy => {
+        let isDetected = false;
+        const enemyGridX = Math.floor(enemy.x / TILE_SIZE);
+        const enemyGridY = Math.floor(enemy.y / TILE_SIZE);
+
+        for (const tower of supportTowers) {
+            const towerGridX = Math.floor(tower.x / TILE_SIZE);
+            const towerGridY = Math.floor(tower.y / TILE_SIZE);
+
+            if (Math.abs(towerGridX - enemyGridX) <= 3 && Math.abs(towerGridY - enemyGridY) <= 3) {
+                isDetected = true;
+                break;
+            }
+        }
+        enemy.isVisible = isDetected;
+    });
+}
+
+
 function applyAuraEffects() {
     // Reset enemies' slow multiplier first.
     gameState.enemies.forEach(enemy => {
@@ -550,6 +580,7 @@ function gameLoop(currentTime) {
     const effectiveDeltaTime = deltaTime * gameSpeed;
     const frameTargetedEnemies = new Set();
 
+    updateStealthVisibility();
     applyAuraEffects();
     const onEnemyDeath = (enemy, payload = {}) => {
         if (selectedEnemy === enemy) {
@@ -853,7 +884,7 @@ function handleCanvasAction(e) {
     let isPlacingMode = placingTower || placingFromCloud;
 
     // Prioritize clicking on an enemy
-    const clickedOnEnemy = gameState.enemies.find(en => Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
+    const clickedOnEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
     if (clickedOnEnemy) {
         selectedEnemy = clickedOnEnemy;
         selectedTower = null; // Deselect any tower

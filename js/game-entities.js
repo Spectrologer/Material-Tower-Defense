@@ -266,6 +266,7 @@ export class Enemy {
         this.jostleX = 0;
         this.jostleY = 0;
         this.jostleTimer = 0;
+        this.isVisible = !this.type.isInvisible;
 
         if (this.type.laysEggs) {
             this.timeUntilLay = this.type.layEggInterval;
@@ -287,6 +288,7 @@ export class Enemy {
         }
     }
     draw(ctx) {
+        if (!this.isVisible) return;
         ctx.save();
         if (this.wiggleTimer > 0) {
             const wiggleAmount = 3;
@@ -709,7 +711,7 @@ export class Tower {
     }
     findTarget(enemies, frameTargetedEnemies) {
         this.target = null;
-        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying);
+        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
 
         if (this.isUnderDiversifyAura) {
             potentialTargets = potentialTargets.filter(enemy => !frameTargetedEnemies.has(enemy.id));
@@ -727,7 +729,7 @@ export class Tower {
 
         if (potentialTargets.length === 0) {
             if (this.isUnderDiversifyAura) { // Fallback for diversify
-                potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying);
+                potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
             } else {
                 return;
             }
