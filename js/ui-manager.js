@@ -109,8 +109,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         uiElements.gameControls.classList.add('hidden');
         uiElements.towersTitle.classList.add('hidden');
         uiElements.sellPanel.classList.remove('hidden');
-        uiElements.towerKillCount.classList.remove('hidden');
-        uiElements.killCountValue.textContent = selectedTower.killCount || 0;
         const sellValue = Math.floor(selectedTower.cost * 0.5);
 
         // Hide the move to cloud button entirely if cloud is not unlocked
@@ -120,6 +118,17 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         } else {
             if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'none';
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.add('col-span-2');
+        }
+
+        const killCountIcon = uiElements.towerKillCount.querySelector('span.material-symbols-outlined');
+        if (selectedTower.type === 'CAT') {
+            uiElements.towerKillCount.classList.remove('hidden');
+            if (killCountIcon) killCountIcon.textContent = 'paid';
+            uiElements.killCountValue.textContent = selectedTower.goldGenerated || 0;
+        } else {
+            uiElements.towerKillCount.classList.remove('hidden');
+            if (killCountIcon) killCountIcon.textContent = 'skull';
+            uiElements.killCountValue.textContent = selectedTower.killCount || 0;
         }
 
         let levelText;
@@ -274,28 +283,31 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             if (selectedTower.type === 'CAT') {
                 if (uiElements.statGoldP) uiElements.statGoldP.classList.remove('hidden');
                 if (uiElements.statGold) {
-                    const goldPercent = ((selectedTower.goldBonus - 1) * 100).toFixed(0);
-                    uiElements.statGold.textContent = `${goldPercent}%`;
+                    uiElements.statGold.textContent = `+${selectedTower.goldBonus}G`;
                 }
             }
             if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                 if (selectedTower.mode === 'boost') {
-                    // Corrected line to access the correct UI elements.
                     if (uiElements.statBoostP) uiElements.statBoostP.classList.remove('hidden');
                     if (uiElements.statBoost) {
                         const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
                         uiElements.statBoost.textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
                     }
                     if (uiElements.statSlowP) uiElements.statSlowP.classList.add('hidden');
-                } else {
+                } else if (selectedTower.mode === 'slow') {
                     if (uiElements.statSlowP) uiElements.statSlowP.classList.remove('hidden');
                     if (uiElements.statSlow) {
                         const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
                         uiElements.statSlow.textContent = `${slowPercent}%`;
                     }
                     if (uiElements.statBoostP) uiElements.statBoostP.classList.add('hidden');
+                } else { // Diversify mode
+                    if (uiElements.statBoostP) uiElements.statBoostP.classList.add('hidden');
+                    if (uiElements.statSlowP) uiElements.statSlowP.classList.add('hidden');
+                    if (uiElements.statSpecialP) uiElements.statSpecialP.classList.remove('hidden');
+                    if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Aura: Towers attack different enemies';
                 }
-            } else {
+            } else { // SUPPORT tower
                 if (uiElements.statBoostP) uiElements.statBoostP.classList.remove('hidden');
                 if (uiElements.statBoost) {
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
@@ -384,3 +396,4 @@ export function triggerGameOver(isWin, wave) {
         if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }
+

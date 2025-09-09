@@ -260,10 +260,12 @@ export class Enemy {
         this.hitTimer = 0;
         this.burns = [];
         this.slowMultiplier = 1;
-        this.jostle = { x: 0, y: 0, timer: 0, strength: 4 };
         this.isDying = false;
         this.deathAnimationTimer = 0;
-        this.deathSpinAngle = 0;
+        this.rotation = 0;
+        this.jostleX = 0;
+        this.jostleY = 0;
+        this.jostleTimer = 0;
 
         if (this.type.laysEggs) {
             this.timeUntilLay = this.type.layEggInterval;
@@ -286,25 +288,17 @@ export class Enemy {
     }
     draw(ctx) {
         ctx.save();
-        if (this.isDying) {
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.deathSpinAngle);
-            const fadeOutAlpha = this.deathAnimationTimer > 0 ? this.deathAnimationTimer / 1.0 : 0;
-            ctx.globalAlpha = fadeOutAlpha;
+        if (this.wiggleTimer > 0) {
+            const wiggleAmount = 3;
+            const wiggleSpeed = 30; // Radians per second
+            ctx.translate(this.x + Math.sin(this.wiggleTimer * wiggleSpeed) * wiggleAmount, this.y);
         } else {
-            if (this.jostle.timer > 0) {
-                ctx.translate(this.jostle.x, this.jostle.y);
-            }
-
-            if (this.wiggleTimer > 0) {
-                const wiggleAmount = 3;
-                const wiggleSpeed = 30; // Radians per second
-                ctx.translate(this.x + Math.sin(this.wiggleTimer * wiggleSpeed) * wiggleAmount, this.y);
-            } else {
-                ctx.translate(this.x, this.y);
-            }
+            ctx.translate(this.x + this.jostleX, this.y + this.jostleY);
         }
 
+        if (this.rotation) {
+            ctx.rotate(this.rotation);
+        }
 
         ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
         ctx.fillStyle = this.color;
@@ -312,8 +306,6 @@ export class Enemy {
         ctx.textBaseline = 'middle';
         ctx.fillText(this.type.icon, 0, 0);
         ctx.restore();
-
-        if (this.isDying) return; // Skip health bar and other effects when dying
 
         const healthBarWidth = this.size * 2;
         const healthBarHeight = 5;
@@ -346,47 +338,50 @@ export class Enemy {
         ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
         ctx.stroke();
     }
-    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound) {
-        if (this.isDying) {
-            this.deathAnimationTimer -= deltaTime;
-            this.deathSpinAngle += 20 * deltaTime; // Spin fast
-            this.x += (Math.random() - 0.5) * 2; // Drift sideways
-            this.y += 1.5; // Fall downwards
-
-            if (this.deathAnimationTimer <= 0) {
-                onDeath(this, { isAnimatedDeath: true });
-                return false; // Animation finished, remove the enemy
-            }
-            return true; // Continue animation
-        }
-
+    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime) {
         if (this.hitTimer > 0) {
             this.hitTimer -= deltaTime;
         }
+        if (this.jostleTimer > 0) {
+            this.jostleTimer -= deltaTime;
+            const progress = this.jostleTimer / 0.1; // 0.1 is the duration of the jostle
+            this.jostleX = Math.sin(progress * Math.PI * 4) * 2 * progress; // Sin wave for back and forth
+            this.jostleY = Math.cos(progress * Math.PI * 4) * 2 * progress;
+        } else {
+            this.jostleX = 0;
+            this.jostleY = 0;
+        }
 
-        if (this.jostle.timer > 0) {
-            this.jostle.timer -= deltaTime;
-            if (this.jostle.timer <= 0) {
-                this.jostle.x = 0;
-                this.jostle.y = 0;
+        // --- Death Animation ---
+        if (this.isDying) {
+            this.deathAnimationTimer -= deltaTime;
+            if (this.type.isFlying) {
+                this.rotation += 30 * deltaTime;
+                this.y += 50 * deltaTime;
             }
+            if (this.deathAnimationTimer <= 0) {
+                onDeath(this, { isAnimatedDeath: true });
+                return false;
+            }
+            return true;
         }
 
         // --- Health & Burn Damage ---
         if (this.burns.length > 0) {
             const burn = this.burns[0];
-            const damageToTake = burn.dps * deltaTime;
-            if (this.takeDamage(damageToTake)) {
-                onDeath(this);
-                return false;
-            }
-            if (playHitSound) playHitSound();
+            this.health -= burn.dps * deltaTime;
             burn.duration -= deltaTime;
             if (burn.duration <= 0) this.burns.shift();
         }
         if (this.health <= 0) {
-            onDeath(this);
-            return false; // Remove this enemy
+            if (this.type.isFlying) { // Trigger death animation for flying units
+                this.isDying = true;
+                this.deathAnimationTimer = 0.5; // seconds
+                return true; // Keep the enemy for animation
+            } else {
+                onDeath(this);
+                return false; // Remove this enemy immediately
+            }
         }
 
         // --- Special Behaviors ---
@@ -477,35 +472,11 @@ export class Enemy {
 
         return true; // Keep this enemy
     }
-    takeDamage(amount, projectile = null) {
-        if (this.isDying) return false;
-
+    takeDamage(amount) {
         this.health -= amount;
         this.hitTimer = 0.08; // seconds
-
-        this.jostle.timer = 0.1;
-        if (projectile) {
-            const dx = this.x - projectile.x;
-            const dy = this.y - projectile.y;
-            const dist = Math.hypot(dx, dy) || 1;
-            this.jostle.x = (dx / dist) * this.jostle.strength;
-            this.jostle.y = (dy / dist) * this.jostle.strength;
-        } else {
-            // For non-projectile damage (like burn)
-            const randAngle = Math.random() * Math.PI * 2;
-            this.jostle.x = Math.cos(randAngle) * this.jostle.strength * 0.5;
-            this.jostle.y = Math.sin(randAngle) * this.jostle.strength * 0.5;
-        }
-
-        if (this.health <= 0) {
-            if (this.type.isFlying) {
-                this.isDying = true;
-                this.deathAnimationTimer = 1.0;
-                return false; // Start animation, don't remove yet
-            }
-            return true; // Remove immediately
-        }
-        return false;
+        this.jostleTimer = 0.1;
+        return this.health <= 0;
     }
 }
 
@@ -524,12 +495,15 @@ export class Tower {
         this.damageMultiplier = 1;
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1;
-        this.goldBonusMultiplier = 1;
+        this.goldBonus = 0;
         this.fragmentBounces = 0;
         this.bounceDamageFalloff = 0.5;
         this.hasFragmentingShot = false;
-        this.hasShrapnel = false;
         this.killCount = 0;
+        this.isUnderDiversifyAura = false;
+        if (this.type === 'CAT') {
+            this.goldGenerated = 0;
+        }
         const baseStats = TOWER_TYPES[type];
         this.splashRadius = baseStats.splashRadius || 0; // Ensure splashRadius is always a number
         if (type === 'FIREPLACE') {
@@ -596,12 +570,10 @@ export class Tower {
     }
     draw(ctx) {
         ctx.save();
-        // Global shadow for all towers
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 0;
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 4;
-
         if (this.type === 'NINE_PIN') {
             const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : 0;
             ctx.save();
@@ -613,7 +585,7 @@ export class Tower {
             ctx.font = `900 90px 'Material Symbols Outlined'`;
             ctx.fillText('move_item', 0, 0);
             ctx.restore();
-            ctx.restore(); // Restore from global shadow save
+            ctx.restore();
             return;
         }
         const visualLevel = this.level === 'MAX LEVEL' ? 6 : this.level;
@@ -647,8 +619,10 @@ export class Tower {
                 iconFamily = "'Material Symbols Outlined'";
                 if (this.mode === 'boost') {
                     ctx.fillStyle = '#65a30d';
-                } else {
+                } else if (this.mode === 'slow') {
                     ctx.fillStyle = '#0891b2';
+                } else { // Diversify
+                    ctx.fillStyle = '#f5c60bff';
                 }
                 break;
             case 'ORBIT':
@@ -662,8 +636,10 @@ export class Tower {
                 iconSize *= TOWER_TYPES.CAT.iconSize;
                 if (this.mode === 'boost') {
                     ctx.fillStyle = '#65a30d';
-                } else {
+                } else if (this.mode === 'slow') {
                     ctx.fillStyle = '#0891b2';
+                } else { // Diversify
+                    ctx.fillStyle = '#f5c60bff';
                 }
                 break;
             case 'ANTI_AIR':
@@ -698,7 +674,7 @@ export class Tower {
         if (this.type === 'ORBIT') {
             this.orbiters.forEach(orbiter => orbiter.draw(ctx));
         }
-        ctx.restore(); // Restore from global shadow save
+        ctx.restore();
     }
     drawRange(ctx) {
         if (this.type === 'ORBIT' || this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') return;
@@ -731,9 +707,13 @@ export class Tower {
         ctx.fillRect(startX, startY, size, size);
         ctx.restore();
     }
-    findTarget(enemies) {
+    findTarget(enemies, frameTargetedEnemies) {
         this.target = null;
         let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying);
+
+        if (this.isUnderDiversifyAura) {
+            potentialTargets = potentialTargets.filter(enemy => !frameTargetedEnemies.has(enemy.id));
+        }
 
         // Special targeting rules
         if (this.type === 'ANTI_AIR') {
@@ -741,38 +721,24 @@ export class Tower {
         } else {
             const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
             if (groundOnlyTowers.includes(this.type)) {
-                // FORT with shrapnel CAN target flying units for its splash
-                if (this.type === 'FORT' && this.hasShrapnel) {
-                    // No filter, can target anything in range to splash on
-                } else {
-                    potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
-                }
+                potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
             }
         }
 
-        if (potentialTargets.length === 0) return;
+        if (potentialTargets.length === 0) {
+            if (this.isUnderDiversifyAura) { // Fallback for diversify
+                potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying);
+            } else {
+                return;
+            }
+        };
+
         switch (this.targetingMode) {
             case 'strongest':
-                let strongestEnemy = null;
-                let maxHealth = -1;
-                for (const enemy of potentialTargets) {
-                    if (enemy.health > maxHealth) {
-                        strongestEnemy = enemy;
-                        maxHealth = enemy.health;
-                    }
-                }
-                this.target = strongestEnemy;
+                this.target = potentialTargets.reduce((a, b) => (a.health > b.health ? a : b), potentialTargets[0]);
                 break;
             case 'weakest':
-                let weakestEnemy = null;
-                let minHealth = Infinity;
-                for (const enemy of potentialTargets) {
-                    if (enemy.health < minHealth) {
-                        weakestEnemy = enemy;
-                        minHealth = enemy.health;
-                    }
-                }
-                this.target = weakestEnemy;
+                this.target = potentialTargets.reduce((a, b) => (a.health < b.health ? a : b), potentialTargets[0]);
                 break;
             case 'furthest':
                 if (this.type === 'FORT') {
@@ -795,33 +761,22 @@ export class Tower {
                     }
                     this.target = bestTarget;
                 } else {
-                    let furthestEnemy = null;
-                    let maxPathIndex = -1;
-                    for (const enemy of potentialTargets) {
-                        if (enemy.pathIndex > maxPathIndex) {
-                            furthestEnemy = enemy;
-                            maxPathIndex = enemy.pathIndex;
-                        }
-                    }
-                    this.target = furthestEnemy;
+                    this.target = potentialTargets.reduce((a, b) => (a.pathIndex > b.pathIndex ? a : b), potentialTargets[0]);
                 }
                 break;
-            default:
-                let closestDist = Infinity;
-                for (const enemy of potentialTargets) {
-                    const dist = Math.hypot(this.x - enemy.x, this.y - enemy.y);
-                    if (dist < closestDist) {
-                        this.target = enemy;
-                        closestDist = dist;
-                    }
-                }
+            default: // closest
+                this.target = potentialTargets.reduce((a, b) => (Math.hypot(this.x - a.x, this.y - a.y) < Math.hypot(this.x - b.x, this.y - b.y) ? a : b), potentialTargets[0]);
                 break;
+        }
+
+        if (this.target && this.isUnderDiversifyAura) {
+            frameTargetedEnemies.add(this.target.id);
         }
     }
     isInRange(enemy) {
         return Math.hypot(this.x - enemy.x, this.y - enemy.y) <= this.range;
     }
-    update(enemies, projectiles, onEnemyDeath, deltaTime) {
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
         if (this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') {
             return;
         }
@@ -829,7 +784,7 @@ export class Tower {
             this.orbiters.forEach(orbiter => {
                 orbiter.update(null, null, null, deltaTime);
                 enemies.forEach(enemy => {
-                    if (enemy.isDying || enemy.type.isFlying) return;
+                    if (enemy.type.isFlying) return;
                     const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
                     if (dist < enemy.size + this.projectileSize) {
                         if (!orbiter.hitEnemies.has(enemy)) {
@@ -846,7 +801,7 @@ export class Tower {
             });
             return;
         }
-        this.findTarget(enemies);
+        this.findTarget(enemies, frameTargetedEnemies);
         if (this.cooldown > 0) this.cooldown -= deltaTime;
         if (this.target && this.cooldown <= 0) {
             this.shoot(projectiles);
@@ -906,12 +861,12 @@ export class Tower {
             fragmentBounces: this.fragmentBounces,
             bounceDamageFalloff: this.bounceDamageFalloff,
             hasFragmentingShot: this.hasFragmentingShot,
-            hasShrapnel: this.hasShrapnel,
-            goldBonusMultiplier: this.goldBonusMultiplier,
+            goldBonus: this.goldBonus,
             splashRadius: this.splashRadius,
             color: this.color,
             projectileSize: this.projectileSize,
             killCount: this.killCount,
+            goldGenerated: this.goldGenerated,
         };
 
         // Add tower-type specific properties
@@ -954,8 +909,7 @@ export class Tower {
             "fragmentBounces",
             "bounceDamageFalloff",
             "hasFragmentingShot",
-            "hasShrapnel",
-            "goldBonusMultiplier",
+            "goldBonus",
             "splashRadius",
             "color",
             "projectileSize",
@@ -966,7 +920,8 @@ export class Tower {
             "enemySlow",
             "goldBonus",
             "orbitMode",
-            "killCount"
+            "killCount",
+            "goldGenerated"
         ];
 
         for (const field of fields) {

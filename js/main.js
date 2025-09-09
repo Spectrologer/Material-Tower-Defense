@@ -330,37 +330,38 @@ function applyAuraEffects() {
 
     // Handle buff applications to towers by finding the single best buff for each stat.
     gameState.towers.forEach(targetTower => {
+        // Reset flags and buffs for this frame
+        targetTower.isUnderDiversifyAura = false;
+
         if (!['SUPPORT', 'ENT', 'CAT'].includes(targetTower.type)) {
             // Reset to base stats before calculating this frame's buffs
             targetTower.fireRate = targetTower.permFireRate;
             targetTower.damageMultiplier = 1;
-            targetTower.goldBonusMultiplier = 1;
+            targetTower.goldBonus = 0;
+            targetTower.goldBuffProviderId = null;
 
-            let bestSpeedBoost = 1; // 1 means no boost
-            let bestDamageBoost = 1; // 1 means no boost
-            let bestGoldBonus = 1;   // 1 means no bonus
+            let bestSpeedBoost = 1;
+            let bestDamageBoost = 1;
+            let bestGoldBonus = 0;
+            let goldProviderId = null;
+            let isDiversified = false;
 
             const targetGridX = Math.floor(targetTower.x / TILE_SIZE);
             const targetGridY = Math.floor(targetTower.y / TILE_SIZE);
 
-            // Find all adjacent aura towers and determine the best buff they offer
+            // Find all adjacent aura towers and determine the best buff/flag they offer
             gameState.towers.forEach(auraTower => {
                 if (['SUPPORT', 'ENT', 'CAT'].includes(auraTower.type)) {
                     const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
                     const auraGridY = Math.floor(auraTower.y / TILE_SIZE);
 
-                    let isAdjacent = false;
-                    if (targetTower.type === 'NINE_PIN') {
-                        if (Math.abs(auraGridX - targetGridX) <= 2 && Math.abs(auraGridY - targetGridY) <= 2) {
-                            isAdjacent = true;
+                    if (Math.abs(auraGridX - targetGridX) <= 1 && Math.abs(auraGridY - targetGridY) <= 1) {
+                        // Check for diversify mode
+                        if (auraTower.mode === 'diversify') {
+                            isDiversified = true;
                         }
-                    } else {
-                        if (Math.abs(auraGridX - targetGridX) <= 1 && Math.abs(auraGridY - targetGridY) <= 1) {
-                            isAdjacent = true;
-                        }
-                    }
 
-                    if (isAdjacent) {
+                        // Check for buffs
                         if (auraTower.type === 'SUPPORT') {
                             bestSpeedBoost = Math.min(bestSpeedBoost, auraTower.attackSpeedBoost);
                         } else if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'boost') {
@@ -368,20 +369,25 @@ function applyAuraEffects() {
                             bestDamageBoost = Math.max(bestDamageBoost, auraTower.damageBoost);
                         }
                         if (auraTower.type === 'CAT') {
-                            bestGoldBonus = Math.max(bestGoldBonus, auraTower.goldBonus);
+                            if (auraTower.goldBonus > bestGoldBonus) {
+                                bestGoldBonus = auraTower.goldBonus;
+                                goldProviderId = auraTower.id;
+                            }
                         }
                     }
                 }
             });
 
-            // Apply only the single best buff found for each stat category
+            // Apply the best buffs and flags found
+            targetTower.isUnderDiversifyAura = isDiversified;
             targetTower.fireRate *= bestSpeedBoost;
             targetTower.damageMultiplier = bestDamageBoost;
-            targetTower.goldBonusMultiplier = bestGoldBonus;
+            targetTower.goldBonus = bestGoldBonus;
+            targetTower.goldBuffProviderId = goldProviderId;
         }
     });
 
-    // Handle enemy slowing auras separately, as this is a debuff on enemies, not a tower buff.
+    // Handle enemy slowing auras separately
     gameState.towers.forEach(auraTower => {
         if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'slow') {
             const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
@@ -407,14 +413,20 @@ function handleProjectileHit(projectile, hitEnemy) {
     }
 
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
-    const goldMultiplier = projectile.owner.goldBonusMultiplier || 1;
 
     const awardGold = (enemy) => {
         if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) return;
-        const goldToGive = Math.ceil(enemy.gold * goldMultiplier);
-        // FIX: Only show gold effect if gold is actually awarded.
+        const bonusGold = projectile.owner.goldBonus || 0;
+        const goldToGive = enemy.gold + bonusGold;
+
         if (goldToGive > 0) {
             gameState.gold += goldToGive;
+            if (bonusGold > 0 && projectile.owner.goldBuffProviderId) {
+                const catTower = gameState.towers.find(t => t.id === projectile.owner.goldBuffProviderId);
+                if (catTower) {
+                    catTower.goldGenerated = (catTower.goldGenerated || 0) + bonusGold;
+                }
+            }
             gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 0.5));
         }
     };
@@ -434,7 +446,8 @@ function handleProjectileHit(projectile, hitEnemy) {
                 // Pins inherit the FORT's damage and multipliers, but deal half damage
                 damage: projectile.owner.damage / 2,
                 damageMultiplier: projectile.owner.damageMultiplier,
-                goldBonusMultiplier: projectile.owner.goldBonusMultiplier,
+                goldBonus: projectile.owner.goldBonus,
+                goldBuffProviderId: projectile.owner.goldBuffProviderId,
                 killCount: 0, // Pins from mortars don't track kills to the main tower
                 // Pin-specific properties
                 projectileSpeed: 7, // Using standard PIN speed
@@ -514,6 +527,7 @@ function gameLoop(currentTime) {
     }
 
     const effectiveDeltaTime = deltaTime * gameSpeed;
+    const frameTargetedEnemies = new Set();
 
     applyAuraEffects();
     const onEnemyDeath = (enemy, payload = {}) => {
@@ -531,7 +545,7 @@ function gameLoop(currentTime) {
 
     const newlySpawnedEnemies = [];
 
-    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime));
+    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies));
     gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects, effectiveDeltaTime));
     gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
         (e) => { // onFinish
@@ -1414,7 +1428,9 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
     resumeAudioContext();
     if (selectedTower) {
         if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
-            selectedTower.mode = selectedTower.mode === 'boost' ? 'slow' : 'boost';
+            const modes = ['boost', 'slow', 'diversify'];
+            const currentIndex = modes.indexOf(selectedTower.mode);
+            selectedTower.mode = modes[(currentIndex + 1) % modes.length];
         } else if (selectedTower.type === 'ORBIT') {
             selectedTower.orbitMode = selectedTower.orbitMode === 'far' ? 'near' : 'far';
         }

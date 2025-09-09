@@ -242,6 +242,20 @@ addRecipe('FORT', 'CASTLE', {
     }
 });
 
+// NEW RECIPE: Upgrade Fort with a Support to add anti-air shrapnel.
+addRecipe('FORT', 'SUPPORT', {
+    resultType: 'FORT', text: 'Upgrade',
+    upgrade: { text: 'AA Shrapnel', icon: 'grain', family: 'material-icons' },
+    canApply: (tower) => !tower.hasShrapnel, // Can only be applied once
+    apply: (tower) => {
+        tower.hasShrapnel = true;
+        tower.level++; // Also provides a level up
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.SUPPORT.color);
+    }
+});
+
+
 // --- ORBIT UPGRADES (FIXED) ---
 const ORBIT_MAX_UPGRADES = 4;
 
