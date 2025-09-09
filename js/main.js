@@ -1586,6 +1586,7 @@ function performPendingMerge() {
     placingTower = null;
     placingFromCloud = null;
     pendingMergeState = null;
+    mergeTooltip.show = false; // FIX: Hide tooltip after merge action
 
     // FIX: Explicitly remove 'selected' class from tower buttons after merge.
     uiElements.buyPinBtn.classList.remove('selected');
@@ -1604,6 +1605,7 @@ uiElements.cancelMergeBtn.addEventListener('click', () => {
     placingTower = null;
     placingFromCloud = null;
     pendingMergeState = null;
+    mergeTooltip.show = false; // FIX: Hide tooltip on cancel
     uiElements.mergeConfirmModal.classList.add('hidden');
 });
 
@@ -1727,4 +1729,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-
