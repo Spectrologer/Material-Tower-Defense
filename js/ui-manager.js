@@ -462,13 +462,26 @@ function createTowerCardHTML(type, isDiscovered) {
             <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-center text-center">
                 <span class="material-symbols-outlined" style="font-size: 64px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
                 <h4 class="text-xl mt-2 text-white">???</h4>
+                <p class="text-xs text-yellow-400 mt-2 italic">"?????????????"</p>
             </div>
         `;
     }
 
     const name = type.replace('_', ' ');
+    const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
 
-    let statsHTML = `<p class="text-xs text-yellow-400 mt-2">${stats.special || 'No special ability'}</p>`;
+    // Build stats with icons
+    let statsGridHTML = '';
+    if (stats.damage > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#ef4444;">bolt</span>Dmg: ${stats.damage}</p>`;
+    if (stats.range > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#60a5fa;">radar</span>Rng: ${stats.range}</p>`;
+    if (stats.fireRate > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#4ade80;">speed</span>Spd: ${(60 / stats.fireRate).toFixed(2)}</p>`;
+    if (stats.splashRadius > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#c084fc;">bubble_chart</span>Spl: ${stats.splashRadius}</p>`;
+    if (stats.attackSpeedBoost) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#f59e0b;">electric_bolt</span>Spd Aura: +${((1 - stats.attackSpeedBoost) * 100).toFixed(0)}%</p>`;
+    if (stats.damageBoost) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#f59e0b;">electric_bolt</span>Dmg Aura: +${((stats.damageBoost - 1) * 100).toFixed(0)}%</p>`;
+    if (stats.enemySlow) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#38bdf8;">hourglass_empty</span>Slow Aura: ${((1 - stats.enemySlow) * 100).toFixed(0)}%</p>`;
+    if (stats.goldBonus) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#facc15;">savings</span>Gold Aura: +${stats.goldBonus}G</p>`;
+    if (stats.burnDps) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#f97316;">local_fire_department</span>Burn: ${stats.burnDps}/s</p>`;
+
 
     return `
         <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
@@ -476,18 +489,10 @@ function createTowerCardHTML(type, isDiscovered) {
                 ${iconHTML}
                 <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
             </div>
-            <div class="text-left text-xs w-full grid grid-cols-2 gap-x-4 gap-y-1">
-                ${stats.damage > 0 ? `<p>Dmg: ${stats.damage}</p>` : ''}
-                ${stats.range > 0 ? `<p>Rng: ${stats.range}</p>` : ''}
-                ${stats.fireRate > 0 ? `<p>Spd: ${(60 / stats.fireRate).toFixed(2)}/s</p>` : ''}
-                ${stats.splashRadius > 0 ? `<p>Spl: ${stats.splashRadius}</p>` : ''}
-                ${stats.attackSpeedBoost ? `<p>Spd Aura: +${((1 - stats.attackSpeedBoost) * 100).toFixed(0)}%</p>` : ''}
-                ${stats.damageBoost ? `<p>Dmg Aura: +${((stats.damageBoost - 1) * 100).toFixed(0)}%</p>` : ''}
-                ${stats.enemySlow ? `<p>Slow Aura: -${((1 - stats.enemySlow) * 100).toFixed(0)}%</p>` : ''}
-                ${stats.goldBonus ? `<p>Gold Aura: +${stats.goldBonus}G</p>` : ''}
-                ${stats.burnDps ? `<p>Burn: ${stats.burnDps}/s</p>` : ''}
+            <div class="text-left text-xs w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
+                ${statsGridHTML}
             </div>
-             ${statsHTML}
+             ${commentHTML}
         </div>
     `;
 }
@@ -496,13 +501,14 @@ function createEnemyCardHTML(type, isDiscovered) {
     const stats = ENEMY_TYPES[type];
     if (!stats) return '';
 
-    const iconHTML = `<span class="${stats.iconFamily || 'material-icons'}" style="font-size: 64px; color: ${stats.color};">${stats.icon}</span>`;
+    const iconHTML = `<span style="font-family: ${stats.iconFamily}; font-size: 64px; color: ${stats.color};">${stats.icon}</span>`;
 
     if (!isDiscovered) {
         return `
             <div class="enemy-card absolute inset-0 p-4 flex flex-col items-center justify-center text-center">
                 <span class="material-symbols-outlined" style="font-size: 64px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
                 <h4 class="text-xl mt-2 text-white">???</h4>
+                <p class="text-xs text-yellow-400 mt-2 italic">"?????????????"</p>
             </div>
         `;
     }
@@ -513,10 +519,17 @@ function createEnemyCardHTML(type, isDiscovered) {
     if (stats.isFlying) specialText += 'Flying, ';
     if (stats.splashImmune) specialText += 'Splash Immune, ';
     if (stats.laysEggs) specialText += 'Lays Eggs, ';
-    if (specialText) specialText = specialText.slice(0, -2); // Remove trailing comma and space
+    if (specialText) specialText = specialText.slice(0, -2);
     else specialText = 'No special abilities';
 
-    let statsHTML = `<p class="text-xs text-yellow-400 mt-2">${specialText}</p>`;
+    const specialHTML = `<p class="text-xs text-yellow-400 mt-2">${specialText}</p>`;
+    const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
+
+    let statsGridHTML = '';
+    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#ef4444;">favorite</span>Health: ${stats.health}</p>`;
+    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#4ade80;">speed</span>Speed: ${stats.speed}</p>`;
+    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#facc15;">paid</span>Gold: ${stats.gold}</p>`;
+
 
     return `
         <div class="enemy-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
@@ -524,12 +537,13 @@ function createEnemyCardHTML(type, isDiscovered) {
                 ${iconHTML}
                 <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
             </div>
-            <div class="text-left text-xs w-full grid grid-cols-2 gap-x-4 gap-y-1">
-                <p>Health: ${stats.health}</p>
-                <p>Speed: ${stats.speed}</p>
-                <p>Gold: ${stats.gold}</p>
+            <div class="text-left text-xs w-full grid grid-cols-1 gap-y-1 px-4">
+                ${statsGridHTML}
             </div>
-             ${statsHTML}
+            <div>
+                ${specialHTML}
+                ${commentHTML}
+            </div>
         </div>
     `;
 }
