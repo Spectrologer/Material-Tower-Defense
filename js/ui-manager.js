@@ -125,6 +125,8 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             uiElements.towerKillCount.classList.remove('hidden');
             if (killCountIcon) killCountIcon.textContent = 'paid';
             uiElements.killCountValue.textContent = selectedTower.goldGenerated || 0;
+        } else if (selectedTower.type === 'SUPPORT' || selectedTower.type === 'ENT') {
+            uiElements.towerKillCount.classList.add('hidden');
         } else {
             uiElements.towerKillCount.classList.remove('hidden');
             if (killCountIcon) killCountIcon.textContent = 'skull';
@@ -281,9 +283,10 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
 
         if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
             if (selectedTower.type === 'CAT') {
-                if (uiElements.statGoldP) uiElements.statGoldP.classList.remove('hidden');
-                if (uiElements.statGold) {
-                    uiElements.statGold.textContent = `+${selectedTower.goldBonus}G`;
+                if (uiElements.statGoldP) {
+                    uiElements.statGoldP.classList.remove('hidden');
+                    const iconHTML = uiElements.statGoldP.querySelector('span.material-icons')?.outerHTML || '';
+                    uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
                 }
             }
             if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
