@@ -33,7 +33,7 @@ export const waveDefinitions = [
     // Wave 4 (Swarm)
     {
         isSwarm: true,
-        composition: [comp(ENEMY_TYPES.SWARM, 35)],
+        composition: [comp(ENEMY_TYPES.SWARM, 30)],
         healthMultiplier: 1.15, healthBonus: 0,
         endOfWaveAnnouncement: { text: "Warning:\nFlying enemies incoming!", color: '#af97d4ff' }
     },
@@ -46,7 +46,7 @@ export const waveDefinitions = [
     },
     // Wave 6
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 10)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 8)],
         healthMultiplier: 1.75, healthBonus: 10,
     },
     // Wave 7

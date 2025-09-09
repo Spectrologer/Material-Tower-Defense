@@ -261,6 +261,9 @@ export class Enemy {
         this.burns = [];
         this.slowMultiplier = 1;
         this.jostle = { x: 0, y: 0, timer: 0, strength: 4 };
+        this.isDying = false;
+        this.deathAnimationTimer = 0;
+        this.deathSpinAngle = 0;
 
         if (this.type.laysEggs) {
             this.timeUntilLay = this.type.layEggInterval;
@@ -283,17 +286,25 @@ export class Enemy {
     }
     draw(ctx) {
         ctx.save();
-        if (this.jostle.timer > 0) {
-            ctx.translate(this.jostle.x, this.jostle.y);
+        if (this.isDying) {
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.deathSpinAngle);
+            const fadeOutAlpha = this.deathAnimationTimer > 0 ? this.deathAnimationTimer / 1.0 : 0;
+            ctx.globalAlpha = fadeOutAlpha;
+        } else {
+            if (this.jostle.timer > 0) {
+                ctx.translate(this.jostle.x, this.jostle.y);
+            }
+
+            if (this.wiggleTimer > 0) {
+                const wiggleAmount = 3;
+                const wiggleSpeed = 30; // Radians per second
+                ctx.translate(this.x + Math.sin(this.wiggleTimer * wiggleSpeed) * wiggleAmount, this.y);
+            } else {
+                ctx.translate(this.x, this.y);
+            }
         }
 
-        if (this.wiggleTimer > 0) {
-            const wiggleAmount = 3;
-            const wiggleSpeed = 30; // Radians per second
-            ctx.translate(this.x + Math.sin(this.wiggleTimer * wiggleSpeed) * wiggleAmount, this.y);
-        } else {
-            ctx.translate(this.x, this.y);
-        }
 
         ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
         ctx.fillStyle = this.color;
@@ -301,6 +312,8 @@ export class Enemy {
         ctx.textBaseline = 'middle';
         ctx.fillText(this.type.icon, 0, 0);
         ctx.restore();
+
+        if (this.isDying) return; // Skip health bar and other effects when dying
 
         const healthBarWidth = this.size * 2;
         const healthBarHeight = 5;
@@ -334,6 +347,19 @@ export class Enemy {
         ctx.stroke();
     }
     update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound) {
+        if (this.isDying) {
+            this.deathAnimationTimer -= deltaTime;
+            this.deathSpinAngle += 20 * deltaTime; // Spin fast
+            this.x += (Math.random() - 0.5) * 2; // Drift sideways
+            this.y += 1.5; // Fall downwards
+
+            if (this.deathAnimationTimer <= 0) {
+                onDeath(this, { isAnimatedDeath: true });
+                return false; // Animation finished, remove the enemy
+            }
+            return true; // Continue animation
+        }
+
         if (this.hitTimer > 0) {
             this.hitTimer -= deltaTime;
         }
@@ -350,7 +376,10 @@ export class Enemy {
         if (this.burns.length > 0) {
             const burn = this.burns[0];
             const damageToTake = burn.dps * deltaTime;
-            this.takeDamage(damageToTake);
+            if (this.takeDamage(damageToTake)) {
+                onDeath(this);
+                return false;
+            }
             if (playHitSound) playHitSound();
             burn.duration -= deltaTime;
             if (burn.duration <= 0) this.burns.shift();
@@ -449,6 +478,8 @@ export class Enemy {
         return true; // Keep this enemy
     }
     takeDamage(amount, projectile = null) {
+        if (this.isDying) return false;
+
         this.health -= amount;
         this.hitTimer = 0.08; // seconds
 
@@ -466,7 +497,15 @@ export class Enemy {
             this.jostle.y = Math.sin(randAngle) * this.jostle.strength * 0.5;
         }
 
-        return this.health <= 0;
+        if (this.health <= 0) {
+            if (this.type.isFlying) {
+                this.isDying = true;
+                this.deathAnimationTimer = 1.0;
+                return false; // Start animation, don't remove yet
+            }
+            return true; // Remove immediately
+        }
+        return false;
     }
 }
 
@@ -556,6 +595,13 @@ export class Tower {
         }
     }
     draw(ctx) {
+        ctx.save();
+        // Global shadow for all towers
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 4;
+        ctx.shadowOffsetY = 4;
+
         if (this.type === 'NINE_PIN') {
             const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : 0;
             ctx.save();
@@ -567,6 +613,7 @@ export class Tower {
             ctx.font = `900 90px 'Material Symbols Outlined'`;
             ctx.fillText('move_item', 0, 0);
             ctx.restore();
+            ctx.restore(); // Restore from global shadow save
             return;
         }
         const visualLevel = this.level === 'MAX LEVEL' ? 6 : this.level;
@@ -651,6 +698,7 @@ export class Tower {
         if (this.type === 'ORBIT') {
             this.orbiters.forEach(orbiter => orbiter.draw(ctx));
         }
+        ctx.restore(); // Restore from global shadow save
     }
     drawRange(ctx) {
         if (this.type === 'ORBIT' || this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') return;
@@ -685,7 +733,7 @@ export class Tower {
     }
     findTarget(enemies) {
         this.target = null;
-        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy));
+        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying);
 
         // Special targeting rules
         if (this.type === 'ANTI_AIR') {
@@ -781,7 +829,7 @@ export class Tower {
             this.orbiters.forEach(orbiter => {
                 orbiter.update(null, null, null, deltaTime);
                 enemies.forEach(enemy => {
-                    if (enemy.type.isFlying) return;
+                    if (enemy.isDying || enemy.type.isFlying) return;
                     const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
                     if (dist < enemy.size + this.projectileSize) {
                         if (!orbiter.hitEnemies.has(enemy)) {

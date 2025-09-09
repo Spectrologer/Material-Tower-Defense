@@ -75,6 +75,40 @@ function playHitSound() {
     osc.stop(now + duration);
 }
 
+function playExplosionSound() {
+    if (!isSoundEnabled) return;
+    const now = audioContext.currentTime;
+    const duration = 0.5;
+
+    // White noise for the explosion "hiss"
+    const bufferSize = audioContext.sampleRate * duration;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+
+    // Low-pass filter to make it sound "boomy"
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.linearRampToValueAtTime(100, now + duration * 0.7);
+
+    // A fast volume envelope for the "boom"
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.4, now + 0.02); // Quick attack
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration); // Slower decay
+
+    noise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    noise.start(now);
+    noise.stop(now + duration);
+}
+
 function playWiggleSound() {
     if (!isSoundEnabled) return;
 
@@ -482,12 +516,16 @@ function gameLoop(currentTime) {
     const effectiveDeltaTime = deltaTime * gameSpeed;
 
     applyAuraEffects();
-    const onEnemyDeath = (enemy) => {
+    const onEnemyDeath = (enemy, payload = {}) => {
         if (selectedEnemy === enemy) {
             selectedEnemy = null;
         }
         if (enemy.gold > 0) {
             playMoneySound();
+        }
+        if (payload.isAnimatedDeath) {
+            gameState.effects.push(new Effect(enemy.x, enemy.y, 'explosion', enemy.size * 4, '#ff9900', 0.5));
+            playExplosionSound();
         }
     };
 
@@ -517,11 +555,7 @@ function gameLoop(currentTime) {
                 }
             }
         },
-        (dyingEnemy) => { // onDeath
-            if (dyingEnemy.gold > 0) {
-                playMoneySound();
-            }
-        },
+        onEnemyDeath,
         newlySpawnedEnemies,
         playWiggleSound,
         playCrackSound,
@@ -876,10 +910,16 @@ function handleCanvasAction(e) {
             placingTower = null;
             placingFromCloud = null;
             actionTaken = true;
+            uiElements.buyPinBtn.classList.remove('selected');
+            uiElements.buyCastleBtn.classList.remove('selected');
+            uiElements.buySupportBtn.classList.remove('selected');
         } else {
             placingTower = null;
             placingFromCloud = null;
             actionTaken = true;
+            uiElements.buyPinBtn.classList.remove('selected');
+            uiElements.buyCastleBtn.classList.remove('selected');
+            uiElements.buySupportBtn.classList.remove('selected');
         }
     } else {
         selectedTower = gameState.towers.find(t => {
@@ -1009,6 +1049,10 @@ canvas.addEventListener('dragstart', (e) => {
         tempCtx.textAlign = 'center';
         tempCtx.textBaseline = 'middle';
         tempCtx.fillStyle = towerColor;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
         tempCtx.fillText(towerIconInfo.icon, TILE_SIZE / 2, TILE_SIZE / 2);
         e.dataTransfer.setDragImage(tempCanvas, TILE_SIZE / 2, TILE_SIZE / 2);
     } else {
