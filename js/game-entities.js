@@ -499,7 +499,7 @@ export class Tower {
         /** @type {"MAX LEVEL" | number} */
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = (type === 'PIN_HEART') ? 'weakest' : (type === 'PIN' ? 'weakest' : 'strongest'); // Pin Heart now defaults to weakest and is locked
+        this.targetingMode = (type === 'PIN_HEART') ? 'weakest' : (type === 'PIN' ? 'weakest' : 'strongest');
         this.damageMultiplier = 1;
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1;

@@ -128,6 +128,8 @@ addRecipe('PIN', 'SUPPORT', {
         tower.color = TOWER_TYPES.PIN_HEART.color;
         tower.hasFragmentingShot = false;
         tower.fragmentBounces = 0;
+        // The fix is here. Explicitly set and lock the targeting mode.
+        tower.targetingMode = 'weakest';
     }
 });
 
