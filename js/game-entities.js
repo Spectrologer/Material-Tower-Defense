@@ -877,15 +877,12 @@ export class Tower {
             data.burnDps = this.burnDps;
             data.burnDuration = this.burnDuration;
         }
-        if (this.type === 'ENT') {
+        if (this.type === 'ENT' || this.type === 'CAT') {
             data.attackSpeedBoost = this.attackSpeedBoost;
             data.damageBoost = this.damageBoost;
             data.enemySlow = this.enemySlow;
         }
         if (this.type === 'CAT') {
-            data.attackSpeedBoost = this.attackSpeedBoost;
-            data.damageBoost = this.damageBoost;
-            data.enemySlow = this.enemySlow;
             data.goldBonus = this.goldBonus;
         }
         if (this.type === 'SUPPORT') {
