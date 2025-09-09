@@ -200,6 +200,24 @@ function playCrackSound() {
     noise.stop(now + duration);
 }
 
+function playLifeLostSound() {
+    if (!isSoundEnabled) return;
+    const now = audioContext.currentTime;
+    const duration = 0.3;
+    const osc = audioContext.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + duration);
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.2, now + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    osc.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+}
+
 
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
@@ -562,6 +580,7 @@ function gameLoop(currentTime) {
 
             if (e.type.damagesLives) {
                 gameState.lives--;
+                playLifeLostSound();
                 updateUI(gameState);
                 if (gameState.lives <= 0) {
                     gameState.gameOver = true;
@@ -863,7 +882,7 @@ function handleCanvasAction(e) {
             }
             return tGridX === gridX && tGridY === gridY;
         });
-        const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type) : null;
+        const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type, gameState) : null;
         const isNinePin = mergingTower.type === 'NINE_PIN';
         if (mergeInfo) {
             pendingMergeState = {
@@ -998,7 +1017,7 @@ canvas.addEventListener('mousemove', e => {
             return tGridX === gridX && tGridY === gridY;
         });
         if (hoveredTower) {
-            const mergeInfo = getMergeResultInfo(hoveredTower, placingTower);
+            const mergeInfo = getMergeResultInfo(hoveredTower, placingTower, gameState);
             if (mergeInfo) {
                 mergeTooltip.show = true;
                 mergeTooltip.info = mergeInfo;
@@ -1158,7 +1177,7 @@ canvas.addEventListener('drop', e => {
                 existingTower: targetTower,
                 mergingTower: sourceTower,
                 placingTowerType: sourceTower.type,
-                mergeInfo: getMergeResultInfo(targetTower, sourceTower.type),
+                mergeInfo: getMergeResultInfo(targetTower, sourceTower.type, gameState),
                 placingFromCloud: transferData.source === 'cloud',
                 mergingFromCanvas: transferData.source === 'canvas',
                 originalPosition: draggedCanvasTowerOriginalGridPos
@@ -1352,6 +1371,12 @@ uiElements.buyCastleBtn.addEventListener('click', () => selectTowerToPlace('CAST
 uiElements.buySupportBtn.addEventListener('click', () => selectTowerToPlace('SUPPORT'));
 uiElements.restartGameBtn.addEventListener('click', reset);
 
+uiElements.onboardingDismissBtn.addEventListener('click', () => {
+    gameState.onboardingTipDismissed = true;
+    updateUI(gameState);
+    persistGameState(0); // Save immediately
+});
+
 uiElements.resetGameBtn.addEventListener('click', () => {
     reset();
     uiElements.optionsMenu.classList.add('hidden');
@@ -1502,7 +1527,7 @@ function performPendingMerge() {
         uiElements.mergeConfirmModal.classList.add('hidden');
         return;
     }
-    const merged = performMerge(existingTower, mergingTower.type, cost);
+    const merged = performMerge(existingTower, mergingTower.type, cost, gameState);
     if (merged) {
         if (mergeState.placingFromCloud) {
             gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
@@ -1580,3 +1605,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+

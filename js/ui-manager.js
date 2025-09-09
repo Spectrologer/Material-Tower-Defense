@@ -49,6 +49,8 @@ export const uiElements = {
     mergeCostInfo: document.getElementById('merge-cost-info'),
     confirmMergeBtn: getButton('confirm-merge-btn'),
     cancelMergeBtn: getButton('cancel-merge-btn'),
+    onboardingMergeTip: document.getElementById('onboarding-merge-tip'),
+    onboardingDismissBtn: getButton('onboarding-dismiss-btn'),
     // New options menu elements
     optionsBtn: getButton('options-btn'),
     optionsMenu: document.getElementById('options-menu'),
@@ -91,6 +93,10 @@ export function updateUI(state) {
     uiElements.buyPinBtn.disabled = state.gold < TOWER_TYPES.PIN.cost;
     uiElements.buyCastleBtn.disabled = state.gold < TOWER_TYPES.CASTLE.cost;
     uiElements.buySupportBtn.disabled = state.gold < TOWER_TYPES.SUPPORT.cost;
+
+    if (uiElements.onboardingMergeTip) {
+        uiElements.onboardingMergeTip.classList.toggle('hidden', state.hasPerformedFirstMerge || state.onboardingTipDismissed);
+    }
 
     if (state.isCloudUnlocked) {
         uiElements.cloudButton.disabled = false;
@@ -223,9 +229,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         const baseStats = TOWER_TYPES[selectedTower.type];
         if (baseStats.special) {
             let specialText = baseStats.special;
-            if (selectedTower.type === 'FORT' && selectedTower.hasShrapnel) {
-                specialText += " + AA Shrapnel";
-            }
             if (uiElements.statSpecialP) {
                 uiElements.statSpecialP.classList.remove('hidden');
                 const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
@@ -385,20 +388,30 @@ function createAndAppendIcon(container, type) {
 }
 
 export function showMergeConfirmation(mergeState) {
+    const isDiscovered = mergeState.mergeInfo.isDiscovered;
+
     if (uiElements.mergeFromTowerIconContainer) createAndAppendIcon(uiElements.mergeFromTowerIconContainer, mergeState.existingTower.type);
     if (uiElements.mergeFromTowerName) uiElements.mergeFromTowerName.textContent = mergeState.existingTower.type.replace('_', ' ');
     if (uiElements.mergeToTowerIconContainer) createAndAppendIcon(uiElements.mergeToTowerIconContainer, mergeState.placingTowerType);
     if (uiElements.mergeToTowerName) uiElements.mergeToTowerName.textContent = mergeState.placingTowerType.replace('_', ' ');
-    if (uiElements.mergeResultTowerIconContainer) createAndAppendIcon(uiElements.mergeResultTowerIconContainer, mergeState.mergeInfo.resultType);
 
-    let resultName = mergeState.mergeInfo.text.replace('LVL ', 'LVL-').replace('_', ' ');
-    if (uiElements.mergeResultBenefitText) uiElements.mergeResultBenefitText.textContent = '';
-    if (resultName.toLowerCase() === 'upgrade' && mergeState.mergeInfo.upgrade) {
-        resultName = mergeState.mergeInfo.resultType.replace('_', ' ');
-        if (uiElements.mergeResultBenefitText) uiElements.mergeResultBenefitText.textContent = mergeState.mergeInfo.upgrade.text;
+    if (isDiscovered) {
+        if (uiElements.mergeResultTowerIconContainer) createAndAppendIcon(uiElements.mergeResultTowerIconContainer, mergeState.mergeInfo.resultType);
+        let resultName = mergeState.mergeInfo.text.replace('LVL ', 'LVL-').replace('_', ' ');
+        if (uiElements.mergeResultBenefitText) uiElements.mergeResultBenefitText.textContent = '';
+        if (resultName.toLowerCase() === 'upgrade' && mergeState.mergeInfo.upgrade) {
+            resultName = mergeState.mergeInfo.resultType.replace('_', ' ');
+            if (uiElements.mergeResultBenefitText) uiElements.mergeResultBenefitText.textContent = mergeState.mergeInfo.upgrade.text;
+        }
+        if (uiElements.mergeResultTowerName) uiElements.mergeResultTowerName.textContent = resultName;
+    } else {
+        if (uiElements.mergeResultTowerIconContainer) {
+            uiElements.mergeResultTowerIconContainer.innerHTML = `<span class="material-symbols-outlined" style="font-size: 2.5rem; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>`;
+        }
+        if (uiElements.mergeResultTowerName) uiElements.mergeResultTowerName.textContent = '???';
+        if (uiElements.mergeResultBenefitText) uiElements.mergeResultBenefitText.textContent = '';
     }
 
-    if (uiElements.mergeResultTowerName) uiElements.mergeResultTowerName.textContent = resultName;
 
     let cost = TOWER_TYPES[mergeState.placingTowerType].cost;
     if (mergeState.placingFromCloud || mergeState.mergingFromCanvas) {

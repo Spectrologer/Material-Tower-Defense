@@ -331,7 +331,15 @@
         </div>
 
         <!-- This is the control panel at the bottom of the screen -->
-        <div class="game-ui-panel p-2 sm:p-4 w-full max-w-[440px] flex-shrink-0 flex flex-col gap-2 sm:gap-4">
+        <div class="game-ui-panel p-2 sm:p-4 w-full max-w-[440px] flex-shrink-0 flex flex-col gap-2 sm:gap-4 relative">
+
+            <div id="onboarding-merge-tip"
+                class="hidden absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-[90%] bg-sky-600 border-2 border-sky-400 p-2 text-center text-xs shadow-lg rounded-md z-10">
+                <p class="text-white pr-4">Drag towers onto each other to merge and upgrade them!</p>
+                <button id="onboarding-dismiss-btn" class="absolute top-0 right-0 p-1 text-white hover:text-sky-200">
+                    <span class="material-symbols-outlined !text-base">close</span>
+                </button>
+            </div>
 
             <div id="tower-buttons-group">
                 <h2 id="towers-title" class="text-base sm:text-xl text-green-400">TOWERS</h2>

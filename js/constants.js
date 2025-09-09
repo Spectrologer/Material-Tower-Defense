@@ -15,7 +15,7 @@ export const GRID_TOWER = 2; // A spot where a tower is already built.
 export const TOWER_TYPES = {
     PIN: { cost: 25, range: 150, damage: 1.2, fireRate: 22, color: '#ffffffff', projectileSpeed: 7, projectileSize: 3, projectileColor: '#ffffffff', splashRadius: 0 },
     CASTLE: { cost: 75, range: 100, damage: 6, fireRate: 60, color: '#525252ff', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, },
-    FORT: { cost: 100, range: 200, damage: 12, fireRate: 180, color: '#878787ff', projectileSpeed: 4, projectileSize: 8, projectileColor: '#717171ff', splashRadius: 80, special: 'Mortar Strike' },
+    FORT: { cost: 100, range: 200, damage: 12, fireRate: 180, color: '#878787ff', projectileSpeed: 4, projectileSize: 15, projectileColor: '#717171ff', splashRadius: 80, special: 'Mortar Strike' },
     SUPPORT: { cost: 60, range: 100, damage: 0, fireRate: 0, color: '#f870ffff', attackSpeedBoost: 0.85, special: 'Non-Stacking Speed Aura' },
     PIN_HEART: { cost: 85, range: 250, damage: 0.8, fireRate: 10, color: '#ff69b4', projectileSpeed: 5, projectileSize: 3, projectileColor: '#ff69b4', splashRadius: 0, special: 'Loyal Projectiles' },
     FIREPLACE: { cost: 135, range: 50, damage: 0.1, fireRate: 2, color: '#e11d48', projectileSpeed: 3, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 10, special: 'Lingering Burn' },

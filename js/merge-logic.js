@@ -324,9 +324,10 @@ addRecipe('FIREPLACE', 'PIN', {
  * Determines the potential result of a merge for UI display.
  * @param {Tower} existingTower - The tower being merged onto.
  * @param {string} placingType - The type of the tower being placed/dragged.
+ * @param {object} gameState - The current game state.
  * @returns {object|null} An object with info for the merge tooltip, or null if no merge is possible.
  */
-export function getMergeResultInfo(existingTower, placingType) {
+export function getMergeResultInfo(existingTower, placingType, gameState) {
     if (existingTower.type === 'NINE_PIN' || placingType === 'NINE_PIN' || TOWER_TYPES[existingTower.type].unmergeable) {
         return null;
     }
@@ -334,6 +335,8 @@ export function getMergeResultInfo(existingTower, placingType) {
     // Look up recipe in the map first for transformations
     const key = createRecipeKey(existingTower.type, placingType);
     const recipe = recipes.get(key);
+    const isDiscovered = gameState.discoveredMerges.has(key);
+
     if (recipe) {
         if (recipe.canApply && !recipe.canApply(existingTower)) {
             return null;
@@ -341,7 +344,8 @@ export function getMergeResultInfo(existingTower, placingType) {
         return {
             resultType: recipe.resultType,
             text: recipe.text || recipe.resultType.replace('_', ' '),
-            upgrade: recipe.upgrade
+            upgrade: recipe.upgrade,
+            isDiscovered: isDiscovered
         };
     }
 
@@ -349,7 +353,8 @@ export function getMergeResultInfo(existingTower, placingType) {
     if (existingTower.type === placingType && existingTower.level !== 'MAX LEVEL' && existingTower.level < 5) {
         return {
             resultType: existingTower.type,
-            text: `${existingTower.type} LVL ${existingTower.level + 1}`
+            text: `${existingTower.type} LVL ${existingTower.level + 1}`,
+            isDiscovered: true // Same-type level ups are always "discovered"
         };
     }
 
@@ -361,9 +366,10 @@ export function getMergeResultInfo(existingTower, placingType) {
  * @param {Tower} tower - The base tower to modify.
  * @param {string} mergingTowerType - The type of the tower being merged with.
  * @param {number} costToAdd - The cost of the merging tower.
+ * @param {object} gameState - The current game state.
  * @returns {boolean} True if a merge was successfully performed, false otherwise.
  */
-export function performMerge(tower, mergingTowerType, costToAdd) {
+export function performMerge(tower, mergingTowerType, costToAdd, gameState) {
     const originalTowerColor = tower.color;
     const existingTowerLevel = tower.level === 'MAX LEVEL' ? 5 : tower.level;
 
@@ -397,7 +403,8 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
                 tower.level = 'MAX LEVEL';
             }
         }
-
+        gameState.hasPerformedFirstMerge = true;
+        gameState.discoveredMerges.add(key);
         return true;
     }
 
@@ -411,8 +418,10 @@ export function performMerge(tower, mergingTowerType, costToAdd) {
             tower.level = 'MAX LEVEL';
             if (tower.damageLevel) tower.damageLevel = 'MAX LEVEL';
         }
+        gameState.hasPerformedFirstMerge = true;
         return true;
     }
 
     return false;
 }
+

@@ -12,11 +12,29 @@ import { generatePath } from "./path-generator.js";
 // - cloudInventory: Towers you've stored for later use.
 export let gameState;
 
-// Wipes the slate clean and starts a brand new game.
+// Wipes the slate clean and starts a brand new game, but keeps persistent data.
 export function resetGameState() {
+    // Get the current persistent settings before wiping the state
+    const discoveredMerges = gameState ? gameState.discoveredMerges : new Set();
+    const onboardingTipDismissed = gameState ? gameState.onboardingTipDismissed : false;
+
+    // This just removes the 'gameState' item from local storage
     clearGameStateFromStorage();
-    gameState = getInitialGameState();
+
+    // This creates a fresh game object with default values
+    const newGameState = getInitialGameState();
+
+    // Now, apply the persistent settings to the fresh object
+    newGameState.discoveredMerges = discoveredMerges;
+    newGameState.onboardingTipDismissed = onboardingTipDismissed;
+
+    // Set the module's gameState to the newly prepared state
+    gameState = newGameState;
+
+    // Immediately save this reset state so that the subsequent `init` call in main.js loads it correctly
+    saveGameStateToStorage();
 }
+
 
 // Loads the last saved game from the browser's local storage.
 export function loadGameStateFromStorage() {
@@ -41,7 +59,9 @@ export function persistGameState(throttleMs = 1000) {
 }
 
 function saveGameStateToStorage() {
-    localStorage.setItem("gameState", getSerializedGameState());
+    if (gameState) {
+        localStorage.setItem("gameState", getSerializedGameState());
+    }
 }
 
 function clearGameStateFromStorage() {
@@ -62,6 +82,9 @@ function getInitialGameState() {
         announcements: [],
         introducedEnemies: new Set(),
         hasPlacedFirstSupport: false,
+        hasPerformedFirstMerge: false,
+        onboardingTipDismissed: false,
+        discoveredMerges: new Set(),
         waveInProgress: false,
         spawningEnemies: false,
         gameOver: false,
@@ -85,6 +108,8 @@ function getSerializedGameState() {
         gold: gameState.gold,
         wave: gameState.wave,
         hasPlacedFirstSupport: gameState.hasPlacedFirstSupport,
+        hasPerformedFirstMerge: gameState.hasPerformedFirstMerge,
+        onboardingTipDismissed: gameState.onboardingTipDismissed,
         waveInProgress: gameState.waveInProgress,
         spawningEnemies: gameState.spawningEnemies,
         gameOver: gameState.gameOver,
@@ -94,13 +119,14 @@ function getSerializedGameState() {
         towers: gameState.towers.map((t) => t.toJSON()),
         cloudInventory: gameState.cloudInventory.map((t) => t.toJSON()),
         introducedEnemies: Array.from(gameState.introducedEnemies),
+        discoveredMerges: Array.from(gameState.discoveredMerges),
     });
 }
 
 // Takes a saved game string and turns it back into a usable game state object.
 function deserializeGameState(serializedGameState) {
     try {
-        const { towers, cloudInventory, introducedEnemies, ...basicData } = JSON.parse(serializedGameState);
+        const { towers, cloudInventory, introducedEnemies, discoveredMerges, ...basicData } = JSON.parse(serializedGameState);
 
         return {
             ...getInitialGameState(),
@@ -108,9 +134,12 @@ function deserializeGameState(serializedGameState) {
             cloudInventory: cloudInventory.map((data) => Tower.fromJSON(data)),
             towers: towers.map((data) => Tower.fromJSON(data)),
             introducedEnemies: new Set(introducedEnemies),
+            onboardingTipDismissed: basicData.onboardingTipDismissed || false,
+            discoveredMerges: new Set(discoveredMerges || []),
         };
     } catch (e) {
         console.error("Failed to load saved game state:", e);
         return getInitialGameState();
     }
 }
+

@@ -75,20 +75,21 @@ export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     ctx.save();
 
     const info = mergeTooltip.info;
+    const isDiscovered = info.isDiscovered;
     const padding = 8;
     const iconSize = 24;
     const iconPadding = 5;
 
     // Figure out how wide the tooltip needs to be based on its text and icons.
+    const resultText = isDiscovered ? info.text : '???';
     ctx.font = "14px 'Press Start 2P'";
-    const resultTextMetrics = ctx.measureText(info.text);
+    const resultTextMetrics = ctx.measureText(resultText);
     let totalContentWidth = 0;
 
-    const resultIconInfo = getTowerIconInfo(info.resultType);
     totalContentWidth += iconSize + iconPadding + resultTextMetrics.width;
 
     let upgradeTextMetrics = { width: 0 };
-    if (info.upgrade) {
+    if (isDiscovered && info.upgrade) {
         upgradeTextMetrics = ctx.measureText(info.upgrade.text);
         totalContentWidth += iconSize + iconPadding + upgradeTextMetrics.width;
         totalContentWidth += 10;
@@ -116,28 +117,36 @@ export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     let currentX = rectX + padding;
     const contentY = rectY + padding + (rectHeight - padding * 2) / 2;
 
-    if (resultIconInfo && resultIconInfo.icon) {
-        let fontWeight = '400', fontFamily = "'Material Icons'", iconToDraw = resultIconInfo.icon;
-        if (resultIconInfo.className.startsWith('fa-')) {
-            fontWeight = '900'; fontFamily = '"Font Awesome 6 Free"';
-            if (info.resultType === 'CAT') iconToDraw = '\uf6be';
-        } else if (resultIconInfo.className === 'material-symbols-outlined') {
-            fontFamily = "'Material Symbols Outlined'";
+    if (isDiscovered) {
+        const resultIconInfo = getTowerIconInfo(info.resultType);
+        if (resultIconInfo && resultIconInfo.icon) {
+            let fontWeight = '400', fontFamily = "'Material Icons'", iconToDraw = resultIconInfo.icon;
+            if (resultIconInfo.className.startsWith('fa-')) {
+                fontWeight = '900'; fontFamily = '"Font Awesome 6 Free"';
+                if (info.resultType === 'CAT') iconToDraw = '\uf6be';
+            } else if (resultIconInfo.className === 'material-symbols-outlined') {
+                fontFamily = "'Material Symbols Outlined'";
+            }
+            ctx.font = `${fontWeight} ${iconSize}px ${fontFamily}`;
+            ctx.fillStyle = TOWER_TYPES[info.resultType]?.color || '#FFFFFF';
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillText(iconToDraw, currentX, contentY);
         }
-        ctx.font = `${fontWeight} ${iconSize}px ${fontFamily}`;
-        ctx.fillStyle = TOWER_TYPES[info.resultType]?.color || '#FFFFFF';
+    } else {
+        ctx.font = `400 ${iconSize}px 'Material Symbols Outlined'`;
+        ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(iconToDraw, currentX, contentY);
-        currentX += iconSize + iconPadding;
+        ctx.fillText('question_mark', currentX, contentY);
     }
+    currentX += iconSize + iconPadding;
 
     ctx.font = "14px 'Press Start 2P'";
     ctx.fillStyle = '#00ff88';
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(info.text, currentX, contentY);
+    ctx.fillText(resultText, currentX, contentY);
     currentX += resultTextMetrics.width + 10;
 
-    if (info.upgrade) {
+    if (isDiscovered && info.upgrade) {
         let fontWeight = '400', fontFamily = "'Material Icons'", iconToDraw = info.upgrade.icon;
         if (info.upgrade.family === 'material-symbols-outlined') {
             fontFamily = "'Material Symbols Outlined'";
@@ -276,3 +285,4 @@ export function getTowerIconInfo(type) {
     }
     return { icon, className };
 }
+
