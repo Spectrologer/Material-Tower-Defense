@@ -6,6 +6,7 @@ let isAudioResumed = false;
 
 export function toggleSoundEnabled() {
     isSoundEnabled = !isSoundEnabled;
+    return isSoundEnabled;
 }
 
 // This function will be called on the first user interaction to enable audio.
