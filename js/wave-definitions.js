@@ -14,13 +14,13 @@ const comp = (type, count) => ({ type, count });
 export const waveDefinitions = [
     // Wave 1
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 8)],
-        healthMultiplier: 1.00, healthBonus: 0,
+        composition: [comp(ENEMY_TYPES.NORMAL, 10)],
+        healthMultiplier: 0.90, healthBonus: 0,
     },
     // Wave 2
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 12)],
-        healthMultiplier: 1.15, healthBonus: 0,
+        composition: [comp(ENEMY_TYPES.NORMAL, 15)],
+        healthMultiplier: 0.95, healthBonus: 0,
         endOfWaveAnnouncement: { text: "Warning:\nFast enemies incoming!", color: '#ffb84d' }
     },
     // Wave 3
@@ -39,14 +39,14 @@ export const waveDefinitions = [
     },
     // Wave 5
     {
-        composition: [comp(ENEMY_TYPES.FLYING, 5)],
+        composition: [comp(ENEMY_TYPES.FLYING, 10)],
         healthMultiplier: 1.60, healthBonus: 0,
         endOfWaveAnnouncement: { text: "Warning:\nBulky enemies inbound!", color: '#979fd4ff' }
 
     },
     // Wave 6
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 8)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 10)],
         healthMultiplier: 1.75, healthBonus: 10,
     },
     // Wave 7
@@ -57,12 +57,12 @@ export const waveDefinitions = [
     // Wave 8 (Swarm)
     {
         isSwarm: true,
-        composition: [comp(ENEMY_TYPES.SWARM, 55)],
+        composition: [comp(ENEMY_TYPES.FAST, 13)],
         healthMultiplier: 1.35, healthBonus: 10,
     },
     // Wave 9
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 15), comp(ENEMY_TYPES.FLYING, 10)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 10), comp(ENEMY_TYPES.FLYING, 6)],
         healthMultiplier: 2.20, healthBonus: 10,
         endOfWaveAnnouncement: { text: "Warning:\nUpcoming enemies will steal gold!", color: '#f7e51aff' }
     },
@@ -73,7 +73,7 @@ export const waveDefinitions = [
     },
     // Wave 11
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 20), comp(ENEMY_TYPES.FAST, 15), comp(ENEMY_TYPES.HEAVY, 10)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 5)],
         healthMultiplier: 2.85, healthBonus: 10,
     },
     // Wave 12 (Swarm)

@@ -31,10 +31,10 @@ export const TOWER_TYPES = {
 export const ENEMY_TYPES = {
     NORMAL: { speed: 1.5, health: 10, color: '#ae2f2fff', size: 16, gold: 1, icon: 'person', iconFamily: "'Material Symbols Outlined'", damagesLives: true },
     FAST: { speed: 2.5, health: 8, color: '#ffb84d', size: 14, gold: 1, icon: 'pest_control_rodent', iconFamily: 'Material Icons', damagesLives: true },
-    HEAVY: { speed: 1, health: 30, color: '#3446ceff', size: 20, gold: 3, icon: 'guardian', iconFamily: 'Material Symbols Outlined', splashImmune: true, damagesLives: true },
+    HEAVY: { speed: 1.1, health: 35, color: '#3446ceff', size: 20, gold: 3, icon: 'guardian', iconFamily: 'Material Symbols Outlined', damagesLives: true },
     SWARM: { speed: 3.0, health: 4, color: '#00e6e6', size: 10, gold: 1, icon: 'bug_report', iconFamily: 'Material Icons', damagesLives: true },
     FLYING: { speed: 2.0, health: 15, color: '#5e359fff', size: 16, gold: 2, icon: 'helicopter', iconFamily: "'Material Symbols Outlined'", isFlying: true, splashImmune: true, damagesLives: true },
-    BITCOIN: { speed: 2.0, health: 50, color: '#F7931A', size: 20, gold: 0, icon: 'currency_bitcoin', iconFamily: 'Material Symbols Outlined', isFlying: false, splashImmune: false, damagesLives: false },
+    BITCOIN: { speed: 2.0, health: 20, color: '#F7931A', size: 15, gold: 0, icon: 'currency_bitcoin', iconFamily: 'Material Symbols Outlined', isFlying: false, splashImmune: false, damagesLives: false },
     BOSS: { speed: 1.2, health: 4400, color: '#f589ffff', size: 28, gold: 50, icon: 'flutter_dash', iconFamily: 'Material Icons', isFlying: true, damagesLives: false, laysEggs: true, layEggInterval: 5, eggLayStopTime: 1.5, wiggleTime: 1, splashImmune: true },
     EGG: { speed: 0, health: 200, color: '#ffedceff', size: 12, gold: 0, icon: 'egg', iconFamily: 'Material Symbols Outlined', damagesLives: false, hatchTime: 5, hatchesTo: 'HATCHED', isStationary: true },
     HATCHED: { speed: 2.5, health: 200, color: '#90CAF9', size: 14, gold: 0, icon: 'boy', iconFamily: 'Material Symbols Outlined', damagesLives: true }
