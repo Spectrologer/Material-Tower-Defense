@@ -4,8 +4,8 @@
   "description": "A tower defense game using icons",
   "start_url": "/Material-Tower-Defense",
   "display": "standalone",
-  "background_color": "#2c2c2c",
-  "theme_color": "#4CAF50",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a8050",
   "orientation": "portrait",
   "icons": [
     {
