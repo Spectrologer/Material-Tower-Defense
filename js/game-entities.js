@@ -1003,13 +1003,11 @@ export class TextAnnouncement {
         let fontSize = 16;
         ctx.font = `${fontSize}px 'Press Start 2P'`;
         const lines = this.text.split('\n');
-        let longestLine = '';
         let maxLineWidth = 0;
         for (const line of lines) {
             const currentLineWidth = ctx.measureText(line).width;
             if (currentLineWidth > maxLineWidth) {
                 maxLineWidth = currentLineWidth;
-                longestLine = line;
             }
         }
         const safeMaxWidth = this.maxWidth * 0.9;
