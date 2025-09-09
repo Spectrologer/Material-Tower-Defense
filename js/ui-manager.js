@@ -219,19 +219,29 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         }
         if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
             if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
-            if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.textContent = `TARGET: ${selectedTower.targetingMode.toUpperCase()}`;
+            let targetingText = selectedTower.targetingMode.toUpperCase();
+            let lockIcon = '';
+            if (selectedTower.type === 'PIN_HEART') {
+                lockIcon = '<span class="material-symbols-outlined !text-base !leading-none">lock</span>';
+            }
+            if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.innerHTML = `TARGET: ${targetingText} ${lockIcon}`;
             if (uiElements.toggleTargetingBtn) {
                 uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'bg-yellow-400', 'bg-blue-800', 'border-red-400', 'border-yellow-300', 'border-blue-400', 'text-black', 'text-yellow-300', 'text-cyan-300');
-                switch (selectedTower.targetingMode) {
-                    case 'strongest':
-                        uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
-                        break;
-                    case 'weakest':
-                        uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
-                        break;
-                    case 'furthest':
-                        uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                        break;
+                if (selectedTower.type === 'PIN_HEART') {
+                    // Locked to weakest, so apply weakest styling
+                    uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+                } else {
+                    switch (selectedTower.targetingMode) {
+                        case 'strongest':
+                            uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                            break;
+                        case 'weakest':
+                            uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+                            break;
+                        case 'furthest':
+                            uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                            break;
+                    }
                 }
             }
         }
@@ -304,7 +314,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                         const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
                         uiElements.statSlow.textContent = `${slowPercent}%`;
                     }
-                } else { // Diversify mode
+                } else { // Diversify
                     if (uiElements.statSpecialP) {
                         uiElements.statSpecialP.classList.remove('hidden');
                         const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));

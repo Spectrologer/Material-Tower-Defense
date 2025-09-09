@@ -1312,7 +1312,7 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
 
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower) {
+    if (selectedTower && selectedTower.type !== 'PIN_HEART') {
         const modes = ['strongest', 'weakest', 'furthest'];
         const currentIndex = modes.indexOf(selectedTower.targetingMode);
         selectedTower.targetingMode = modes[(currentIndex + 1) % modes.length];

@@ -499,7 +499,7 @@ export class Tower {
         /** @type {"MAX LEVEL" | number} */
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = (type === 'PIN') ? 'weakest' : 'strongest'; // CASTLE now defaults to strongest
+        this.targetingMode = (type === 'PIN_HEART') ? 'weakest' : (type === 'PIN' ? 'weakest' : 'strongest'); // Pin Heart now defaults to weakest and is locked
         this.damageMultiplier = 1;
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1;
@@ -1014,6 +1014,7 @@ export class TextAnnouncement {
     }
     update(deltaTime) {
         this.life -= deltaTime;
+        this.y -= (deltaTime * 5); // Drift upwards slowly
         return this.life > 0;
     }
     draw(ctx) {

@@ -234,7 +234,7 @@ addRecipe('PIN_HEART', 'PIN', {
     apply: (tower) => {
         tower.level++;
         tower.damageLevel++;
-        tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.1;
+        tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.01;
         tower.updateStats();
         tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
     }
