@@ -146,6 +146,8 @@ export class Projectile {
         if (this.isMortar) {
             this.life -= deltaTime;
             if (this.life <= 0) {
+                // Mortar explosion occurs when it lands
+                effects.push(new Effect(this.x, this.y, 'explosion', 30, '#FFA500', 0.2));
                 onHit(this);
                 return false;
             }
@@ -206,10 +208,14 @@ export class Projectile {
                 }
             }
         }
-
         const hitCondition = distance < moveDistance || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
 
         if (hitCondition) {
+            // Check if it is a rocket BEFORE onHit and removal.
+            if (this.isRocket) {
+                // Use a smaller size for the rocket explosion
+                effects.push(new Effect(this.x, this.y, 'explosion', 15, '#FFA500', 0.2));
+            }
             onHit(this);
             this.hitEnemies.add(this.target);
 
@@ -503,6 +509,13 @@ export class Tower {
         this.hasFragmentingShot = false;
         this.killCount = 0;
         this.isUnderDiversifyAura = false;
+        // Add new properties here to prevent TypeScript errors
+        this.natCastleBonus = 0;
+        this.burnDps = 0;
+        this.burnDuration = 0;
+        this.attackSpeedBoost = 1;
+        this.damageBoost = 1;
+        this.enemySlow = 1;
         if (this.type === 'CAT') {
             this.goldGenerated = 0;
         }
@@ -529,7 +542,7 @@ export class Tower {
         }
     }
     get maxLevel() {
-        return this.type === 'FIREPLACE' ? 3 : 5;
+        return TOWER_TYPES[this.type].maxLevel || 5;
     }
     get levelForCalc() {
         return this.level === 'MAX LEVEL' ? this.maxLevel : this.level;
@@ -558,6 +571,13 @@ export class Tower {
         } else {
             this.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (this.damageMultiplierFromMerge || 1);
         }
+
+        if (this.type === 'ANTI_AIR' && this.natCastleBonus) {
+            this.splashRadius = 10 * this.natCastleBonus;
+        } else {
+            this.splashRadius = baseStats.splashRadius || 0;
+        }
+
         this.permFireRate = baseStats.fireRate * Math.pow(0.9, this.levelForCalc - 1);
         this.fireRate = this.permFireRate;
         this.color = this.color || baseStats.color;
@@ -869,6 +889,7 @@ export class Tower {
             projectileSize: this.projectileSize,
             killCount: this.killCount,
             goldGenerated: this.goldGenerated,
+            natCastleBonus: this.natCastleBonus,
         };
 
         // Add tower-type specific properties
@@ -920,7 +941,8 @@ export class Tower {
             "goldBonus",
             "orbitMode",
             "killCount",
-            "goldGenerated"
+            "goldGenerated",
+            "natCastleBonus",
         ];
 
         for (const field of fields) {

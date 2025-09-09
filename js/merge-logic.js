@@ -64,9 +64,19 @@ addRecipe('ENT', 'SUPPORT', {
 addRecipe('SUPPORT', 'NAT', {
     resultType: 'ANTI_AIR',
     apply: (tower) => {
+        const newLevel = tower.level;
+        const newDamageMultiplier = tower.damageMultiplierFromMerge;
+        // Check if the NAT tower had multiple projectiles (from Castle merges)
+        const projectileCountBonus = tower.projectileCount > 1 ? (tower.projectileCount - 1) : 0;
+
         tower.type = 'ANTI_AIR';
-        tower.level = 1;
-        tower.damageLevel = 1;
+        tower.level = newLevel;
+        tower.damageLevel = newLevel;
+        tower.projectileCount = 1;
+        tower.damageMultiplierFromMerge = newDamageMultiplier;
+
+        tower.natCastleBonus = projectileCountBonus;
+
         tower.updateStats();
         tower.color = TOWER_TYPES.ANTI_AIR.color;
     }
@@ -175,6 +185,44 @@ addRecipe('NAT', 'PIN', {
         tower.damageMultiplierFromMerge *= 1.25;
         tower.updateStats();
         tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
+    }
+});
+
+// --- ANTI_AIR UPGRADES ---
+addRecipe('ANTI_AIR', 'PIN', {
+    resultType: 'ANTI_AIR', text: 'Upgrade',
+    upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
+    canApply: (tower) => {
+        // Prevent upgrading a level 5 NAT that was converted to AA
+        if (tower.level === 5 && tower.damageLevel === 5) {
+            return false;
+        }
+        return tower.level < TOWER_TYPES.ANTI_AIR.maxLevel;
+    },
+    apply: (tower) => {
+        tower.level++;
+        tower.damageLevel++;
+        tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.25;
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
+    }
+});
+
+addRecipe('ANTI_AIR', 'CASTLE', {
+    resultType: 'ANTI_AIR', text: 'Upgrade',
+    upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
+    canApply: (tower) => {
+        // The splash radius is already determined by the NAT's previous upgrades.
+        // Don't allow this merge if it was created from a level 5 NAT.
+        if (tower.level === 5 && tower.damageLevel === 5) {
+            return false;
+        }
+        return tower.level < TOWER_TYPES.ANTI_AIR.maxLevel;
+    },
+    apply: (tower) => {
+        tower.level++;
+        tower.updateStats();
+        tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
     }
 });
 
@@ -373,7 +421,7 @@ export function performMerge(tower, mergingTowerType, costToAdd, gameState) {
         recipe.apply(tower, { existingTowerLevel, originalTowerColor, mergingTowerType });
         tower.cost = oldCost + costToAdd;
 
-        const maxLevel = tower.type === 'FIREPLACE' ? 3 : 5;
+        const maxLevel = TOWER_TYPES[tower.type].maxLevel || 5;
         if (tower.type === 'ORBIT') {
             if (tower.upgradeCount === ORBIT_MAX_UPGRADES) {
                 tower.level = 'MAX LEVEL';
@@ -412,4 +460,3 @@ export function performMerge(tower, mergingTowerType, costToAdd, gameState) {
 
     return false;
 }
-

@@ -457,10 +457,9 @@ function applyAuraEffects() {
 function handleProjectileHit(projectile, hitEnemy) {
     const targetEnemy = hitEnemy || projectile.target;
 
-    if (projectile.isMortar) {
-        // Mortar logic doesn't depend on hitting a specific enemy object
-    } else if (!targetEnemy || typeof targetEnemy.takeDamage !== 'function') {
-        return; // No valid enemy to hit for other projectile types
+    // Create the explosion visual effect for Anti-Air rockets at the exact point of collision.
+    if (projectile.owner.type === 'ANTI_AIR') {
+        gameState.effects.push(new Effect(projectile.x, projectile.y, 'explosion', 25, '#e2d2b3ff', 0.2));
     }
 
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
