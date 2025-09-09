@@ -68,13 +68,13 @@ export const waveDefinitions = [
     },
     // Wave 10 (Special Gold-Stealing Wave)
     {
-        composition: [comp(ENEMY_TYPES.BITCOIN, 25)],
+        composition: [comp(ENEMY_TYPES.BITCOIN, 30)],
         healthMultiplier: 2.35, healthBonus: 10,
     },
     // Wave 11
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.NORMAL, 8), comp(ENEMY_TYPES.FAST, 5)],
-        healthMultiplier: 2.85, healthBonus: 10,
+        healthMultiplier: 2.85, healthBonus: 20,
     },
     // Wave 12 (Swarm)
     {
