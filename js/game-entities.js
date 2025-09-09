@@ -1045,4 +1045,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-
