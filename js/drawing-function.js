@@ -163,7 +163,7 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
 
     const stats = [
         { icon: 'favorite', text: `${enemy.health.toFixed(0)}/${enemy.maxHealth}`, color: '#ef4444' },
-        { icon: 'speed', text: `${enemyType.speed}`, color: '#38bdf8' },
+        { icon: 'speed', text: `${enemyType.speed}`, color: '#4ade80' },
         { icon: 'paid', text: `${enemyType.gold}`, color: '#facc15' }
     ];
 

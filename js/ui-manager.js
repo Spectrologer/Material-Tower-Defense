@@ -120,16 +120,22 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.add('col-span-2');
         }
 
-        const killCountIcon = uiElements.towerKillCount.querySelector('span.material-symbols-outlined');
+        const killCountIcon = /** @type {HTMLElement | null} */ (uiElements.towerKillCount.querySelector('span.material-symbols-outlined'));
         if (selectedTower.type === 'CAT') {
             uiElements.towerKillCount.classList.remove('hidden');
-            if (killCountIcon) killCountIcon.textContent = 'paid';
+            if (killCountIcon) {
+                killCountIcon.textContent = 'paid';
+                killCountIcon.style.color = '#facc15'; // Gold
+            }
             uiElements.killCountValue.textContent = selectedTower.goldGenerated || 0;
         } else if (selectedTower.type === 'SUPPORT' || selectedTower.type === 'ENT') {
             uiElements.towerKillCount.classList.add('hidden');
         } else {
             uiElements.towerKillCount.classList.remove('hidden');
-            if (killCountIcon) killCountIcon.textContent = 'skull';
+            if (killCountIcon) {
+                killCountIcon.textContent = 'skull';
+                killCountIcon.style.color = '#e0e0e0'; // White
+            }
             uiElements.killCountValue.textContent = selectedTower.killCount || 0;
         }
 
@@ -141,35 +147,15 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             } else {
                 levelText = `LVL ${totalUpgrades + 1}`;
             }
-
-            // Display stats specific to ORBIT tower
-            if (uiElements.statDamageP) uiElements.statDamageP.classList.remove('hidden');
-            if (uiElements.statDamage) uiElements.statDamage.textContent = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
-
-            if (uiElements.statProjectilesP) uiElements.statProjectilesP.classList.remove('hidden');
-            if (uiElements.statProjectiles) uiElements.statProjectiles.textContent = selectedTower.orbiters.length;
-
-            if (uiElements.statRangeP) uiElements.statRangeP.classList.add('hidden');
-            if (uiElements.statSpeedP) uiElements.statSpeedP.classList.add('hidden');
-            if (uiElements.statSplashP) uiElements.statSplashP.classList.add('hidden');
-            if (uiElements.statBoostP) uiElements.statBoostP.classList.add('hidden');
-            if (uiElements.statSlowP) uiElements.statSlowP.classList.add('hidden');
-            if (uiElements.statGoldP) uiElements.statGoldP.classList.add('hidden');
-            if (uiElements.statBurnP) uiElements.statBurnP.classList.add('hidden');
-            if (uiElements.statFragsP) uiElements.statFragsP.classList.add('hidden');
-            if (uiElements.statPinsP) uiElements.statPinsP.classList.add('hidden');
         } else if (selectedTower.level === 'MAX LEVEL') {
             levelText = '<span class="material-icons">star</span> MAX LEVEL';
         } else if (selectedTower.level === 1 && (selectedTower.type === 'PIN' || selectedTower.type === 'CASTLE')) {
             levelText = '';
         } else {
-            // FIX: Use the main level counter for display, as it is incremented on all tower upgrades,
-            // unlike damageLevel which is specific to certain merges.
             const visualLevel = selectedTower.level;
             levelText = `LVL ${visualLevel}`;
         }
 
-        // Fort-specific level display logic
         if (selectedTower.type === 'FORT') {
             if (selectedTower.level === 'MAX LEVEL') {
                 levelText = '<span class="material-icons">star</span> MAX LEVEL';
@@ -179,7 +165,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             }
         }
 
-        // Hide all stat paragraphs by default
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
             uiElements.statBoostP, uiElements.statSlowP, uiElements.statGoldP,
@@ -194,7 +179,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         if (uiElements.sellTowerBtn) {
             if (!isSellConfirmPending) {
                 uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
-                // This resets the button to its default appearance, canceling any pending confirmation.
                 uiElements.sellTowerBtn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-600', 'shadow-[0_4px_0_#ca8a04]');
                 uiElements.sellTowerBtn.classList.add('bg-red-700', 'text-yellow-300', 'border-yellow-400', 'shadow-[0_4px_0_#9a3412]');
             }
@@ -236,103 +220,138 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             }
         }
 
-        // Display stats based on tower type
-        if (selectedTower.type !== 'ORBIT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'CAT') {
-            if (uiElements.statRangeP) uiElements.statRangeP.classList.remove('hidden');
-            if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
-        }
         const baseStats = TOWER_TYPES[selectedTower.type];
         if (baseStats.special) {
             let specialText = baseStats.special;
             if (selectedTower.type === 'FORT' && selectedTower.hasShrapnel) {
                 specialText += " + AA Shrapnel";
             }
-            if (uiElements.statSpecialP) uiElements.statSpecialP.classList.remove('hidden');
+            if (uiElements.statSpecialP) {
+                uiElements.statSpecialP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
+                if (icon) icon.style.color = '#facc15'; // Gold for Special
+            }
             if (uiElements.statSpecial) uiElements.statSpecial.textContent = specialText;
         }
 
-
         if (selectedTower.hasFragmentingShot) {
-            if (uiElements.statFragsP) uiElements.statFragsP.classList.remove('hidden');
+            if (uiElements.statFragsP) {
+                uiElements.statFragsP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statFragsP.querySelector('span'));
+                if (icon) icon.style.color = '#f472b6'; // Pink for Fragments
+            }
             if (uiElements.statFrags) uiElements.statFrags.textContent = selectedTower.fragmentBounces;
             if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Fragmenting Shot';
         }
 
-        if (selectedTower.type === 'NAT') {
-            if (uiElements.statProjectilesP) uiElements.statProjectilesP.classList.remove('hidden');
-            if (uiElements.statProjectiles) uiElements.statProjectiles.textContent = selectedTower.projectileCount || 1;
-        }
-        if (selectedTower.type === 'ORBIT') {
-            if (uiElements.statDamageP) uiElements.statDamageP.classList.remove('hidden');
-            if (uiElements.statDamage) uiElements.statDamage.textContent = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
-
-            if (uiElements.statProjectilesP) uiElements.statProjectilesP.classList.remove('hidden');
-            if (uiElements.statProjectiles) uiElements.statProjectiles.textContent = selectedTower.orbiters.length;
-
-            if (uiElements.statRangeP) uiElements.statRangeP.classList.add('hidden');
-            if (uiElements.statSpeedP) uiElements.statSpeedP.classList.add('hidden');
-        }
-        // The core logic fix for the splash stat display.
         if (selectedTower.splashRadius > 0) {
-            if (uiElements.statSplashP) uiElements.statSplashP.classList.remove('hidden');
+            if (uiElements.statSplashP) {
+                uiElements.statSplashP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statSplashP.querySelector('span'));
+                if (icon) icon.style.color = '#c084fc'; // Purple for Splash
+            }
             if (uiElements.statSplash) {
                 uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius).toString();
             }
         }
 
-
         if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
             if (selectedTower.type === 'CAT') {
                 if (uiElements.statGoldP) {
                     uiElements.statGoldP.classList.remove('hidden');
-                    const iconHTML = uiElements.statGoldP.querySelector('span.material-icons')?.outerHTML || '';
-                    uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statGoldP.querySelector('span.material-icons'));
+                    if (icon) {
+                        icon.style.color = '#facc15'; // Gold
+                        const iconHTML = icon.outerHTML;
+                        uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
+                    }
                 }
             }
             if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
                 if (selectedTower.mode === 'boost') {
-                    if (uiElements.statBoostP) uiElements.statBoostP.classList.remove('hidden');
+                    if (uiElements.statBoostP) {
+                        uiElements.statBoostP.classList.remove('hidden');
+                        const icon = /** @type {HTMLElement | null} */ (uiElements.statBoostP.querySelector('span'));
+                        if (icon) icon.style.color = '#f59e0b'; // Amber
+                    }
                     if (uiElements.statBoost) {
                         const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
                         uiElements.statBoost.textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
                     }
-                    if (uiElements.statSlowP) uiElements.statSlowP.classList.add('hidden');
                 } else if (selectedTower.mode === 'slow') {
-                    if (uiElements.statSlowP) uiElements.statSlowP.classList.remove('hidden');
+                    if (uiElements.statSlowP) {
+                        uiElements.statSlowP.classList.remove('hidden');
+                        const icon = /** @type {HTMLElement | null} */ (uiElements.statSlowP.querySelector('span'));
+                        if (icon) icon.style.color = '#38bdf8'; // Sky Blue
+                    }
                     if (uiElements.statSlow) {
                         const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
                         uiElements.statSlow.textContent = `${slowPercent}%`;
                     }
-                    if (uiElements.statBoostP) uiElements.statBoostP.classList.add('hidden');
                 } else { // Diversify mode
-                    if (uiElements.statBoostP) uiElements.statBoostP.classList.add('hidden');
-                    if (uiElements.statSlowP) uiElements.statSlowP.classList.add('hidden');
-                    if (uiElements.statSpecialP) uiElements.statSpecialP.classList.remove('hidden');
+                    if (uiElements.statSpecialP) {
+                        uiElements.statSpecialP.classList.remove('hidden');
+                        const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
+                        if (icon) icon.style.color = '#facc15'; // Gold for Special
+                    }
                     if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Aura: Towers attack different enemies';
                 }
             } else { // SUPPORT tower
-                if (uiElements.statBoostP) uiElements.statBoostP.classList.remove('hidden');
+                if (uiElements.statBoostP) {
+                    uiElements.statBoostP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statBoostP.querySelector('span'));
+                    if (icon) icon.style.color = '#f59e0b'; // Amber
+                }
                 if (uiElements.statBoost) {
                     const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
                     uiElements.statBoost.textContent = `${boostPercent}%`;
                 }
             }
-        } else {
-            if (uiElements.statDamageP) uiElements.statDamageP.classList.remove('hidden');
-            if (uiElements.statSpeedP) uiElements.statSpeedP.classList.remove('hidden');
+        } else { // Attacking towers
+            if (uiElements.statDamageP) {
+                uiElements.statDamageP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statDamageP.querySelector('span'));
+                if (icon) icon.style.color = '#ef4444'; // Red for Damage
+            }
             if (uiElements.statDamage) {
                 const finalDamage = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
                 uiElements.statDamage.textContent = finalDamage;
             }
-            if (selectedTower.type !== 'ORBIT') {
-                if (uiElements.statSpeed) uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
-            } else {
-                if (uiElements.statSpeedP) uiElements.statSpeedP.classList.add('hidden');
+
+            if (uiElements.statSpeedP && selectedTower.type !== 'ORBIT') {
+                uiElements.statSpeedP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statSpeedP.querySelector('span'));
+                if (icon) icon.style.color = '#4ade80'; // Green for Speed
+            }
+            if (uiElements.statSpeed && selectedTower.type !== 'ORBIT') {
+                uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
             }
 
+            if (uiElements.statRangeP) {
+                uiElements.statRangeP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
+                if (icon) icon.style.color = '#60a5fa'; // Blue for Range
+            }
+            if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
+
             if (selectedTower.type === 'FIREPLACE') {
-                if (uiElements.statBurnP) uiElements.statBurnP.classList.remove('hidden');
+                if (uiElements.statBurnP) {
+                    uiElements.statBurnP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statBurnP.querySelector('span'));
+                    if (icon) icon.style.color = '#f97316'; // Orange for Burn
+                }
                 if (uiElements.statBurn) uiElements.statBurn.textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;
+            }
+
+            if (selectedTower.type === 'NAT' || selectedTower.type === 'ORBIT') {
+                if (uiElements.statProjectilesP) {
+                    uiElements.statProjectilesP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statProjectilesP.querySelector('span'));
+                    if (icon) icon.style.color = '#e0e0e0'; // White for Projectiles
+                }
+                if (uiElements.statProjectiles) {
+                    uiElements.statProjectiles.textContent = selectedTower.type === 'NAT' ? (selectedTower.projectileCount || 1) : selectedTower.orbiters.length;
+                }
             }
         }
     } else {
