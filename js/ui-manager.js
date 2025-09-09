@@ -232,9 +232,14 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         }
         const baseStats = TOWER_TYPES[selectedTower.type];
         if (baseStats.special) {
+            let specialText = baseStats.special;
+            if (selectedTower.type === 'FORT' && selectedTower.hasShrapnel) {
+                specialText += " + AA Shrapnel";
+            }
             if (uiElements.statSpecialP) uiElements.statSpecialP.classList.remove('hidden');
-            if (uiElements.statSpecial) uiElements.statSpecial.textContent = baseStats.special;
+            if (uiElements.statSpecial) uiElements.statSpecial.textContent = specialText;
         }
+
 
         if (selectedTower.hasFragmentingShot) {
             if (uiElements.statFragsP) uiElements.statFragsP.classList.remove('hidden');
@@ -379,5 +384,3 @@ export function triggerGameOver(isWin, wave) {
         if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
     }
 }
-
-

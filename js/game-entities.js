@@ -260,6 +260,7 @@ export class Enemy {
         this.hitTimer = 0;
         this.burns = [];
         this.slowMultiplier = 1;
+        this.jostle = { x: 0, y: 0, timer: 0, strength: 4 };
 
         if (this.type.laysEggs) {
             this.timeUntilLay = this.type.layEggInterval;
@@ -282,6 +283,10 @@ export class Enemy {
     }
     draw(ctx) {
         ctx.save();
+        if (this.jostle.timer > 0) {
+            ctx.translate(this.jostle.x, this.jostle.y);
+        }
+
         if (this.wiggleTimer > 0) {
             const wiggleAmount = 3;
             const wiggleSpeed = 30; // Radians per second
@@ -328,15 +333,25 @@ export class Enemy {
         ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
         ctx.stroke();
     }
-    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime) {
+    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound) {
         if (this.hitTimer > 0) {
             this.hitTimer -= deltaTime;
+        }
+
+        if (this.jostle.timer > 0) {
+            this.jostle.timer -= deltaTime;
+            if (this.jostle.timer <= 0) {
+                this.jostle.x = 0;
+                this.jostle.y = 0;
+            }
         }
 
         // --- Health & Burn Damage ---
         if (this.burns.length > 0) {
             const burn = this.burns[0];
-            this.health -= burn.dps * deltaTime;
+            const damageToTake = burn.dps * deltaTime;
+            this.takeDamage(damageToTake);
+            if (playHitSound) playHitSound();
             burn.duration -= deltaTime;
             if (burn.duration <= 0) this.burns.shift();
         }
@@ -433,9 +448,24 @@ export class Enemy {
 
         return true; // Keep this enemy
     }
-    takeDamage(amount) {
+    takeDamage(amount, projectile = null) {
         this.health -= amount;
         this.hitTimer = 0.08; // seconds
+
+        this.jostle.timer = 0.1;
+        if (projectile) {
+            const dx = this.x - projectile.x;
+            const dy = this.y - projectile.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            this.jostle.x = (dx / dist) * this.jostle.strength;
+            this.jostle.y = (dy / dist) * this.jostle.strength;
+        } else {
+            // For non-projectile damage (like burn)
+            const randAngle = Math.random() * Math.PI * 2;
+            this.jostle.x = Math.cos(randAngle) * this.jostle.strength * 0.5;
+            this.jostle.y = Math.sin(randAngle) * this.jostle.strength * 0.5;
+        }
+
         return this.health <= 0;
     }
 }
@@ -459,6 +489,7 @@ export class Tower {
         this.fragmentBounces = 0;
         this.bounceDamageFalloff = 0.5;
         this.hasFragmentingShot = false;
+        this.hasShrapnel = false;
         this.killCount = 0;
         const baseStats = TOWER_TYPES[type];
         this.splashRadius = baseStats.splashRadius || 0; // Ensure splashRadius is always a number
@@ -662,7 +693,12 @@ export class Tower {
         } else {
             const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
             if (groundOnlyTowers.includes(this.type)) {
-                potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
+                // FORT with shrapnel CAN target flying units for its splash
+                if (this.type === 'FORT' && this.hasShrapnel) {
+                    // No filter, can target anything in range to splash on
+                } else {
+                    potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
+                }
             }
         }
 
@@ -822,6 +858,7 @@ export class Tower {
             fragmentBounces: this.fragmentBounces,
             bounceDamageFalloff: this.bounceDamageFalloff,
             hasFragmentingShot: this.hasFragmentingShot,
+            hasShrapnel: this.hasShrapnel,
             goldBonusMultiplier: this.goldBonusMultiplier,
             splashRadius: this.splashRadius,
             color: this.color,
@@ -869,6 +906,7 @@ export class Tower {
             "fragmentBounces",
             "bounceDamageFalloff",
             "hasFragmentingShot",
+            "hasShrapnel",
             "goldBonusMultiplier",
             "splashRadius",
             "color",

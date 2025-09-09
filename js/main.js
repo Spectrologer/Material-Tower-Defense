@@ -57,6 +57,24 @@ function playMoneySound() {
     oscillator.stop(audioContext.currentTime + 0.5);
 }
 
+function playHitSound() {
+    if (!isSoundEnabled) return;
+    const now = audioContext.currentTime;
+    const duration = 0.08;
+    const osc = audioContext.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.linearRampToValueAtTime(220, now + duration);
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.1, now + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    osc.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+}
+
 function playWiggleSound() {
     if (!isSoundEnabled) return;
 
@@ -413,11 +431,13 @@ function handleProjectileHit(projectile, hitEnemy) {
         gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 0.33));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
-                if (enemy === targetEnemy || !enemy.type.splashImmune) {
-                    if (enemy.takeDamage(finalDamage)) {
+                const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
+                if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
+                    if (enemy.takeDamage(finalDamage, projectile)) {
                         projectile.owner.killCount++;
                         awardGold(enemy);
                     }
+                    playHitSound();
                     enemy.applyBurn(projectile.owner.burnDps, projectile.owner.burnDuration);
                 }
             }
@@ -427,19 +447,22 @@ function handleProjectileHit(projectile, hitEnemy) {
         gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'explosion', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 0.33));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
-                if (enemy === targetEnemy || !enemy.type.splashImmune) {
-                    if (enemy.takeDamage(finalDamage)) {
+                const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
+                if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
+                    if (enemy.takeDamage(finalDamage, projectile)) {
                         projectile.owner.killCount++;
                         awardGold(enemy);
                     }
+                    playHitSound();
                 }
             }
         });
     } else {
-        if (targetEnemy && targetEnemy.takeDamage(finalDamage)) {
+        if (targetEnemy && targetEnemy.takeDamage(finalDamage, projectile)) {
             projectile.owner.killCount++;
             awardGold(targetEnemy);
         }
+        if (targetEnemy) playHitSound();
     }
     updateUI(gameState);
 }
@@ -502,7 +525,8 @@ function gameLoop(currentTime) {
         newlySpawnedEnemies,
         playWiggleSound,
         playCrackSound,
-        effectiveDeltaTime
+        effectiveDeltaTime,
+        playHitSound
     ));
 
     gameState.enemies.push(...newlySpawnedEnemies);
@@ -1496,3 +1520,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+

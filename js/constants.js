@@ -18,12 +18,12 @@ export const TOWER_TYPES = {
     FORT: { cost: 100, range: 200, damage: 12, fireRate: 180, color: '#878787ff', projectileSpeed: 4, projectileSize: 8, projectileColor: '#717171ff', splashRadius: 80, special: 'Mortar Strike' },
     SUPPORT: { cost: 60, range: 100, damage: 0, fireRate: 0, color: '#f870ffff', attackSpeedBoost: 0.85, special: 'Non-Stacking Speed Aura' },
     PIN_HEART: { cost: 85, range: 250, damage: 0.8, fireRate: 10, color: '#ff69b4', projectileSpeed: 5, projectileSize: 3, projectileColor: '#ff69b4', splashRadius: 0, special: 'Loyal Projectiles' },
-    FIREPLACE: { cost: 135, range: 50, damage: 0.1, fireRate: 2, color: '#e11d48', projectileSpeed: 3, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 10, special: 'Lingering Burn' },
+    FIREPLACE: { cost: 135, range: 50, damage: 0.1, fireRate: 1, color: '#e11d48', projectileSpeed: 3, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 10, special: 'Lingering Burn' },
     NAT: { cost: 50, range: 300, damage: 8, fireRate: 120, color: '#DEB887', projectileSpeed: 12, projectileSize: 5, projectileColor: '#DEB887', splashRadius: 0, special: 'Sniper' },
     ENT: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, special: 'Non-Stacking Aura: Boost/Slow' },
     ORBIT: { cost: 150, range: 9999, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters' },
     CAT: { cost: 180, range: 120, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1.2, special: 'Greed Aura & Toggle', iconSize: 0.9 },
-    NINE_PIN: { cost: 119, range: 249, damage: 4.9, fireRate: 69, color: '#FFFFFF', projectileSpeed: 6, projectileSize: 39, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
+    NINE_PIN: { cost: 119, range: 249, damage: 3, fireRate: 69, color: '#FFFFFF', projectileSpeed: 6, projectileSize: 39, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true },
     ANTI_AIR: { cost: 110, range: 350, damage: 50, fireRate: 180, color: '#a9a9a9', projectileSpeed: .1, projectileSize: 24, projectileColor: '#cccccc', special: 'Air units only' },
 };
 
@@ -31,7 +31,7 @@ export const TOWER_TYPES = {
 export const ENEMY_TYPES = {
     NORMAL: { speed: 1.5, health: 10, color: '#ae2f2fff', size: 16, gold: 1, icon: 'person', iconFamily: "'Material Symbols Outlined'", damagesLives: true },
     FAST: { speed: 2.5, health: 8, color: '#ffb84d', size: 14, gold: 1, icon: 'pest_control_rodent', iconFamily: 'Material Icons', damagesLives: true },
-    HEAVY: { speed: 1, health: 30, color: '#3446ceff', size: 20, gold: 3, icon: 'guardian', iconFamily: 'Material Symbols Outlined', damagesLives: true },
+    HEAVY: { speed: 1, health: 35, color: '#3446ceff', size: 20, gold: 3, icon: 'guardian', iconFamily: 'Material Symbols Outlined', damagesLives: true },
     SWARM: { speed: 3.0, health: 4, color: '#00e6e6', size: 10, gold: 1, icon: 'bug_report', iconFamily: 'Material Icons', damagesLives: true },
     FLYING: { speed: 2.0, health: 15, color: '#5e359fff', size: 16, gold: 2, icon: 'helicopter', iconFamily: "'Material Symbols Outlined'", isFlying: true, splashImmune: true, damagesLives: true },
     BITCOIN: { speed: 2.0, health: 50, color: '#F7931A', size: 20, gold: 0, icon: 'currency_bitcoin', iconFamily: 'Material Symbols Outlined', isFlying: false, splashImmune: false, damagesLives: false },
