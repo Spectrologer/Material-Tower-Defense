@@ -467,7 +467,7 @@ function createTowerCardHTML(type, isDiscovered) {
         `;
     }
 
-    const name = type.replace('_', ' ');
+    const name = iconInfo.icon.replace(/_/g, ' ').toUpperCase();
     const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
 
     // Build stats with icons
@@ -488,6 +488,7 @@ function createTowerCardHTML(type, isDiscovered) {
             <div>
                 ${iconHTML}
                 <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
+                <p class="text-xs text-gray-400">(${type})</p>
             </div>
             <div class="text-left text-xs w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
                 ${statsGridHTML}
@@ -513,7 +514,7 @@ function createEnemyCardHTML(type, isDiscovered) {
         `;
     }
 
-    const name = type.replace('_', ' ');
+    const name = stats.icon.replace(/_/g, ' ').toUpperCase();
 
     let specialText = '';
     if (stats.isFlying) specialText += 'Flying, ';
@@ -536,6 +537,7 @@ function createEnemyCardHTML(type, isDiscovered) {
             <div>
                 ${iconHTML}
                 <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
+                <p class="text-xs text-gray-400">(${type})</p>
             </div>
             <div class="text-left text-xs w-full grid grid-cols-1 gap-y-1 px-4">
                 ${statsGridHTML}
@@ -580,4 +582,3 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
-
