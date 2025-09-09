@@ -57,12 +57,12 @@ export const waveDefinitions = [
     // Wave 8 (Swarm)
     {
         isSwarm: true,
-        composition: [comp(ENEMY_TYPES.FAST, 13)],
+        composition: [comp(ENEMY_TYPES.FAST, 15)],
         healthMultiplier: 1.35, healthBonus: 10,
     },
     // Wave 9
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 10), comp(ENEMY_TYPES.FLYING, 6)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 10), comp(ENEMY_TYPES.FLYING, 10)],
         healthMultiplier: 2.20, healthBonus: 10,
         endOfWaveAnnouncement: { text: "Warning:\nUpcoming enemies will steal gold!", color: '#f7e51aff' }
     },
