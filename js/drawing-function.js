@@ -38,7 +38,7 @@ export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid,
 // Draws the path that enemies will follow.
 export function drawPath(ctx, canvasWidth, path, mazeColor) {
     // This draws the darker border of the path.
-    ctx.strokeStyle = '#748275ff';
+    ctx.strokeStyle = '#acacacff';
     ctx.lineWidth = TILE_SIZE;
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'miter';
@@ -67,6 +67,56 @@ export function drawPath(ctx, canvasWidth, path, mazeColor) {
     }
     ctx.stroke();
 }
+
+// New function to draw a temporary path.
+export function drawUpcomingPath(ctx, path) {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = TILE_SIZE - 20;
+    ctx.setLineDash([5, 5]);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    // It's a vertical line from the top path segment to the bottom path segment.
+    ctx.moveTo(path[4].x, path[4].y - TILE_SIZE / 2);
+    ctx.lineTo(path[4].x, path[4].y + TILE_SIZE);
+    ctx.lineTo(path[4].x + TILE_SIZE * 2, path[4].y + TILE_SIZE);
+    ctx.lineTo(path[4].x + TILE_SIZE * 2, path[4].y - TILE_SIZE / 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// Draws the detour path as a solid segment.
+export function drawDetourPath(ctx, path, mazeColor) {
+    if (!path || path.length < 1) return;
+    ctx.save();
+
+    // This draws the darker border of the path.
+    ctx.strokeStyle = '#7c7c7cff'; // Darker border for detour
+    ctx.lineWidth = TILE_SIZE;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x, path[i].y);
+    }
+    ctx.stroke();
+
+    // This draws the main, lighter part of the path on top.
+    ctx.strokeStyle = mazeColor;
+    ctx.lineWidth = TILE_SIZE - 10;
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x, path[i].y);
+    }
+    ctx.stroke();
+
+    ctx.restore();
+}
+
 
 // Draws the little pop-up tooltip that appears when you hover over a tower to merge it.
 export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
@@ -250,6 +300,7 @@ export function getTowerIconInfo(type) {
         case 'PIN_HEART':
             icon = 'map_pin_heart';
             className = "material-symbols-outlined";
+
             break;
         case 'FIREPLACE':
             icon = 'fireplace';
@@ -285,4 +336,3 @@ export function getTowerIconInfo(type) {
     }
     return { icon, className };
 }
-

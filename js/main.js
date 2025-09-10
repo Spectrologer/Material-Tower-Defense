@@ -1,7 +1,7 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries } from './ui-manager.js';
-import { drawPlacementGrid, drawPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
+import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions } from './wave-definitions.js';
@@ -12,6 +12,7 @@ const ctx = canvas.getContext('2d');
 let canvasWidth, canvasHeight;
 let isInfiniteGold = false;
 let mazeColor = '#818181ff';
+let detourMazeColor = '#666666ff'; // Darker gray for the detour path
 
 // UI/Interaction State (not part of core game data)
 let placingTower = null;
@@ -89,6 +90,16 @@ function renderCloudInventory() {
     });
 }
 
+/**
+ * Calculates the greatest common divisor of two numbers.
+ * @param {number} a
+ * @param {number} b
+ * @returns {number} The GCD.
+ */
+function gcd(a, b) {
+    return b === 0 ? a : gcd(b, a % b);
+}
+
 function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
@@ -104,6 +115,8 @@ function spawnWave() {
         return;
     }
 
+    gameState.isDetourOpen = (waveDef.detourRatio || 0) > 0;
+
     const enemiesToSpawn = [];
     waveDef.composition.forEach(comp => {
         for (let i = 0; i < comp.count; i++) {
@@ -112,6 +125,23 @@ function spawnWave() {
     });
 
     let spawned = 0;
+    let detourCounter = 0;
+    let detourNumerator = 0;
+    let detourDenominator = 1;
+
+    if (waveDef.detourRatio > 0) {
+        const ratio = waveDef.detourRatio;
+        let denominator = 1;
+        while ((ratio * denominator) % 1 !== 0) {
+            denominator *= 10;
+        }
+        let numerator = ratio * denominator;
+        const commonDivisor = gcd(numerator, denominator);
+        detourNumerator = numerator / commonDivisor;
+        detourDenominator = denominator / commonDivisor;
+    }
+
+
     const spawnNextEnemy = () => {
         if (spawned >= enemiesToSpawn.length) {
             gameState.spawningEnemies = false;
@@ -135,7 +165,20 @@ function spawnWave() {
         }
 
         const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: enemyType.gold };
-        gameState.enemies.push(new Enemy(finalEnemyType, gameState.path, enemyTypeName));
+
+        let useDetour = false;
+        if (gameState.isDetourOpen && enemyType.prefersDetour) {
+            detourCounter++;
+            if (detourCounter <= detourNumerator) {
+                useDetour = true;
+            }
+            if (detourCounter >= detourDenominator) {
+                detourCounter = 0;
+            }
+        }
+
+        const pathForEnemy = useDetour ? gameState.pathWithDetour : gameState.path;
+        gameState.enemies.push(new Enemy(finalEnemyType, pathForEnemy, enemyTypeName));
         spawned++;
 
         // --- Dynamic Spawn Rate Logic ---
@@ -458,6 +501,7 @@ function gameLoop(currentTime) {
 
     if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.spawningEnemies) {
         gameState.waveInProgress = false;
+        gameState.isDetourOpen = false;
 
         // Check for an announcement for the *next* wave from the wave that just ended.
         const completedWaveDef = waveDefinitions[gameState.wave - 1];
@@ -484,7 +528,16 @@ function gameLoop(currentTime) {
         persistGameState(0);
     }
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    // Determine detour path color based on current and next wave
+    const nextWaveDef = waveDefinitions[gameState.wave - 1];
+    const isDetourInNextWave = nextWaveDef && nextWaveDef.detourRatio > 0;
+    const effectiveDetourColor = (gameState.isDetourOpen || isDetourInNextWave) ? mazeColor : detourMazeColor;
+
+    // Draw detour first so main path draws over it
+    drawDetourPath(ctx, gameState.detourPath, effectiveDetourColor);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
+
     gameState.enemies.forEach(enemy => {
         enemy.draw(ctx);
     });
@@ -1539,3 +1592,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+

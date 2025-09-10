@@ -25,7 +25,7 @@ const generateFixedPortraitLayout = (cols, rows) => {
 export function generatePath() {
     const cols = GRID_COLS;
     const rows = GRID_ROWS;
-    let path = [];
+    let pathInGridCoords = [];
     // Start with a grid that's completely empty.
     let placementGrid = Array(rows).fill(null).map(() => Array(cols).fill(GRID_EMPTY));
 
@@ -34,20 +34,67 @@ export function generatePath() {
     // Convert the layout coordinates into path points.
     selectedLayout.forEach(coord => {
         const [gridX, gridY] = coord;
-        if (path.length === 0 || path[path.length - 1].x !== gridX || path[path.length - 1].y !== gridY) {
-            path.push({ x: gridX, y: gridY });
+        if (pathInGridCoords.length === 0 || pathInGridCoords[pathInGridCoords.length - 1].x !== gridX || pathInGridCoords[pathInGridCoords.length - 1].y !== gridY) {
+            pathInGridCoords.push({ x: gridX, y: gridY });
         }
     });
 
-    // Mark the path squares on the placement grid so you can't build there.
-    for (let i = 0; i < path.length; i++) {
-        const gridPos = path[i];
+    // --- Create Detour Path ---
+    const y1 = Math.floor(rows * 0.20);
+    const y2 = Math.floor(rows * 0.5);
+    const x1 = Math.floor(cols * 0.2); // Use x1 for the detour path location
+    let detourPathInGridCoords = [];
+    for (let y = y1; y <= y2; y++) {
+        detourPathInGridCoords.push({ x: x1, y });
+    }
+
+    // --- Create Combined Path with Detour ---
+    const detourStartIndex = pathInGridCoords.findIndex(p => p.x === x1 && p.y === y1);
+    const rejoinPoint = { x: x1, y: y2 };
+    // Find where the detour would rejoin the main path's horizontal segment.
+    const detourRejoinIndexOnMain = pathInGridCoords.findIndex(p => p.y === rejoinPoint.y && p.x === rejoinPoint.x);
+
+
+    let pathWithDetourInGridCoords = [];
+    if (detourStartIndex !== -1 && detourRejoinIndexOnMain !== -1) {
+        // Part 1: Main path up to the detour start.
+        pathWithDetourInGridCoords.push(...pathInGridCoords.slice(0, detourStartIndex));
+        // Part 2: The detour itself.
+        pathWithDetourInGridCoords.push(...detourPathInGridCoords);
+        // Part 3: Main path from where detour rejoins.
+        pathWithDetourInGridCoords.push(...pathInGridCoords.slice(detourRejoinIndexOnMain + 1));
+
+    } else {
+        // Fallback if detour points aren't on the path for some reason
+        pathWithDetourInGridCoords = [...pathInGridCoords];
+    }
+
+
+    // --- Mark paths on grid and convert all paths to pixel coordinates ---
+    const convertToPixels = (gridPath) => {
+        return gridPath.map(gridPos => ({
+            x: gridPos.x * TILE_SIZE + TILE_SIZE / 2,
+            y: gridPos.y * TILE_SIZE + TILE_SIZE / 2
+        }));
+    };
+
+    // Mark detour path on grid so you can't build on it.
+    for (const gridPos of detourPathInGridCoords) {
         if (gridPos.x >= 0 && gridPos.x < cols && gridPos.y >= 0 && gridPos.y < rows) {
             placementGrid[gridPos.y][gridPos.x] = GRID_PATH;
         }
-        // Convert grid coordinates (like 1, 2) to pixel coordinates (like 60, 100).
-        path[i] = { x: gridPos.x * TILE_SIZE + TILE_SIZE / 2, y: gridPos.y * TILE_SIZE + TILE_SIZE / 2 };
+    }
+    // Mark main path on grid. This will correctly overwrite any detour tiles
+    // that overlap with the main path, ensuring consistent path marking.
+    for (const gridPos of pathInGridCoords) {
+        if (gridPos.x >= 0 && gridPos.x < cols && gridPos.y >= 0 && gridPos.y < rows) {
+            placementGrid[gridPos.y][gridPos.x] = GRID_PATH;
+        }
     }
 
-    return { path, placementGrid };
+    const path = convertToPixels(pathInGridCoords);
+    const detourPath = convertToPixels(detourPathInGridCoords);
+    const pathWithDetour = convertToPixels(pathWithDetourInGridCoords);
+
+    return { path, placementGrid, detourPath, pathWithDetour };
 }

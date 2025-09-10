@@ -120,11 +120,28 @@ export function updateUI(state) {
 }
 
 export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPending) {
+    // Always remove the icon first to handle deselection correctly.
+    const existingIcon = uiElements.sellPanel.querySelector('.detection-indicator');
+    if (existingIcon) {
+        existingIcon.remove();
+    }
+
     if (selectedTower) {
         uiElements.towerButtons.classList.add('hidden');
         uiElements.gameControls.classList.add('hidden');
         uiElements.towersTitle.classList.add('hidden');
         uiElements.sellPanel.classList.remove('hidden');
+
+        // Add the detection icon if the tower type is correct.
+        if (['SUPPORT', 'ENT', 'CAT'].includes(selectedTower.type)) {
+            const eyeIcon = document.createElement('span');
+            eyeIcon.className = 'material-icons detection-indicator absolute top-2 left-2 text-white';
+            eyeIcon.textContent = 'visibility';
+            eyeIcon.style.textShadow = '1px 1px 3px #000';
+            uiElements.sellPanel.classList.add('relative'); // Ensure positioning context
+            uiElements.sellPanel.prepend(eyeIcon);
+        }
+
         const sellValue = Math.floor(selectedTower.cost * 0.5);
 
         // Hide the move to cloud button entirely if cloud is not unlocked

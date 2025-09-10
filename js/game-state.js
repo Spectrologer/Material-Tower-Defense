@@ -97,7 +97,10 @@ function getInitialGameState() {
         gameOver: false,
         isCloudUnlocked: false,
         cloudInventory: [],
+        isDetourOpen: false,
         path: pathData.path,
+        detourPath: pathData.detourPath,
+        pathWithDetour: pathData.pathWithDetour,
         placementGrid: pathData.placementGrid,
     };
 }
@@ -121,7 +124,10 @@ function getSerializedGameState() {
         spawningEnemies: gameState.spawningEnemies,
         gameOver: gameState.gameOver,
         isCloudUnlocked: gameState.isCloudUnlocked,
+        isDetourOpen: gameState.isDetourOpen,
         path: gameState.path,
+        detourPath: gameState.detourPath,
+        pathWithDetour: gameState.pathWithDetour,
         placementGrid: gameState.placementGrid,
         towers: gameState.towers.map((t) => t.toJSON()),
         cloudInventory: gameState.cloudInventory.map((t) => t.toJSON()),
@@ -137,8 +143,11 @@ function deserializeGameState(serializedGameState) {
     try {
         const { towers, cloudInventory, introducedEnemies, killedEnemies, discoveredMerges, discoveredTowerTypes, ...basicData } = JSON.parse(serializedGameState);
 
+        const initialState = getInitialGameState();
+        // If the save file doesn't have detour paths, the initial state will provide them.
+        // If it does, the saved data from basicData will overwrite the defaults.
         return {
-            ...getInitialGameState(),
+            ...initialState,
             ...basicData,
             cloudInventory: cloudInventory.map((data) => Tower.fromJSON(data)),
             towers: towers.map((data) => Tower.fromJSON(data)),
@@ -153,4 +162,3 @@ function deserializeGameState(serializedGameState) {
         return getInitialGameState();
     }
 }
-
