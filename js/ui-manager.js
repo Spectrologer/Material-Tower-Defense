@@ -119,7 +119,7 @@ export function updateUI(state) {
     }
 }
 
-export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPending) {
+export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
     // Always remove the icon first to handle deselection correctly.
     const existingIndicator = uiElements.sellPanel.querySelector('.detection-indicator-container');
     if (existingIndicator) {
@@ -247,7 +247,40 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
             }
         }
-        if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
+        if (selectedTower.type === 'FORT') {
+            if (uiElements.toggleTargetingBtn) {
+                uiElements.toggleTargetingBtn.classList.remove('hidden');
+                uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'border-red-400', 'text-yellow-300', 'bg-yellow-400', 'border-yellow-300', 'text-black', 'bg-blue-800', 'border-blue-400', 'text-cyan-300', 'bg-green-600', 'border-green-400', 'text-white');
+
+                if (settingAttackGroundForTower === selectedTower) {
+                    uiElements.toggleTargetingBtn.innerHTML = 'Select target';
+                    uiElements.toggleTargetingBtn.classList.add('bg-green-600', 'border-green-400', 'text-white');
+                } else {
+                    switch (selectedTower.targetingMode) {
+                        case 'ground':
+                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: GROUND';
+                            uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                            break;
+                        case 'strongest':
+                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: STRONGEST';
+                            uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                            break;
+                        case 'weakest':
+                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: WEAKEST';
+                            uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+                            break;
+                        case 'furthest':
+                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
+                            uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                            break;
+                        default:
+                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: CLUSTER';
+                            uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                            break;
+                    }
+                }
+            }
+        } else if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
             if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
             let targetingText = selectedTower.targetingMode.toUpperCase();
             let lockIcon = '';
@@ -622,3 +655,4 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
+

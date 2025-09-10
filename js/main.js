@@ -28,6 +28,7 @@ let mouse = { x: 0, y: 0 };
 let animationFrameId;
 let lastTime = 0;
 let pendingMergeState = null;
+let settingAttackGroundForTower = null;
 let isMergeConfirmationEnabled = true;
 let isSellConfirmPending = false;
 let libraryCurrentIndex = 0;
@@ -497,7 +498,7 @@ function gameLoop(currentTime) {
     }
 
     if (selectedTower) {
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending);
+        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 
     if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.spawningEnemies) {
@@ -539,6 +540,25 @@ function gameLoop(currentTime) {
     drawDetourPath(ctx, gameState.detourPath, effectiveDetourColor);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
 
+    // Draw ground target marker if one is set for the selected tower
+    if (selectedTower && selectedTower.type === 'FORT' && selectedTower.attackGroundTarget) {
+        const target = selectedTower.attackGroundTarget;
+        ctx.save();
+        ctx.strokeStyle = '#ff4d4d';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(target.x - 10, target.y - 10);
+        ctx.lineTo(target.x + 10, target.y + 10);
+        ctx.moveTo(target.x + 10, target.y - 10);
+        ctx.lineTo(target.x - 10, target.y + 10);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, 15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
     gameState.enemies.forEach(enemy => {
         enemy.draw(ctx);
     });
@@ -556,6 +576,30 @@ function gameLoop(currentTime) {
     if (selectedEnemy) {
         selectedEnemy.drawSelection(ctx);
         drawEnemyInfoPanel(ctx, selectedEnemy, canvasWidth);
+    }
+    if (settingAttackGroundForTower) {
+        const gridX = Math.floor(mouse.x / TILE_SIZE);
+        const gridY = Math.floor(mouse.y / TILE_SIZE);
+        const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
+        const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = '#ff4d4d';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+
+        ctx.beginPath();
+        ctx.arc(snappedX, snappedY, 15, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(snappedX - 10, snappedY);
+        ctx.lineTo(snappedX + 10, snappedY);
+        ctx.moveTo(snappedX, snappedY - 10);
+        ctx.lineTo(snappedX, snappedY + 10);
+        ctx.stroke();
+
+        ctx.restore();
     }
     if (placingTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
@@ -747,6 +791,20 @@ function handleCanvasAction(e) {
     let actionTaken = false;
     let isPlacingMode = placingTower || placingFromCloud;
 
+    // Handle setting mortar attack ground target
+    if (settingAttackGroundForTower) {
+        const distance = Math.hypot(snappedX - settingAttackGroundForTower.x, snappedY - settingAttackGroundForTower.y);
+        if (distance <= settingAttackGroundForTower.range) {
+            if (settingAttackGroundForTower.type === 'FORT') {
+                settingAttackGroundForTower.attackGroundTarget = { x: snappedX, y: snappedY };
+                settingAttackGroundForTower.targetingMode = 'ground';
+            }
+        }
+        settingAttackGroundForTower = null;
+        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+        return; // This action is complete.
+    }
+
     // Prioritize clicking on an enemy
     const clickedOnEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
     if (clickedOnEnemy) {
@@ -893,7 +951,7 @@ function handleCanvasAction(e) {
 
     if (actionTaken) {
         updateUI(gameState);
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending);
+        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 
     if (actionTaken) {
@@ -1316,7 +1374,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
             selectedTower = null;
             isSellConfirmPending = false;
             updateUI(gameState);
-            updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending);
+            updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
         }
     }
 });
@@ -1346,7 +1404,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
         selectedTower = null;
         isSellConfirmPending = false;
         renderCloudInventory();
-        updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending);
+        updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 });
 
@@ -1360,18 +1418,36 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
         } else if (selectedTower.type === 'ORBIT') {
             selectedTower.orbitMode = selectedTower.orbitMode === 'far' ? 'near' : 'far';
         }
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending);
+        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 });
 
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower && selectedTower.type !== 'PIN_HEART') {
+    if (selectedTower && selectedTower.type === 'FORT') {
+        const fortModes = ['furthest', 'strongest', 'weakest', 'ground'];
+        const currentIndex = fortModes.indexOf(selectedTower.targetingMode);
+        const nextMode = fortModes[(currentIndex + 1) % fortModes.length];
+
+        if (settingAttackGroundForTower === selectedTower) {
+            settingAttackGroundForTower = null;
+        }
+
+        selectedTower.targetingMode = nextMode;
+
+        if (nextMode === 'ground') {
+            settingAttackGroundForTower = selectedTower;
+            selectedTower.attackGroundTarget = null;
+        } else {
+            settingAttackGroundForTower = null;
+            selectedTower.attackGroundTarget = null;
+        }
+    } else if (selectedTower && selectedTower.type !== 'PIN_HEART') {
         const modes = ['strongest', 'weakest', 'furthest'];
         const currentIndex = modes.indexOf(selectedTower.targetingMode);
         selectedTower.targetingMode = modes[(currentIndex + 1) % modes.length];
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending);
     }
+    updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
 });
 
 uiElements.speedToggleBtn.addEventListener('click', () => {
@@ -1458,7 +1534,7 @@ function performPendingMerge() {
     uiElements.buySupportBtn.classList.remove('selected');
 
     updateUI(gameState);
-    updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending);
+    updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     renderCloudInventory();
 }
 
@@ -1593,3 +1669,5 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+
+

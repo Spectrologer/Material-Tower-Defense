@@ -69,7 +69,7 @@ export const waveDefinitions = [
     },
     // Wave 9: Introduce STEALTH enemies, testing detection tower usage.
     {
-        composition: [comp(ENEMY_TYPES.STEALTH, 8)],
+        composition: [comp(ENEMY_TYPES.STEALTH, 10)],
         healthMultiplier: 1.5, healthBonus: 10,
         detourRatio: 0.5,
     },
@@ -83,7 +83,7 @@ export const waveDefinitions = [
     },
     // Wave 11: Introduce BITCOIN enemies as an economic challenge.
     {
-        composition: [comp(ENEMY_TYPES.BITCOIN, 15)],
+        composition: [comp(ENEMY_TYPES.BITCOIN, 18)],
         healthMultiplier: 1.7, healthBonus: 10,
     },
     // Wave 12: A difficult pincer attack with HEAVY and FAST enemies on separate paths.
@@ -94,16 +94,16 @@ export const waveDefinitions = [
     },
     // Wave 13: Mixed wave including STEALTH to test layered defenses.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.STEALTH, 6), comp(ENEMY_TYPES.FAST, 8)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.STEALTH, 4), comp(ENEMY_TYPES.FAST, 4)],
         healthMultiplier: 2.2, healthBonus: 15,
         detourRatio: 0.5,
     },
     // Wave 14: Pre-boss wave with a mix of all major threats.
     {
         composition: [
-            comp(ENEMY_TYPES.HEAVY, 6),
+            comp(ENEMY_TYPES.HEAVY, 4),
             comp(ENEMY_TYPES.FLYING, 6),
-            comp(ENEMY_TYPES.SWARM, 15),
+            comp(ENEMY_TYPES.SWARM, 8),
             comp(ENEMY_TYPES.STEALTH, 4)
         ],
         healthMultiplier: 2.5, healthBonus: 20,

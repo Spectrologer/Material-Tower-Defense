@@ -499,7 +499,8 @@ export class Tower {
         /** @type {"MAX LEVEL" | number} */
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = (type === 'PIN_HEART') ? 'weakest' : (type === 'PIN' ? 'weakest' : 'strongest');
+        this.targetingMode = (type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
+        this.attackGroundTarget = null;
         this.damageMultiplier = 1;
         this.projectileCount = 1;
         this.damageMultiplierFromMerge = 1;
@@ -823,18 +824,31 @@ export class Tower {
             });
             return;
         }
-        this.findTarget(enemies, frameTargetedEnemies);
+
         if (this.cooldown > 0) this.cooldown -= deltaTime;
-        if (this.target && this.cooldown <= 0) {
-            this.shoot(projectiles);
-            this.cooldown = this.fireRate / 60; // Cooldown in seconds
+
+        if (this.type === 'FORT' && this.targetingMode === 'ground' && this.attackGroundTarget) {
+            this.target = null; // Ensure no enemy is targeted
+            if (this.cooldown <= 0) {
+                this.shoot(projectiles);
+                this.cooldown = this.fireRate / 60;
+            }
+        } else {
+            this.findTarget(enemies, frameTargetedEnemies);
+            if (this.target && this.cooldown <= 0) {
+                this.shoot(projectiles);
+                this.cooldown = this.fireRate / 60; // Cooldown in seconds
+            }
         }
     }
     shoot(projectiles) {
-        if (!this.target) return;
+        if (!this.target && !(this.type === 'FORT' && this.targetingMode === 'ground' && this.attackGroundTarget)) return;
+
         if (this.type === 'FORT') {
             // Mortar targets a location, not the enemy object itself.
-            const locationTarget = { x: this.target.x, y: this.target.y, health: 1 }; // health > 0 to be valid
+            const locationTarget = (this.targetingMode === 'ground' && this.attackGroundTarget)
+                ? { x: this.attackGroundTarget.x, y: this.attackGroundTarget.y, health: 1 }
+                : { x: this.target.x, y: this.target.y, health: 1 }; // health > 0 to be valid
             projectiles.push(new Projectile(this, locationTarget));
             return;
         }
@@ -877,6 +891,7 @@ export class Tower {
             damageLevel: this.damageLevel,
             mode: this.mode,
             targetingMode: this.targetingMode,
+            attackGroundTarget: this.attackGroundTarget,
             damageMultiplier: this.damageMultiplier,
             projectileCount: this.projectileCount,
             damageMultiplierFromMerge: this.damageMultiplierFromMerge,
@@ -923,6 +938,7 @@ export class Tower {
             "damageLevel",
             "mode",
             "targetingMode",
+            "attackGroundTarget",
             "damageMultiplier",
             "projectileCount",
             "damageMultiplierFromMerge",
@@ -1065,3 +1081,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
