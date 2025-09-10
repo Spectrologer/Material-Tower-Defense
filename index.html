@@ -132,6 +132,13 @@
             transform: translateY(-2px);
         }
 
+        #set-ground-target-btn.active {
+            background-color: #f59e0b;
+            border-color: #fde047;
+            color: #1a1a1a;
+            box-shadow: 0 4px 0 #b45309;
+        }
+
         /* FIX: Explicitly set font-family for icon classes to override global font and fix tooltips. */
         .material-icons {
             font-family: 'Material Icons';
@@ -367,6 +374,9 @@
                     <span class="material-symbols-outlined !text-lg">skull</span>
                     <span id="kill-count-value">0</span>
                 </div>
+                <button id="set-ground-target-btn" class="pixel-button absolute top-2 right-2 p-2 hidden">
+                    <span class="material-symbols-outlined">gps_fixed</span>
+                </button>
                 <h4 id="selected-tower-info" class="text-center text-yellow-400 text-xs sm:text-sm h-4 mb-2"></h4>
                 <!-- Shows the stats of the selected tower -->
                 <div id="tower-stats-panel"

@@ -445,7 +445,7 @@ export class Enemy {
         let atEnd = this.pathIndex >= this.path.length - 1;
         let atStart = this.pathIndex <= 0;
 
-        if (this.type === ENEMY_TYPES.BOSS) {
+        if (this.typeName === 'BOSS') {
             if (atEnd && this.direction === 1) this.direction = -1;
             if (atStart && this.direction === -1) this.direction = 1;
         } else {
@@ -540,6 +540,7 @@ export class Tower {
         if (this.type === 'NINE_PIN') {
             this.level = 'MAX LEVEL';
             this.damageLevel = 'MAX LEVEL';
+            this.targetingMode = 'strongest';
         }
     }
     get maxLevel() {

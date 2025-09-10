@@ -26,6 +26,7 @@ export const uiElements = {
     moveToCloudBtn: getButton('move-to-cloud-btn'),
     toggleModeBtn: getButton('toggle-mode'),
     toggleTargetingBtn: getButton('toggle-targeting'),
+    setGroundTargetBtn: getButton('set-ground-target-btn'),
     speedToggleBtn: getButton('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
     soundToggleBtn: getButton('sound-toggle-btn'),
@@ -125,6 +126,8 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
     if (existingIndicator) {
         existingIndicator.remove();
     }
+
+    if (uiElements.setGroundTargetBtn) uiElements.setGroundTargetBtn.classList.add('hidden');
 
     if (selectedTower) {
         uiElements.towerButtons.classList.add('hidden');
@@ -248,36 +251,60 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             }
         }
         if (selectedTower.type === 'FORT') {
+            if (uiElements.setGroundTargetBtn) {
+                uiElements.setGroundTargetBtn.classList.remove('hidden');
+                if (settingAttackGroundForTower === selectedTower) {
+                    uiElements.setGroundTargetBtn.innerHTML = `<span class="material-symbols-outlined">cancel</span>`;
+                    uiElements.setGroundTargetBtn.classList.add('active');
+                } else {
+                    uiElements.setGroundTargetBtn.innerHTML = `<span class="material-symbols-outlined">gps_fixed</span>`;
+                    uiElements.setGroundTargetBtn.classList.remove('active');
+                }
+            }
             if (uiElements.toggleTargetingBtn) {
                 uiElements.toggleTargetingBtn.classList.remove('hidden');
-                uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'border-red-400', 'text-yellow-300', 'bg-yellow-400', 'border-yellow-300', 'text-black', 'bg-blue-800', 'border-blue-400', 'text-cyan-300', 'bg-green-600', 'border-green-400', 'text-white');
+                uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'border-red-400', 'text-yellow-300', 'bg-yellow-400', 'border-yellow-300', 'text-black', 'bg-blue-800', 'border-blue-400', 'text-cyan-300');
 
-                if (settingAttackGroundForTower === selectedTower) {
-                    uiElements.toggleTargetingBtn.innerHTML = 'Select target';
-                    uiElements.toggleTargetingBtn.classList.add('bg-green-600', 'border-green-400', 'text-white');
-                } else {
-                    switch (selectedTower.targetingMode) {
-                        case 'ground':
-                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: GROUND';
-                            uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                            break;
-                        case 'strongest':
-                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: STRONGEST';
-                            uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
-                            break;
-                        case 'weakest':
-                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: WEAKEST';
-                            uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
-                            break;
-                        case 'furthest':
-                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
-                            uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                            break;
-                        default:
-                            uiElements.toggleTargetingBtn.innerHTML = 'TARGET: CLUSTER';
-                            uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
-                            break;
-                    }
+                switch (selectedTower.targetingMode) {
+                    case 'ground':
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: GROUND';
+                        uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                        break;
+                    case 'strongest':
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: STRONGEST';
+                        uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                        break;
+                    case 'weakest':
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: WEAKEST';
+                        uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+                        break;
+                    case 'furthest':
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
+                        uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                        break;
+                    default:
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: CLUSTER';
+                        uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                        break;
+                }
+            }
+        } else if (selectedTower.type === 'NINE_PIN') {
+            if (uiElements.toggleTargetingBtn) {
+                uiElements.toggleTargetingBtn.classList.remove('hidden');
+                uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'border-red-400', 'text-yellow-300', 'bg-yellow-400', 'border-yellow-300', 'text-black', 'bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                switch (selectedTower.targetingMode) {
+                    case 'strongest':
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: STRONGEST';
+                        uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                        break;
+                    case 'weakest':
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: WEAKEST';
+                        uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+                        break;
+                    case 'furthest':
+                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
+                        uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                        break;
                 }
             }
         } else if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {

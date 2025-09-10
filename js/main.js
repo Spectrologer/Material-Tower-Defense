@@ -1425,23 +1425,26 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
     resumeAudioContext();
     if (selectedTower && selectedTower.type === 'FORT') {
-        const fortModes = ['furthest', 'strongest', 'weakest', 'ground'];
-        const currentIndex = fortModes.indexOf(selectedTower.targetingMode);
-        const nextMode = fortModes[(currentIndex + 1) % fortModes.length];
+        settingAttackGroundForTower = null; // Always cancel ground target selection when cycling
 
-        if (settingAttackGroundForTower === selectedTower) {
-            settingAttackGroundForTower = null;
-        }
+        const fortModes = ['furthest', 'strongest', 'weakest']; // 'ground' is no longer in this cycle
+        let currentIndex = fortModes.indexOf(selectedTower.targetingMode);
 
-        selectedTower.targetingMode = nextMode;
-
-        if (nextMode === 'ground') {
-            settingAttackGroundForTower = selectedTower;
-            selectedTower.attackGroundTarget = null;
+        // If current mode is 'ground' or not in the cycle, start from the first mode.
+        if (currentIndex === -1) {
+            currentIndex = 0;
         } else {
-            settingAttackGroundForTower = null;
-            selectedTower.attackGroundTarget = null;
+            currentIndex = (currentIndex + 1) % fortModes.length;
         }
+
+        const nextMode = fortModes[currentIndex];
+        selectedTower.targetingMode = nextMode;
+        selectedTower.attackGroundTarget = null; // Clear any existing ground target
+
+    } else if (selectedTower && selectedTower.type === 'NINE_PIN') {
+        const modes = ['strongest', 'weakest', 'furthest'];
+        const currentIndex = modes.indexOf(selectedTower.targetingMode);
+        selectedTower.targetingMode = modes[(currentIndex + 1) % modes.length];
     } else if (selectedTower && selectedTower.type !== 'PIN_HEART') {
         const modes = ['strongest', 'weakest', 'furthest'];
         const currentIndex = modes.indexOf(selectedTower.targetingMode);
@@ -1449,6 +1452,22 @@ uiElements.toggleTargetingBtn.addEventListener('click', () => {
     }
     updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
 });
+
+if (uiElements.setGroundTargetBtn) {
+    uiElements.setGroundTargetBtn.addEventListener('click', () => {
+        resumeAudioContext();
+        if (!selectedTower || (selectedTower.type !== 'FORT' && selectedTower.type !== 'NINE_PIN')) return;
+
+        // Toggle setting mode
+        if (settingAttackGroundForTower === selectedTower) {
+            settingAttackGroundForTower = null; // Cancel
+        } else {
+            settingAttackGroundForTower = selectedTower; // Enter selection mode
+        }
+        // Update the UI to reflect the change (e.g., button icon)
+        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+    });
+}
 
 uiElements.speedToggleBtn.addEventListener('click', () => {
     resumeAudioContext();
@@ -1669,5 +1688,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-
 
