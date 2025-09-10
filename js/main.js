@@ -216,8 +216,9 @@ function updateStealthVisibility() {
         for (const tower of supportTowers) {
             const towerGridX = Math.floor(tower.x / TILE_SIZE);
             const towerGridY = Math.floor(tower.y / TILE_SIZE);
+            const detectionRange = TOWER_TYPES[tower.type].stealthDetectionRange;
 
-            if (Math.abs(towerGridX - enemyGridX) <= 3 && Math.abs(towerGridY - enemyGridY) <= 3) {
+            if (detectionRange && Math.abs(towerGridX - enemyGridX) <= detectionRange && Math.abs(towerGridY - enemyGridY) <= detectionRange) {
                 isDetected = true;
                 break;
             }
@@ -1592,4 +1593,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-

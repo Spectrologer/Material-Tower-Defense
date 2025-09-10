@@ -121,9 +121,9 @@ export function updateUI(state) {
 
 export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPending) {
     // Always remove the icon first to handle deselection correctly.
-    const existingIcon = uiElements.sellPanel.querySelector('.detection-indicator');
-    if (existingIcon) {
-        existingIcon.remove();
+    const existingIndicator = uiElements.sellPanel.querySelector('.detection-indicator-container');
+    if (existingIndicator) {
+        existingIndicator.remove();
     }
 
     if (selectedTower) {
@@ -134,12 +134,25 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
 
         // Add the detection icon if the tower type is correct.
         if (['SUPPORT', 'ENT', 'CAT'].includes(selectedTower.type)) {
+            const detectionRange = TOWER_TYPES[selectedTower.type].stealthDetectionRange;
+
+            const indicatorContainer = document.createElement('div');
+            indicatorContainer.className = 'detection-indicator-container absolute top-2 left-2 flex items-center gap-1 text-white';
+            indicatorContainer.style.textShadow = '1px 1px 3px #000';
+
             const eyeIcon = document.createElement('span');
-            eyeIcon.className = 'material-icons detection-indicator absolute top-2 left-2 text-white';
+            eyeIcon.className = 'material-icons';
             eyeIcon.textContent = 'visibility';
-            eyeIcon.style.textShadow = '1px 1px 3px #000';
+
+            const rangeText = document.createElement('span');
+            rangeText.className = 'text-sm font-bold';
+            rangeText.textContent = `${detectionRange}x${detectionRange}`;
+
+            indicatorContainer.appendChild(eyeIcon);
+            indicatorContainer.appendChild(rangeText);
+
             uiElements.sellPanel.classList.add('relative'); // Ensure positioning context
-            uiElements.sellPanel.prepend(eyeIcon);
+            uiElements.sellPanel.prepend(indicatorContainer);
         }
 
         const sellValue = Math.floor(selectedTower.cost * 0.5);
