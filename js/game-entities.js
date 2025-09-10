@@ -503,7 +503,7 @@ export class Tower {
         /** @type {"MAX LEVEL" | number} */
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = (type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
+        this.targetingMode = (type === 'PIN' || type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
         this.attackGroundTarget = null;
         this.damageMultiplier = 1;
         this.projectileCount = 1;
@@ -1096,3 +1096,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
