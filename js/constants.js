@@ -18,7 +18,7 @@ export const TOWER_TYPES = {
     FORT: { cost: 100, range: 200, damage: 12, fireRate: 160, color: '#878787ff', projectileSpeed: 4, projectileSize: 15, projectileColor: '#717171ff', splashRadius: 80, special: 'Mortar Strike', comment: "Holding it down." },
     SUPPORT: { cost: 60, range: 100, damage: 0, fireRate: 0, color: '#f870ffff', attackSpeedBoost: 0.85, stealthDetectionRange: 2, special: 'Non-Stacking Speed Aura', comment: "Please stay off the line." },
     PIN_HEART: { cost: 85, range: 220, damage: 1.3, fireRate: 15, color: '#ff69b4', projectileSpeed: 5, projectileSize: 3, projectileColor: '#ff69b4', splashRadius: 0, special: 'Loyal Projectiles', comment: "It's a little clingy." },
-    FIREPLACE: { cost: 135, range: 50, damage: 0.1, fireRate: 2, color: '#e11d48', projectileSpeed: 3, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 20, special: 'Lingering Burn', comment: "It's not fun when it's too hot!" },
+    FIREPLACE: { cost: 135, range: 50, damage: 0.1, fireRate: 2, color: '#e11d48', projectileSpeed: 10, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 20, special: 'Lingering Burn', comment: "It's not fun when it's too hot!" },
     NAT: { cost: 50, range: 300, damage: 12, fireRate: 120, color: '#DEB887', projectileSpeed: 12, projectileSize: 5, projectileColor: '#DEB887', splashRadius: 0, special: 'Sniper', comment: "Hiding its true IP: Intense Pain." },
     ENT: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, stealthDetectionRange: 3, special: 'Aura: Boost/Slow', comment: "Clears sinuses and enemy waves." },
     ORBIT: { cost: 150, range: 9999, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters', comment: "Weeeeeeeee!" },
@@ -29,7 +29,7 @@ export const TOWER_TYPES = {
 
 // All the stats for each type of enemy that can spawn.
 export const ENEMY_TYPES = {
-    NORMAL: { speed: 1.5, health: 12, color: '#ae2f2fff', size: 16, gold: 1, icon: 'person', iconFamily: "'Material Symbols Outlined'", damagesLives: true, comment: "Just some guy. Don't feel too bad.", prefersDetour: true },
+    NORMAL: { speed: 1.5, health: 12, color: '#ae2f2fff', size: 16, gold: 1, icon: 'person', iconFamily: "'Material Symbols Outlined'", damagesLives: true, comment: "Just some guy. Don't feel too bad." },
     FAST: { speed: 2.5, health: 8, color: '#ffb84d', size: 14, gold: 1, icon: 'pest_control_rodent', iconFamily: 'Material Icons', damagesLives: true, comment: "Has places to be.", prefersDetour: true }, // This enemy type is eligible to take the detour path.
     HEAVY: { speed: 1.1, health: 35, color: '#3446ceff', size: 20, gold: 3, icon: 'guardian', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "Slow and steady loses the race." },
     SWARM: { speed: 3.0, health: 4, color: '#00e6e6', size: 10, gold: 1, icon: 'bug_report', iconFamily: 'Material Icons', damagesLives: true, comment: "It's a bug, and a feature.", prefersDetour: true },

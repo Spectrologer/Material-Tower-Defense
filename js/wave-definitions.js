@@ -102,11 +102,11 @@ export const waveDefinitions = [
     {
         composition: [
             comp(ENEMY_TYPES.HEAVY, 4),
-            comp(ENEMY_TYPES.FLYING, 6),
-            comp(ENEMY_TYPES.SWARM, 8),
+            comp(ENEMY_TYPES.FLYING, 4),
+            comp(ENEMY_TYPES.SWARM, 4),
             comp(ENEMY_TYPES.STEALTH, 4)
         ],
-        healthMultiplier: 2.5, healthBonus: 20,
+        healthMultiplier: 2, healthBonus: 10,
         detourRatio: 0.75,
         endOfWaveAnnouncement: { text: "ALERT:\nFLUTTERDASH APPROACHING!", color: '#f542e9ff' }
     },

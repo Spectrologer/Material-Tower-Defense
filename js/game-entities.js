@@ -272,6 +272,7 @@ export class Enemy {
         this.jostleX = 0;
         this.jostleY = 0;
         this.jostleTimer = 0;
+        this.progress = 0;
         this.isVisible = !this.type.isInvisible;
 
         if (this.type.laysEggs) {
@@ -477,6 +478,9 @@ export class Enemy {
             }
         }
 
+        if (this.path && this.path.length > 1) {
+            this.progress = this.pathIndex / (this.path.length - 1);
+        }
 
         return true; // Keep this enemy
     }
@@ -789,7 +793,7 @@ export class Tower {
                     }
                     this.target = bestTarget;
                 } else {
-                    this.target = potentialTargets.reduce((a, b) => (a.pathIndex > b.pathIndex ? a : b), potentialTargets[0]);
+                    this.target = potentialTargets.reduce((a, b) => (a.progress > b.progress ? a : b), potentialTargets[0]);
                 }
                 break;
             default: // closest
@@ -1092,4 +1096,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-

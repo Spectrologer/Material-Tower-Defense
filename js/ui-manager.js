@@ -38,7 +38,6 @@ export const uiElements = {
     cloudText: document.getElementById('cloud-text'),
     cloudInventoryPanel: document.getElementById('cloud-inventory-panel'),
     cloudInventorySlots: document.getElementById('cloud-inventory-slots'),
-    cloudTooltipContainer: document.getElementById('cloud-tooltip-container'),
     mergeConfirmModal: document.getElementById('merge-confirm-modal'),
     mergeFromTowerIconContainer: document.getElementById('merge-from-tower-icon-container'),
     mergeFromTowerName: document.getElementById('merge-from-tower-name'),
@@ -55,7 +54,6 @@ export const uiElements = {
     // New options menu elements
     optionsBtn: getButton('options-btn'),
     optionsMenu: document.getElementById('options-menu'),
-    closeOptionsBtn: document.getElementById('close-options-btn'), // Note: This element doesn't exist in HTML
     toggleMergeConfirm: /** @type {HTMLInputElement} */ (document.getElementById('toggle-merge-confirm-checkbox')),
     resetGameBtn: getButton('reset-game-btn'),
     libraryBtn: getButton('library-btn'),
