@@ -63,6 +63,7 @@ addRecipe('ENT', 'SUPPORT', {
 
 addRecipe('SUPPORT', 'NAT', {
     resultType: 'ANTI_AIR',
+    canApply: (tower) => tower.level === 1,
     apply: (tower) => {
         const newLevel = tower.level;
         const newDamageMultiplier = tower.damageMultiplierFromMerge;

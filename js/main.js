@@ -411,11 +411,13 @@ function handleProjectileHit(projectile, hitEnemy) {
             }
         });
     } else {
-        if (targetEnemy && targetEnemy.takeDamage(finalDamage, projectile)) {
-            projectile.owner.killCount++;
-            awardGold(targetEnemy);
+        if (targetEnemy && typeof targetEnemy.takeDamage === 'function') {
+            if (targetEnemy.takeDamage(finalDamage, projectile)) {
+                projectile.owner.killCount++;
+                awardGold(targetEnemy);
+            }
+            playHitSound();
         }
-        if (targetEnemy) playHitSound();
     }
     updateUI(gameState);
 }
@@ -541,7 +543,7 @@ function gameLoop(currentTime) {
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
 
     // Draw ground target marker if one is set for the selected tower
-    if (selectedTower && selectedTower.type === 'FORT' && selectedTower.attackGroundTarget) {
+    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') && selectedTower.attackGroundTarget) {
         const target = selectedTower.attackGroundTarget;
         ctx.save();
         ctx.strokeStyle = '#ff4d4d';
@@ -763,6 +765,7 @@ function checkForNinePinOnBoard() {
                     const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
                     ninePin.cost = totalCost;
                     gameState.towers.push(ninePin);
+                    gameState.discoveredTowerTypes.add('NINE_PIN');
 
                     // Update placement grid for the new tower
                     for (let j = 0; j < 3; j++) {
@@ -795,7 +798,7 @@ function handleCanvasAction(e) {
     if (settingAttackGroundForTower) {
         const distance = Math.hypot(snappedX - settingAttackGroundForTower.x, snappedY - settingAttackGroundForTower.y);
         if (distance <= settingAttackGroundForTower.range) {
-            if (settingAttackGroundForTower.type === 'FORT') {
+            if (settingAttackGroundForTower.type === 'FORT' || settingAttackGroundForTower.type === 'NINE_PIN') {
                 settingAttackGroundForTower.attackGroundTarget = { x: snappedX, y: snappedY };
                 settingAttackGroundForTower.targetingMode = 'ground';
             }
@@ -1424,27 +1427,23 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
 
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower && selectedTower.type === 'FORT') {
+    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN')) {
         settingAttackGroundForTower = null; // Always cancel ground target selection when cycling
 
-        const fortModes = ['furthest', 'strongest', 'weakest']; // 'ground' is no longer in this cycle
-        let currentIndex = fortModes.indexOf(selectedTower.targetingMode);
+        const modes = ['furthest', 'strongest', 'weakest']; // 'ground' is not in this cycle
+        let currentIndex = modes.indexOf(selectedTower.targetingMode);
 
         // If current mode is 'ground' or not in the cycle, start from the first mode.
         if (currentIndex === -1) {
             currentIndex = 0;
         } else {
-            currentIndex = (currentIndex + 1) % fortModes.length;
+            currentIndex = (currentIndex + 1) % modes.length;
         }
 
-        const nextMode = fortModes[currentIndex];
+        const nextMode = modes[currentIndex];
         selectedTower.targetingMode = nextMode;
         selectedTower.attackGroundTarget = null; // Clear any existing ground target
 
-    } else if (selectedTower && selectedTower.type === 'NINE_PIN') {
-        const modes = ['strongest', 'weakest', 'furthest'];
-        const currentIndex = modes.indexOf(selectedTower.targetingMode);
-        selectedTower.targetingMode = modes[(currentIndex + 1) % modes.length];
     } else if (selectedTower && selectedTower.type !== 'PIN_HEART') {
         const modes = ['strongest', 'weakest', 'furthest'];
         const currentIndex = modes.indexOf(selectedTower.targetingMode);

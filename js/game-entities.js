@@ -599,7 +599,11 @@ export class Tower {
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 4;
         if (this.type === 'NINE_PIN') {
-            const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : 0;
+            let targetPoint = this.target;
+            if (this.targetingMode === 'ground' && this.attackGroundTarget) {
+                targetPoint = this.attackGroundTarget;
+            }
+            const angle = targetPoint ? Math.atan2(targetPoint.y - this.y, targetPoint.x - this.x) : 0;
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.rotate(angle);
@@ -828,7 +832,7 @@ export class Tower {
 
         if (this.cooldown > 0) this.cooldown -= deltaTime;
 
-        if (this.type === 'FORT' && this.targetingMode === 'ground' && this.attackGroundTarget) {
+        if ((this.type === 'FORT' || this.type === 'NINE_PIN') && this.targetingMode === 'ground' && this.attackGroundTarget) {
             this.target = null; // Ensure no enemy is targeted
             if (this.cooldown <= 0) {
                 this.shoot(projectiles);
@@ -843,7 +847,7 @@ export class Tower {
         }
     }
     shoot(projectiles) {
-        if (!this.target && !(this.type === 'FORT' && this.targetingMode === 'ground' && this.attackGroundTarget)) return;
+        if (!this.target && !((this.type === 'FORT' || this.type === 'NINE_PIN') && this.targetingMode === 'ground' && this.attackGroundTarget)) return;
 
         if (this.type === 'FORT') {
             // Mortar targets a location, not the enemy object itself.
@@ -854,7 +858,13 @@ export class Tower {
             return;
         }
         if (this.type === 'NINE_PIN') {
-            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+            const targetPoint = (this.targetingMode === 'ground' && this.attackGroundTarget)
+                ? this.attackGroundTarget
+                : this.target;
+
+            if (!targetPoint) return;
+
+            const angle = Math.atan2(targetPoint.y - this.y, targetPoint.x - this.x);
             const fakeTarget = {
                 x: this.x + Math.cos(angle) * 2000,
                 y: this.y + Math.sin(angle) * 2000,

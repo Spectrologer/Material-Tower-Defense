@@ -250,7 +250,8 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
             }
         }
-        if (selectedTower.type === 'FORT') {
+
+        if (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') {
             if (uiElements.setGroundTargetBtn) {
                 uiElements.setGroundTargetBtn.classList.remove('hidden');
                 if (settingAttackGroundForTower === selectedTower) {
@@ -283,25 +284,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                         uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
                         break;
                     default:
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: CLUSTER';
-                        uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
-                        break;
-                }
-            }
-        } else if (selectedTower.type === 'NINE_PIN') {
-            if (uiElements.toggleTargetingBtn) {
-                uiElements.toggleTargetingBtn.classList.remove('hidden');
-                uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'border-red-400', 'text-yellow-300', 'bg-yellow-400', 'border-yellow-300', 'text-black', 'bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                switch (selectedTower.targetingMode) {
-                    case 'strongest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: STRONGEST';
-                        uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
-                        break;
-                    case 'weakest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: WEAKEST';
-                        uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
-                        break;
-                    case 'furthest':
                         uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
                         uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
                         break;
@@ -682,4 +664,3 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
-
