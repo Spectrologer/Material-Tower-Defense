@@ -270,6 +270,12 @@
         .toggle-btn:disabled {
             opacity: 0.3;
         }
+
+        /* FIX: Prevents icons inside buttons from capturing click events. */
+        .pixel-button span,
+        .pixel-button i {
+            pointer-events: none;
+        }
     </style>
 
 </head>
@@ -376,7 +382,7 @@
             <div id="sell-panel" class="hidden flex flex-col gap-2">
                 <hr class="border-gray-600" />
                 <div class="grid grid-cols-3 items-center">
-                    <div class="flex">
+                    <div class="flex justify-start">
                         <button id="set-ground-target-btn" class="pixel-button p-2 hidden">
                             <span class="material-symbols-outlined">gps_fixed</span>
                         </button>
