@@ -188,36 +188,6 @@ export class MergeHandler {
             }
         });
 
-        this._addRecipe('ANTI_AIR', 'PIN', {
-            resultType: 'ANTI_AIR', text: 'Upgrade',
-            upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
-            canApply: (tower) => {
-                if (tower.level === 5 && tower.damageLevel === 5) return false;
-                return tower.level < TOWER_TYPES.ANTI_AIR.maxLevel;
-            },
-            apply: (tower) => {
-                tower.level++;
-                tower.damageLevel++;
-                tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.25;
-                tower.updateStats();
-                tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
-            }
-        });
-
-        this._addRecipe('ANTI_AIR', 'CASTLE', {
-            resultType: 'ANTI_AIR', text: 'Upgrade',
-            upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
-            canApply: (tower) => {
-                if (tower.level === 5 && tower.damageLevel === 5) return false;
-                return tower.level < TOWER_TYPES.ANTI_AIR.maxLevel;
-            },
-            apply: (tower) => {
-                tower.level++;
-                tower.updateStats();
-                tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
-            }
-        });
-
         this._addRecipe('PIN_HEART', 'PIN', {
             resultType: 'PIN_HEART', text: 'Upgrade',
             upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
@@ -412,7 +382,7 @@ export class MergeHandler {
             }
 
             if (tower.type === 'FORT') {
-                const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.levelForCalc + tower.damageLevelForCalc - 1);
+                const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.stats.levelForCalc + tower.stats.damageLevelForCalc - 1);
                 if (visualLevel >= 5) {
                     tower.level = 'MAX LEVEL';
                 }
@@ -439,4 +409,3 @@ export class MergeHandler {
         return false;
     }
 }
-
