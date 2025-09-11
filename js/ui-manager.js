@@ -30,6 +30,7 @@ export const uiElements = {
     speedToggleBtn: getButton('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
     soundToggleBtn: getButton('sound-toggle-btn'),
+    musicToggleBtn: getButton('music-toggle-btn'),
     towerButtons: document.getElementById('tower-buttons'),
     gameControls: document.getElementById('game-controls'),
     towersTitle: document.getElementById('towers-title'),

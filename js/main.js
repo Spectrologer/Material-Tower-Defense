@@ -5,7 +5,7 @@ import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTower
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions } from './wave-definitions.js';
-import { playHitSound, playMoneySound, playExplosionSound, playLifeLostSound, playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled } from './audio.js';
+import { playHitSound, playMoneySound, playExplosionSound, playLifeLostSound, playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled, toggleMusic } from './audio.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
@@ -1484,6 +1484,13 @@ uiElements.soundToggleBtn.addEventListener('click', () => {
     const isSoundEnabled = toggleSoundEnabled();
     const soundIcon = document.getElementById('sound-icon');
     soundIcon.textContent = isSoundEnabled ? 'volume_up' : 'volume_off';
+    uiElements.musicToggleBtn.disabled = !isSoundEnabled;
+});
+
+uiElements.musicToggleBtn.addEventListener('click', () => {
+    const isMusicEnabled = toggleMusic();
+    const musicIcon = document.getElementById('music-icon');
+    musicIcon.textContent = isMusicEnabled ? 'music_note' : 'music_off';
 });
 
 uiElements.cloudButton.addEventListener('click', () => {
