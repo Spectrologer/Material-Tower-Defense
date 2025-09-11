@@ -1412,7 +1412,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
                 const gridY = Math.floor(selectedTower.y / TILE_SIZE);
                 gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
             }
-            gameState.towers = gameState.towers.filter(t => t !== selectedTower);
+            gameState.towers = gameState.towers.filter(t => t.id !== selectedTower.id);
             selectedTower = null;
             isSellConfirmPending = false;
             updateUI(gameState);
@@ -1442,7 +1442,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
             const gridY = Math.floor(selectedTower.y / TILE_SIZE);
             gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
         }
-        gameState.towers = gameState.towers.filter(t => t !== selectedTower);
+        gameState.towers = gameState.towers.filter(t => t.id !== selectedTower.id);
         selectedTower = null;
         isSellConfirmPending = false;
         renderCloudInventory();
@@ -1466,22 +1466,26 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
 
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN')) {
-        settingAttackGroundForTower = null; // Always cancel ground target selection when cycling
 
-        const modes = ['furthest', 'strongest', 'weakest']; // 'ground' is not in this cycle
+    // If we are in the middle of selecting a ground target, this button should do nothing.
+    // This prevents the targeting mode from being cancelled unexpectedly.
+    if (settingAttackGroundForTower) {
+        return;
+    }
+
+    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN')) {
+        const modes = ['furthest', 'strongest', 'weakest'];
         let currentIndex = modes.indexOf(selectedTower.targetingMode);
 
         // If current mode is 'ground' or not in the cycle, start from the first mode.
         if (currentIndex === -1) {
-            currentIndex = 0;
-        } else {
-            currentIndex = (currentIndex + 1) % modes.length;
+            currentIndex = -1; // Will become 0 after +1
         }
 
-        const nextMode = modes[currentIndex];
+        const nextMode = modes[(currentIndex + 1) % modes.length];
         selectedTower.targetingMode = nextMode;
-        selectedTower.attackGroundTarget = null; // Clear any existing ground target
+        // When switching to an enemy-targeting mode, always clear the ground target.
+        selectedTower.attackGroundTarget = null;
 
     } else if (selectedTower && selectedTower.type !== 'PIN_HEART') {
         const modes = ['strongest', 'weakest', 'furthest'];
@@ -1733,5 +1737,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-
 
