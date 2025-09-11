@@ -14,8 +14,8 @@ export const GRID_TOWER = 2; // A spot where a tower is already built.
 // All the stats for each type of tower you can build.
 export const TOWER_TYPES = {
     PIN: { cost: 25, range: 150, damage: 1.2, fireRate: 22, color: '#ffffffff', projectileSpeed: 7, projectileSize: 3, projectileColor: '#ffffffff', splashRadius: 0, comment: "It's pointy." },
-    CASTLE: { cost: 75, range: 100, damage: 6, fireRate: 80, color: '#525252ff', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, comment: "It's like a house, but harder." },
-    FORT: { cost: 100, range: 200, damage: 12, fireRate: 160, color: '#878787ff', projectileSpeed: 4, projectileSize: 15, projectileColor: '#717171ff', splashRadius: 80, special: 'Mortar Strike', comment: "Holding it down." },
+    CASTLE: { cost: 75, range: 100, damage: 6, fireRate: 80, color: '#be724fff', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, comment: "It's like a house, but harder." },
+    FORT: { cost: 100, range: 200, damage: 12, fireRate: 160, color: '#ac5e5eff', projectileSpeed: 4, projectileSize: 15, projectileColor: '#717171ff', splashRadius: 80, special: 'Mortar Strike', comment: "Holding it down." },
     SUPPORT: { cost: 60, range: 100, damage: 0, fireRate: 0, color: '#f870ffff', attackSpeedBoost: 0.85, stealthDetectionRange: 2, special: 'Non-Stacking Speed Aura', comment: "Please stay off the line." },
     PIN_HEART: { cost: 85, range: 220, damage: 1.5, fireRate: 15, color: '#ff69b4', projectileSpeed: 5, projectileSize: 3, projectileColor: '#ff69b4', splashRadius: 0, special: 'Loyal Projectiles', comment: "It's a little clingy." },
     FIREPLACE: { cost: 135, range: 50, damage: 0.1, fireRate: 2, color: '#e11d48', projectileSpeed: 10, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 20, special: 'Lingering Burn', maxLevel: 3, comment: "It's not fun when it's too hot!" },

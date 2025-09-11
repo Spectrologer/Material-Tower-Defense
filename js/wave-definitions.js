@@ -25,12 +25,12 @@ export const waveDefinitions = [
     // Wave 2: More NORMAL enemies, testing basic tower placement without a detour.
     {
         composition: [comp(ENEMY_TYPES.NORMAL, 15)],
-        healthMultiplier: 0.95, healthBonus: 0,
+        healthMultiplier: 1.15, healthBonus: 0,
         endOfWaveAnnouncement: { text: "Warning:\nFast enemies incoming!", color: '#ffb84d' }
     },
     // Wave 3: Introduce FAST enemies and split the path.
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 4)],
+        composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 8)],
         healthMultiplier: 1.0, healthBonus: 0,
         detourRatio: 0.5,
         endOfWaveAnnouncement: { text: "Warning:\nWe've encountered a bug!", color: '#00e6e6' }
@@ -46,8 +46,8 @@ export const waveDefinitions = [
     },
     // Wave 5: Introduce HEAVY enemies, a pure test of single-target damage.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 5)],
-        healthMultiplier: 1.1, healthBonus: 15,
+        composition: [comp(ENEMY_TYPES.HEAVY, 7)],
+        healthMultiplier: 1.1, healthBonus: 30,
     },
     // Wave 6: A mix of HEAVY on main path and FAST on detour to challenge tower specialization.
     {
@@ -58,19 +58,19 @@ export const waveDefinitions = [
     },
     // Wave 7: Introduce FLYING enemies, a pure anti-air check.
     {
-        composition: [comp(ENEMY_TYPES.FLYING, 7)],
-        healthMultiplier: 1.3, healthBonus: 15,
+        composition: [comp(ENEMY_TYPES.FLYING, 10)],
+        healthMultiplier: 1.3, healthBonus: 20,
     },
     // Wave 8: A mix of ground and air to test defense flexibility.
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.FLYING, 5)],
-        healthMultiplier: 1.4, healthBonus: 15,
+        healthMultiplier: 1.4, healthBonus: 22,
         endOfWaveAnnouncement: { text: "Unseen threats ahead!\nDetection required.", color: '#BDBDBD' }
     },
     // Wave 9: Introduce STEALTH enemies, testing detection tower usage.
     {
         composition: [comp(ENEMY_TYPES.STEALTH, 10)],
-        healthMultiplier: 1.5, healthBonus: 10,
+        healthMultiplier: 1.1, healthBonus: 10,
         detourRatio: 0.5,
     },
     // Wave 10: A larger ground wave with mixed types to test overall defense.
@@ -83,12 +83,12 @@ export const waveDefinitions = [
     },
     // Wave 11: Introduce BITCOIN enemies as an economic challenge.
     {
-        composition: [comp(ENEMY_TYPES.BITCOIN, 18)],
-        healthMultiplier: 1.7, healthBonus: 10,
+        composition: [comp(ENEMY_TYPES.BITCOIN, 20)],
+        healthMultiplier: 2, healthBonus: 10,
     },
     // Wave 12: A difficult pincer attack with HEAVY and FAST enemies on separate paths.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.FAST, 12)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.FAST, 13)],
         healthMultiplier: 1.9, healthBonus: 15,
         detourRatio: 1.0,
     },
