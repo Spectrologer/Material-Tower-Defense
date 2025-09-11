@@ -526,6 +526,29 @@ export function triggerGameOver(isWin, wave) {
     }
 }
 
+/**
+ * Configuration for displaying tower stats in the library.
+ * Each key corresponds to a property in the TOWER_TYPES objects.
+ * - label: Text to display.
+ * - icon: Material Icon name.
+ * - family: Icon font family.
+ * - color: Color of the icon.
+ * - condition: A function that returns true if the stat should be displayed.
+ * - formatter: An optional function to format the stat value for display.
+ */
+const statDisplayConfig = {
+    damage: { label: 'Dmg', icon: 'bolt', family: 'material-icons', color: '#ef4444', condition: (s) => s.damage > 0 },
+    range: { label: 'Rng', icon: 'radar', family: 'material-icons', color: '#60a5fa', condition: (s) => s.range > 0 },
+    fireRate: { label: 'Spd', icon: 'speed', family: 'material-icons', color: '#4ade80', condition: (s) => s.fireRate > 0, formatter: (val) => (60 / val).toFixed(2) },
+    splashRadius: { label: 'Spl', icon: 'bubble_chart', family: 'material-icons', color: '#c084fc', condition: (s) => s.splashRadius > 0 },
+    attackSpeedBoost: { label: 'Spd Aura', icon: 'electric_bolt', family: 'material-icons', color: '#f59e0b', condition: (s) => s.attackSpeedBoost, formatter: (val) => `+${((1 - val) * 100).toFixed(0)}%` },
+    damageBoost: { label: 'Dmg Aura', icon: 'electric_bolt', family: 'material-icons', color: '#f59e0b', condition: (s) => s.damageBoost, formatter: (val) => `+${((val - 1) * 100).toFixed(0)}%` },
+    enemySlow: { label: 'Slow Aura', icon: 'hourglass_empty', family: 'material-symbols-outlined', color: '#38bdf8', condition: (s) => s.enemySlow, formatter: (val) => `${((1 - val) * 100).toFixed(0)}%` },
+    goldBonus: { label: 'Gold Aura', icon: 'savings', family: 'material-icons', color: '#facc15', condition: (s) => s.goldBonus, formatter: (val) => `+${val}G` },
+    burnDps: { label: 'Burn', icon: 'local_fire_department', family: 'material-symbols-outlined', color: '#f97316', condition: (s) => s.burnDps, formatter: (val, stats) => `${val}/s for ${stats.burnDuration}s` },
+};
+
+
 function createTowerCardHTML(type, isDiscovered) {
     const stats = TOWER_TYPES[type];
     if (!stats) return '';
@@ -556,17 +579,18 @@ function createTowerCardHTML(type, isDiscovered) {
 
     const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
 
-    // Build stats with icons
-    let statsGridHTML = '';
-    if (stats.damage > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#ef4444;">bolt</span>Dmg: ${stats.damage}</p>`;
-    if (stats.range > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#60a5fa;">radar</span>Rng: ${stats.range}</p>`;
-    if (stats.fireRate > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#4ade80;">speed</span>Spd: ${(60 / stats.fireRate).toFixed(2)}</p>`;
-    if (stats.splashRadius > 0) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#c084fc;">bubble_chart</span>Spl: ${stats.splashRadius}</p>`;
-    if (stats.attackSpeedBoost) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#f59e0b;">electric_bolt</span>Spd Aura: +${((1 - stats.attackSpeedBoost) * 100).toFixed(0)}%</p>`;
-    if (stats.damageBoost) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#f59e0b;">electric_bolt</span>Dmg Aura: +${((stats.damageBoost - 1) * 100).toFixed(0)}%</p>`;
-    if (stats.enemySlow) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#38bdf8;">hourglass_empty</span>Slow Aura: ${((1 - stats.enemySlow) * 100).toFixed(0)}%</p>`;
-    if (stats.goldBonus) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-icons text-base align-bottom" style="color:#facc15;">savings</span>Gold Aura: +${stats.goldBonus}G</p>`;
-    if (stats.burnDps) statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#f97316;">local_fire_department</span>Burn: ${stats.burnDps}/s</p>`;
+    // Build stats with icons dynamically from the config
+    const statsGridHTML = Object.entries(statDisplayConfig)
+        .map(([key, config]) => {
+            if (config.condition && config.condition(stats)) {
+                const statValue = stats[key];
+                const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
+                const iconFamily = config.family || 'material-icons';
+                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-base align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+            }
+            return '';
+        })
+        .join('');
 
 
     return `
@@ -668,3 +692,4 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
+
