@@ -1,11 +1,12 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
-import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries } from './ui-manager.js';
+import { Enemy, Tower, Projectile, Effect, TextAnnouncement, TextStreamEnemy } from './game-entities.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, updateSpecialWaveTimer } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions } from './wave-definitions.js';
 import { playHitSound, playMoneySound, playExplosionSound, playLifeLostSound, playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled } from './audio.js';
+// import { toggleMusic } from './strudel-music.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
@@ -34,6 +35,12 @@ let isSellConfirmPending = false;
 let libraryCurrentIndex = 0;
 let libraryEnemyCurrentIndex = 0;
 let libraryActiveTab = 'towers';
+
+// Special Wave State
+let specialWaveActive = false;
+let specialWaveTimer = 0;
+let specialWaveObject = null;
+
 
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
@@ -115,6 +122,16 @@ function spawnWave() {
         triggerGameOver(true, gameState.wave - 1);
         return;
     }
+
+    // Handle special Proust wave
+    if (waveDef.isSpecial === 'PROUST') {
+        specialWaveActive = true;
+        specialWaveTimer = waveDef.duration;
+        const enemyType = ENEMY_TYPES.PROUST;
+        specialWaveObject = new TextStreamEnemy(enemyType, gameState.path, waveDef.text, waveDef.health);
+        return; // Skip normal spawning
+    }
+
 
     gameState.isDetourOpen = (waveDef.detourRatio || 0) > 0;
 
@@ -422,6 +439,14 @@ function handleProjectileHit(projectile, hitEnemy) {
     updateUI(gameState);
 }
 
+function handleSpecialWaveProjectileHit(projectile) {
+    if (specialWaveObject) {
+        specialWaveObject.takeDamage(projectile.owner.damage * projectile.owner.damageMultiplier);
+        playHitSound();
+        gameState.effects.push(new Effect(projectile.x, projectile.y, 'lens', 15, '#FFFFFF', 0.2));
+    }
+}
+
 function gameLoop(currentTime) {
     if (!lastTime) {
         lastTime = currentTime;
@@ -437,8 +462,12 @@ function gameLoop(currentTime) {
     const effectiveDeltaTime = deltaTime * gameSpeed;
     const frameTargetedEnemies = new Set();
 
+    // --- UPDATE LOGIC ---
+
+    // Update everything's state first
     updateStealthVisibility();
     applyAuraEffects();
+
     const onEnemyDeath = (enemy, payload = {}) => {
         if (selectedEnemy === enemy) {
             selectedEnemy = null;
@@ -457,41 +486,70 @@ function gameLoop(currentTime) {
 
     const newlySpawnedEnemies = [];
 
-    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies));
-    gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects, effectiveDeltaTime));
-    gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
-        (e) => { // onFinish
-            if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
-                gameState.gold = Math.max(0, gameState.gold - 1);
-                updateUI(gameState);
-                const goldCounterRect = uiElements.goldEl.getBoundingClientRect();
-                const goldX = goldCounterRect.left + (goldCounterRect.width / 3);
-                const goldY = goldCounterRect.top + (goldCounterRect.height / 3);
-                const canvasGoldX = (goldX / window.innerWidth) * canvasWidth;
-                const canvasGoldY = (goldY / window.innerHeight) * canvasHeight;
-                gameState.announcements.push(new TextAnnouncement("-$", canvasGoldX, canvasGoldY, 1, '#ff4d4d', canvasWidth));
-            }
+    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies, specialWaveActive ? specialWaveObject : null));
 
-            if (e.type.damagesLives) {
-                gameState.lives--;
-                playLifeLostSound();
-                updateUI(gameState);
-                if (gameState.lives <= 0) {
+    const onHitCallback = specialWaveActive ? handleSpecialWaveProjectileHit : handleProjectileHit;
+    gameState.projectiles = gameState.projectiles.filter(p => p.update(onHitCallback, gameState.enemies, gameState.effects, effectiveDeltaTime));
+
+    if (specialWaveActive) {
+        specialWaveTimer -= effectiveDeltaTime;
+
+        if (specialWaveObject) {
+            if (!specialWaveObject.update(effectiveDeltaTime)) {
+                specialWaveActive = false;
+                specialWaveObject = null;
+                gameState.waveInProgress = false;
+            }
+        }
+
+        if (specialWaveTimer <= 0) {
+            if (specialWaveObject && specialWaveObject.health > 0) {
+                gameState.lives -= 2 * effectiveDeltaTime;
+                if (gameState.lives <= 0 && !gameState.gameOver) {
+                    gameState.lives = 0;
                     gameState.gameOver = true;
                     triggerGameOver(false, gameState.wave - 1);
                 }
+            } else {
+                specialWaveActive = false;
+                specialWaveObject = null;
+                gameState.waveInProgress = false;
             }
-        },
-        onEnemyDeath,
-        newlySpawnedEnemies,
-        playWiggleSound,
-        playCrackSound,
-        effectiveDeltaTime,
-        playHitSound
-    ));
+        }
+    } else {
+        gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
+            (e) => { // onFinish
+                if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
+                    gameState.gold = Math.max(0, gameState.gold - 1);
+                    updateUI(gameState);
+                    const goldCounterRect = uiElements.goldEl.getBoundingClientRect();
+                    const goldX = goldCounterRect.left + (goldCounterRect.width / 3);
+                    const goldY = goldCounterRect.top + (goldCounterRect.height / 3);
+                    const canvasGoldX = (goldX / window.innerWidth) * canvasWidth;
+                    const canvasGoldY = (goldY / window.innerHeight) * canvasHeight;
+                    gameState.announcements.push(new TextAnnouncement("-$", canvasGoldX, canvasGoldY, 1, '#ff4d4d', canvasWidth));
+                }
+
+                if (e.type.damagesLives) {
+                    gameState.lives--;
+                    playLifeLostSound();
+                    updateUI(gameState);
+                    if (gameState.lives <= 0) {
+                        gameState.gameOver = true;
+                        triggerGameOver(false, gameState.wave - 1);
+                    }
+                }
+            },
+            onEnemyDeath,
+            newlySpawnedEnemies,
+            playWiggleSound,
+            playCrackSound,
+            effectiveDeltaTime,
+            playHitSound
+        ));
+    }
 
     gameState.enemies.push(...newlySpawnedEnemies);
-
     gameState.effects = gameState.effects.filter(effect => effect.update(effectiveDeltaTime));
     gameState.announcements = gameState.announcements.filter(announcement => announcement.update(effectiveDeltaTime));
 
@@ -503,11 +561,10 @@ function gameLoop(currentTime) {
         updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 
-    if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.spawningEnemies) {
+    if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.spawningEnemies && !specialWaveActive) {
         gameState.waveInProgress = false;
         gameState.isDetourOpen = false;
 
-        // Check for an announcement for the *next* wave from the wave that just ended.
         const completedWaveDef = waveDefinitions[gameState.wave - 1];
         if (completedWaveDef && completedWaveDef.endOfWaveAnnouncement) {
             const announcement = completedWaveDef.endOfWaveAnnouncement;
@@ -531,18 +588,19 @@ function gameLoop(currentTime) {
         updateUI(gameState);
         persistGameState(0);
     }
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    // Determine detour path color based on current and next wave
+    // --- DRAWING LOGIC ---
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    updateSpecialWaveTimer(specialWaveTimer, specialWaveActive);
+    updateUI(gameState);
+
     const nextWaveDef = waveDefinitions[gameState.wave - 1];
     const isDetourInNextWave = nextWaveDef && nextWaveDef.detourRatio > 0;
     const effectiveDetourColor = (gameState.isDetourOpen || isDetourInNextWave) ? mazeColor : detourMazeColor;
 
-    // Draw detour first so main path draws over it
     drawDetourPath(ctx, gameState.detourPath, effectiveDetourColor);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
 
-    // Draw ground target marker if one is set for the selected tower
     if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') && selectedTower.attackGroundTarget) {
         const target = selectedTower.attackGroundTarget;
         ctx.save();
@@ -561,24 +619,32 @@ function gameLoop(currentTime) {
         ctx.restore();
     }
 
-    gameState.enemies.forEach(enemy => {
-        enemy.draw(ctx);
-    });
+    if (specialWaveActive && specialWaveObject) {
+        specialWaveObject.draw(ctx);
+    } else {
+        gameState.enemies.forEach(enemy => enemy.draw(ctx));
+    }
+
     if (placingTower) {
         drawPlacementGrid(ctx, canvasWidth, canvasHeight, gameState.placementGrid, mouse);
     }
+
     gameState.towers.forEach(tower => tower.draw(ctx));
+
     if (selectedTower) {
         selectedTower.drawRange(ctx);
         if (['SUPPORT', 'ENT', 'CAT'].includes(selectedTower.type)) selectedTower.drawBuffEffect(ctx);
     }
+
     gameState.projectiles.forEach(p => p.draw(ctx));
     gameState.effects.forEach(effect => effect.draw(ctx));
     gameState.announcements.forEach(announcement => announcement.draw(ctx));
+
     if (selectedEnemy) {
         selectedEnemy.drawSelection(ctx);
         drawEnemyInfoPanel(ctx, selectedEnemy, canvasWidth);
     }
+
     if (settingAttackGroundForTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);
@@ -589,20 +655,18 @@ function gameLoop(currentTime) {
         ctx.strokeStyle = '#ff4d4d';
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 4]);
-
         ctx.beginPath();
         ctx.arc(snappedX, snappedY, 15, 0, Math.PI * 2);
         ctx.stroke();
-
         ctx.beginPath();
         ctx.moveTo(snappedX - 10, snappedY);
         ctx.lineTo(snappedX + 10, snappedY);
         ctx.moveTo(snappedX, snappedY - 10);
         ctx.lineTo(snappedX, snappedY + 10);
         ctx.stroke();
-
         ctx.restore();
     }
+
     if (placingTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);
@@ -631,6 +695,7 @@ function gameLoop(currentTime) {
             ctx.fill();
         }
     }
+
     drawMergeTooltip(ctx, mergeTooltip, canvasWidth);
     animationFrameId = requestAnimationFrame(gameLoop);
 }
@@ -808,8 +873,11 @@ function handleCanvasAction(e) {
         return; // This action is complete.
     }
 
-    // Prioritize clicking on an enemy
-    const clickedOnEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
+    let clickedOnEnemy;
+    if (!specialWaveActive) {
+        clickedOnEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
+    }
+
     if (clickedOnEnemy) {
         selectedEnemy = clickedOnEnemy;
         selectedTower = null; // Deselect any tower
@@ -1232,6 +1300,10 @@ function reset(hardReset = false) {
     mergeTooltip.info = null;
     pendingMergeState = null;
     isSellConfirmPending = false;
+    specialWaveActive = false;
+    specialWaveTimer = 0;
+    specialWaveObject = null;
+
 
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
@@ -1269,6 +1341,21 @@ function init() {
 }
 
 const consoleCommands = {};
+
+consoleCommands.spawnProust = () => {
+    if (gameState && gameState.path.length > 0 && !specialWaveActive) {
+        const waveDef = waveDefinitions.find(w => w.isSpecial === 'PROUST');
+        if (waveDef) {
+            specialWaveActive = true;
+            specialWaveTimer = waveDef.duration;
+            const enemyType = ENEMY_TYPES.PROUST;
+            specialWaveObject = new TextStreamEnemy(enemyType, gameState.path, waveDef.text, waveDef.health);
+            console.log("In Search of Lost Time begins...");
+        }
+    } else {
+        console.error("Game not initialized, path not available, or special wave already active.");
+    }
+};
 
 // Function to spawn Flutterdash from the console
 consoleCommands.spawnFlutterdash = () => {
@@ -1344,6 +1431,9 @@ uiElements.resetGameBtn.addEventListener('click', () => {
     uiElements.optionsMenu.classList.add('hidden');
 });
 
+// Prevent clicks on the sell panel from propagating to the canvas, which would deselect the tower.
+uiElements.sellPanel.addEventListener('click', e => e.stopPropagation());
+
 uiElements.sellTowerBtn.addEventListener('click', () => {
     resumeAudioContext();
     if (selectedTower) {
@@ -1411,7 +1501,8 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
     }
 });
 
-uiElements.toggleModeBtn.addEventListener('click', () => {
+uiElements.toggleModeBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent canvas click
     resumeAudioContext();
     if (selectedTower) {
         if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
@@ -1425,7 +1516,8 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
     }
 });
 
-uiElements.toggleTargetingBtn.addEventListener('click', () => {
+uiElements.toggleTargetingBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent canvas click
     resumeAudioContext();
     if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN')) {
         settingAttackGroundForTower = null; // Always cancel ground target selection when cycling
@@ -1453,7 +1545,8 @@ uiElements.toggleTargetingBtn.addEventListener('click', () => {
 });
 
 if (uiElements.setGroundTargetBtn) {
-    uiElements.setGroundTargetBtn.addEventListener('click', () => {
+    uiElements.setGroundTargetBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent canvas click
         resumeAudioContext();
         if (!selectedTower || (selectedTower.type !== 'FORT' && selectedTower.type !== 'NINE_PIN')) return;
 
@@ -1485,6 +1578,16 @@ uiElements.soundToggleBtn.addEventListener('click', () => {
     const soundIcon = document.getElementById('sound-icon');
     soundIcon.textContent = isSoundEnabled ? 'volume_up' : 'volume_off';
 });
+
+/*
+uiElements.musicToggleBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    const isMusicOn = toggleMusic();
+    const musicIcon = document.getElementById('music-icon');
+    musicIcon.textContent = isMusicOn ? 'music_note' : 'music_off';
+});
+*/
+
 
 uiElements.cloudButton.addEventListener('click', () => {
     resumeAudioContext();
@@ -1687,4 +1790,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-

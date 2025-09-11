@@ -1,5 +1,32 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE } from './constants.js';
 
+// Helper function to get a point along a path at a specific distance
+function getPointAtDistance(path, distance) {
+    if (!path || path.length === 0) return null;
+
+    let totalLength = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+        const p1 = path[i];
+        const p2 = path[i + 1];
+        const segmentLength = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+
+        if (totalLength + segmentLength >= distance) {
+            const distIntoSegment = distance - totalLength;
+            const ratio = distIntoSegment / segmentLength;
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            return {
+                x: p1.x + (p2.x - p1.x) * ratio,
+                y: p1.y + (p2.y - p1.y) * ratio,
+                angle: angle
+            };
+        }
+        totalLength += segmentLength;
+    }
+
+    // If distance is beyond the path, return null
+    return null;
+}
+
 export class Projectile {
     constructor(owner, target, startAngle = 0) {
         this.owner = owner;
@@ -208,7 +235,7 @@ export class Projectile {
                 }
             }
         }
-        const hitCondition = distance < moveDistance || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
+        const hitCondition = distance < moveDistance || Math.hypot(this.x - this.target.x, this.y - this.target.y) < (this.target.size || 1);
 
         if (hitCondition) {
             // Check if it is a rocket BEFORE onHit and removal.
@@ -217,7 +244,10 @@ export class Projectile {
                 effects.push(new Effect(this.x, this.y, 'explosion', 15, '#FFA500', 0.2));
             }
             onHit(this);
-            this.hitEnemies.add(this.target);
+            if (this.target.health !== Infinity) { // Don't add path points to hitEnemies
+                this.hitEnemies.add(this.target);
+            }
+
 
             if (this.owner.hasFragmentingShot && this.bounces > 0) {
                 let nextTarget = null;
@@ -493,6 +523,101 @@ export class Enemy {
     }
 }
 
+export class TextStreamEnemy {
+    constructor(type, path, text, totalHealth) {
+        this.type = type;
+        this.path = path;
+        this.text = text;
+        this.health = totalHealth;
+        this.maxHealth = totalHealth;
+        this.damageTaken = 0;
+        this.speed = type.speed;
+        this.progress = 0; // distance traveled along the path
+        this.charWidth = 20; // estimated width of a character
+        this.hitboxes = []; // To store character positions for collision
+        this.typeName = 'PROUST'; // For library checks etc.
+        this.id = crypto.randomUUID();
+        this.isDying = false; // Not really used but good for consistency
+        this.pathLength = this.path.reduce((acc, point, i, arr) => {
+            if (i === 0) return 0;
+            return acc + Math.hypot(point.x - arr[i - 1].x, point.y - arr[i - 1].y);
+        }, 0);
+    }
+
+    update(deltaTime) {
+        this.progress += this.speed * deltaTime;
+
+        // Update hitboxes for collision detection
+        this.hitboxes = [];
+        for (let i = 0; i < this.text.length; i++) {
+            const charDistance = this.progress - (i * this.charWidth);
+            if (charDistance < 0 || charDistance > this.pathLength) continue;
+            const point = getPointAtDistance(this.path, charDistance);
+            if (point) {
+                this.hitboxes.push({ x: point.x, y: point.y, size: this.type.size / 2 });
+            }
+        }
+
+
+        const totalTextLengthPixels = this.text.length * this.charWidth;
+
+
+        if (this.progress > this.pathLength + totalTextLengthPixels) {
+            return false;
+        }
+
+        return this.health > 0;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.font = `${this.type.size}px 'Caveat'`;
+        ctx.fillStyle = this.type.color;
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i < this.text.length; i++) {
+            const charDistance = this.progress - (i * this.charWidth);
+            if (charDistance < 0 || charDistance > this.pathLength) continue;
+
+            const point = getPointAtDistance(this.path, charDistance);
+            if (point) {
+                ctx.save();
+                ctx.translate(point.x, point.y);
+                ctx.rotate(point.angle);
+                ctx.fillText(this.text[i], 0, 0);
+                ctx.restore();
+            }
+        }
+        ctx.restore();
+
+        // Draw health bar for the text stream at the top
+        const healthBarWidth = ctx.canvas.width * 0.8;
+        const healthBarHeight = 10;
+        const healthX = (ctx.canvas.width - healthBarWidth) / 2;
+        const healthY = 10;
+        const healthPercentage = this.health / this.maxHealth;
+
+        ctx.fillStyle = '#333';
+        ctx.fillRect(healthX, healthY, healthBarWidth, healthBarHeight);
+        ctx.fillStyle = '#f5e5c7'; // Proust color
+        ctx.fillRect(healthX, healthY, healthBarWidth * healthPercentage, healthBarHeight);
+
+        const damageText = `Damage Dealt: ${Math.floor(this.damageTaken)}`;
+        ctx.font = "12px 'Press Start 2P'";
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(damageText, ctx.canvas.width / 2, healthY + healthBarHeight + 15);
+    }
+
+    takeDamage(amount) {
+        this.health -= amount;
+        this.damageTaken += amount;
+        return this.health <= 0;
+    }
+}
+
+
 export class Tower {
     constructor(x, y, type) {
         this.x = x;
@@ -522,6 +647,7 @@ export class Tower {
         this.attackSpeedBoost = 1;
         this.damageBoost = 1;
         this.enemySlow = 1;
+        this.specialWaveTargetCooldown = 0;
         if (this.type === 'CAT') {
             this.goldGenerated = 0;
         }
@@ -740,7 +866,21 @@ export class Tower {
         ctx.fillRect(startX, startY, size, size);
         ctx.restore();
     }
-    findTarget(enemies, frameTargetedEnemies) {
+    findTarget(enemies, frameTargetedEnemies, specialWaveObject = null) {
+        if (specialWaveObject) {
+            if (this.specialWaveTargetCooldown <= 0) {
+                const pathPointsInRange = specialWaveObject.path.filter(p => this.isInRange(p));
+                if (pathPointsInRange.length > 0) {
+                    const targetPoint = pathPointsInRange[Math.floor(Math.random() * pathPointsInRange.length)];
+                    this.target = { ...targetPoint, health: Infinity, isVisible: true, progress: 0 };
+                    this.specialWaveTargetCooldown = 0.5; // seconds
+                } else {
+                    this.target = null;
+                }
+            }
+            return;
+        }
+
         this.target = null;
         let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
 
@@ -809,33 +949,50 @@ export class Tower {
     isInRange(enemy) {
         return Math.hypot(this.x - enemy.x, this.y - enemy.y) <= this.range;
     }
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, specialWaveObject = null) {
         if (this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') {
             return;
         }
         if (this.type === 'ORBIT') {
             this.orbiters.forEach(orbiter => {
                 orbiter.update(null, null, null, deltaTime);
-                enemies.forEach(enemy => {
-                    if (enemy.type.isFlying) return;
-                    const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
-                    if (dist < enemy.size + this.projectileSize) {
-                        if (!orbiter.hitEnemies.has(enemy)) {
-                            const finalDamage = this.damage * this.damageMultiplier;
-                            if (enemy.takeDamage(finalDamage)) {
-                                this.killCount++;
-                                onEnemyDeath(enemy);
+                if (specialWaveObject) {
+                    // Orbit can damage text stream
+                    specialWaveObject.hitboxes.forEach(hitbox => {
+                        if (Math.hypot(orbiter.x - hitbox.x, orbiter.y - hitbox.y) < hitbox.size + this.projectileSize) {
+                            if (!orbiter.hitEnemies.has(hitbox)) { // Use hitbox as a pseudo-enemy
+                                const finalDamage = this.damage * this.damageMultiplier;
+                                specialWaveObject.takeDamage(finalDamage);
+                                orbiter.hitEnemies.add(hitbox);
+                                orbiter.hitCooldown = 0.25;
                             }
-                            orbiter.hitEnemies.add(enemy);
-                            orbiter.hitCooldown = 0.25; // seconds
                         }
-                    }
-                });
+                    });
+
+                } else {
+                    enemies.forEach(enemy => {
+                        if (enemy.type.isFlying) return;
+                        const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
+                        if (dist < enemy.size + this.projectileSize) {
+                            if (!orbiter.hitEnemies.has(enemy)) {
+                                const finalDamage = this.damage * this.damageMultiplier;
+                                if (enemy.takeDamage(finalDamage)) {
+                                    this.killCount++;
+                                    onEnemyDeath(enemy);
+                                }
+                                orbiter.hitEnemies.add(enemy);
+                                orbiter.hitCooldown = 0.25; // seconds
+                            }
+                        }
+                    });
+                }
             });
             return;
         }
 
         if (this.cooldown > 0) this.cooldown -= deltaTime;
+        if (this.specialWaveTargetCooldown > 0) this.specialWaveTargetCooldown -= deltaTime;
+
 
         if ((this.type === 'FORT' || this.type === 'NINE_PIN') && this.targetingMode === 'ground' && this.attackGroundTarget) {
             this.target = null; // Ensure no enemy is targeted
@@ -844,7 +1001,7 @@ export class Tower {
                 this.cooldown = this.fireRate / 60;
             }
         } else {
-            this.findTarget(enemies, frameTargetedEnemies);
+            this.findTarget(enemies, frameTargetedEnemies, specialWaveObject);
             if (this.target && this.cooldown <= 0) {
                 this.shoot(projectiles);
                 this.cooldown = this.fireRate / 60; // Cooldown in seconds

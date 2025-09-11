@@ -114,6 +114,16 @@ export const waveDefinitions = [
     {
         isBoss: true,
         composition: [comp(ENEMY_TYPES.BOSS, 1)],
+        endOfWaveAnnouncement: { text: "ALERT:\nWho invited symbols!?", color: '#cb83ffff' }
+
+    },
+    // Wave 16: Special Proust Wave
+    {
+        isSpecial: 'PROUST',
+        duration: 120, // seconds
+        health: 20000,
+        text: "For a long time, I went to bed early. Sometimes, my candle barely out, my eyes would close so quickly that I did not have time to tell myself: “I’m falling asleep.” And half an hour later the thought that it was time to look for sleep would awaken me; I would make as if to put away the book which I imagined was still in my hands, and to blow out the light; I had not ceased while sleeping to form reflections on what I had just read, but these reflections had taken a rather peculiar turn; it seemed to me that I myself was what the book was talking about: a church, a quartet, the rivalry between François I and Charles V. This belief would survive for a few seconds after my waking; it did not shock my reason but lay heavy like scales on my eyes and kept them from realizing that the candlestick was no longer lit. Then it would begin to seem unintelligible to me, as after metempsychosis do the thoughts of an earlier existence; the subject of the book would separate itself from me, I was free to apply myself to it or not; immediately I would recover my sight and I would be astonished to find a darkness around me, soft and restful for my eyes, but perhaps even more so for my mind, to which it appeared as a thing without cause, incomprehensible, a thing truly dark. I would ask myself what time it could be; I could hear the whistling of trains, which, now nearer and now farther off, punctuating the distance like the note of a bird in a forest, showed me the extent of the deserted countryside where the traveler is hurrying toward the nearest station; and the little path that he is following will be engraved on his memory by the excitement that he owes to new places, to unaccustomed activities, to the recent conversation and the farewells under the unfamiliar lamp that are still following him into the silence of the night, to the imminent sweetness of the return.",
+        endOfWaveAnnouncement: { text: "The text has been vanquished!", color: '#f5e5c7' }
     },
 ];
 

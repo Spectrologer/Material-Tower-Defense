@@ -38,5 +38,7 @@ export const ENEMY_TYPES = {
     BOSS: { speed: 1.2, health: 5400, color: '#f589ffff', size: 28, gold: 50, icon: 'flutter_dash', iconFamily: 'Material Icons', isFlying: true, damagesLives: false, laysEggs: true, layEggInterval: 5, eggLayStopTime: 1.5, wiggleTime: 1, splashImmune: true, comment: "Lays eggs. Has commitment issues." },
     EGG: { speed: 0, health: 200, color: '#ffedceff', size: 12, gold: 0, icon: 'egg', iconFamily: 'Material Symbols Outlined', damagesLives: false, hatchTime: 5, hatchesTo: 'HATCHED', isStationary: true, comment: "What's inside? It's probably not a surprise party." },
     HATCHED: { speed: 2.5, health: 200, color: '#90CAF9', size: 14, gold: 0, icon: 'boy', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "Why." },
-    STEALTH: { speed: 2.2, health: 15, color: '#BDBDBD', size: 16, gold: 5, icon: 'settings_accessibility', iconFamily: "'Material Symbols Outlined'", damagesLives: true, isInvisible: true, prefersDetour: true, comment: "He's  not your a11y." }
+    STEALTH: { speed: 2.2, health: 15, color: '#BDBDBD', size: 16, gold: 5, icon: 'settings_accessibility', iconFamily: "'Material Symbols Outlined'", damagesLives: true, isInvisible: true, prefersDetour: true, comment: "He's  not your a11y." },
+    PROUST: { speed: 150, health: 20000, color: '#000000', size: 24, gold: 0, damagesLives: true, isTextStream: true, comment: "For a long time I would go to bed early." },
 };
+

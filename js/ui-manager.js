@@ -30,6 +30,7 @@ export const uiElements = {
     speedToggleBtn: getButton('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
     soundToggleBtn: getButton('sound-toggle-btn'),
+    musicToggleBtn: getButton('music-toggle-btn'),
     towerButtons: document.getElementById('tower-buttons'),
     gameControls: document.getElementById('game-controls'),
     towersTitle: document.getElementById('towers-title'),
@@ -66,6 +67,9 @@ export const uiElements = {
     libraryNextBtn: getButton('library-next-btn'),
     libraryCounter: document.getElementById('library-counter'),
     libraryCloseBtn: getButton('library-close-btn'),
+    // Special Wave Timer
+    specialWaveTimerContainer: document.getElementById('special-wave-timer-container'),
+    specialWaveTimer: document.getElementById('special-wave-timer'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
@@ -95,10 +99,19 @@ export const uiElements = {
     killCountValue: document.getElementById('kill-count-value'),
 };
 
+export function updateSpecialWaveTimer(time, visible) {
+    if (uiElements.specialWaveTimerContainer) {
+        uiElements.specialWaveTimerContainer.classList.toggle('hidden', !visible);
+        if (visible) {
+            uiElements.specialWaveTimer.textContent = Math.ceil(time).toString();
+        }
+    }
+}
+
 export function updateUI(state) {
-    uiElements.livesEl.textContent = state.lives;
-    uiElements.goldEl.textContent = state.gold;
-    uiElements.waveEl.textContent = state.wave;
+    uiElements.livesEl.textContent = Math.floor(state.lives).toString();
+    uiElements.goldEl.textContent = state.gold.toString();
+    uiElements.waveEl.textContent = state.wave.toString();
     uiElements.buyPinBtn.disabled = state.gold < TOWER_TYPES.PIN.cost;
     uiElements.buyCastleBtn.disabled = state.gold < TOWER_TYPES.CASTLE.cost;
     uiElements.buySupportBtn.disabled = state.gold < TOWER_TYPES.SUPPORT.cost;
@@ -125,9 +138,13 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         existingIndicator.remove();
     }
 
-    if (uiElements.setGroundTargetBtn) uiElements.setGroundTargetBtn.classList.add('hidden');
+    // Hide the ground target button by default
+    if (uiElements.setGroundTargetBtn) {
+        uiElements.setGroundTargetBtn.classList.add('hidden');
+    }
 
     if (selectedTower) {
+        uiElements.sellPanel.classList.add('relative'); // Ensure positioning context for absolute children
         uiElements.towerButtons.classList.add('hidden');
         uiElements.gameControls.classList.add('hidden');
         uiElements.towersTitle.classList.add('hidden');
@@ -152,7 +169,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             indicatorContainer.appendChild(eyeIcon);
             indicatorContainer.appendChild(rangeText);
 
-            uiElements.sellPanel.classList.add('relative'); // Ensure positioning context
             uiElements.sellPanel.prepend(indicatorContainer);
         }
 
@@ -174,7 +190,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 killCountIcon.textContent = 'paid';
                 killCountIcon.style.color = '#facc15'; // Gold
             }
-            uiElements.killCountValue.textContent = selectedTower.goldGenerated || 0;
+            uiElements.killCountValue.textContent = (selectedTower.goldGenerated || 0).toString();
         } else if (selectedTower.type === 'SUPPORT' || selectedTower.type === 'ENT') {
             uiElements.towerKillCount.classList.add('hidden');
         } else {
@@ -183,7 +199,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 killCountIcon.textContent = 'skull';
                 killCountIcon.style.color = '#e0e0e0'; // White
             }
-            uiElements.killCountValue.textContent = selectedTower.killCount || 0;
+            uiElements.killCountValue.textContent = (selectedTower.killCount || 0).toString();
         }
 
         let levelText;
@@ -207,7 +223,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             if (selectedTower.level === 'MAX LEVEL') {
                 levelText = '<span class="material-icons">star</span> MAX LEVEL';
             } else {
-                const visualLevel = (typeof selectedTower.level === 'string' && selectedTower.level === 'MAX LEVEL') ? 5 : (selectedTower.level + selectedTower.damageLevel - 1);
+                const visualLevel = selectedTower.levelForCalc + selectedTower.damageLevelForCalc - 1;
                 levelText = `LVL ${visualLevel}`;
             }
         }
@@ -252,6 +268,10 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         if (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') {
             if (uiElements.setGroundTargetBtn) {
                 uiElements.setGroundTargetBtn.classList.remove('hidden');
+                // Move to top left to avoid overlap with kill count
+                uiElements.setGroundTargetBtn.classList.remove('right-2');
+                uiElements.setGroundTargetBtn.classList.add('left-2');
+
                 if (settingAttackGroundForTower === selectedTower) {
                     uiElements.setGroundTargetBtn.innerHTML = `<span class="material-symbols-outlined">cancel</span>`;
                     uiElements.setGroundTargetBtn.classList.add('active');
@@ -263,39 +283,52 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             if (uiElements.toggleTargetingBtn) {
                 uiElements.toggleTargetingBtn.classList.remove('hidden');
                 uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'border-red-400', 'text-yellow-300', 'bg-yellow-400', 'border-yellow-300', 'text-black', 'bg-blue-800', 'border-blue-400', 'text-cyan-300');
-
+                let modeText = '';
                 switch (selectedTower.targetingMode) {
                     case 'ground':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: GROUND';
+                        modeText = 'TARGET: GROUND';
                         uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
                         break;
                     case 'strongest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: STRONGEST';
+                        modeText = 'TARGET: STRONGEST';
                         uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
                         break;
                     case 'weakest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: WEAKEST';
+                        modeText = 'TARGET: WEAKEST';
                         uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
                         break;
                     case 'furthest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
+                        modeText = 'TARGET: FURTHEST';
                         uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
                         break;
                     default:
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
+                        modeText = 'TARGET: FURTHEST';
                         uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
                         break;
                 }
+                const div = uiElements.toggleTargetingBtn.querySelector('div');
+                if (div) div.textContent = modeText;
             }
         } else if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
             if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
             let targetingText = selectedTower.targetingMode.toUpperCase();
-            let lockIcon = '';
-            if (selectedTower.type === 'PIN_HEART') {
-                lockIcon = '<span class="material-symbols-outlined !text-base !leading-none">lock</span>';
-            }
-            if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.innerHTML = `TARGET: ${targetingText} ${lockIcon}`;
+
             if (uiElements.toggleTargetingBtn) {
+                const div = uiElements.toggleTargetingBtn.querySelector('div');
+                if (div) {
+                    div.textContent = `TARGET: ${targetingText} `; // Set text part
+                    // Remove old icon if it exists
+                    const oldIcon = div.querySelector('span');
+                    if (oldIcon) oldIcon.remove();
+                    // Add new icon if needed
+                    if (selectedTower.type === 'PIN_HEART') {
+                        const iconSpan = document.createElement('span');
+                        iconSpan.className = 'material-symbols-outlined !text-base !leading-none';
+                        iconSpan.textContent = 'lock';
+                        div.appendChild(iconSpan);
+                    }
+                }
+
                 uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'bg-yellow-400', 'bg-blue-800', 'border-red-400', 'border-yellow-300', 'border-blue-400', 'text-black', 'text-yellow-300', 'text-cyan-300');
                 if (selectedTower.type === 'PIN_HEART') {
                     // Locked to weakest, so apply weakest styling
@@ -336,7 +369,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 const icon = /** @type {HTMLElement | null} */ (uiElements.statFragsP.querySelector('span'));
                 if (icon) icon.style.color = '#f472b6'; // Pink for Fragments
             }
-            if (uiElements.statFrags) uiElements.statFrags.textContent = selectedTower.fragmentBounces;
+            if (uiElements.statFrags) uiElements.statFrags.textContent = selectedTower.fragmentBounces.toString();
             if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Fragmenting Shot';
         }
 
@@ -446,7 +479,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                     if (icon) icon.style.color = '#e0e0e0'; // White for Projectiles
                 }
                 if (uiElements.statProjectiles) {
-                    uiElements.statProjectiles.textContent = selectedTower.type === 'NAT' ? (selectedTower.projectileCount || 1) : selectedTower.orbiters.length;
+                    uiElements.statProjectiles.textContent = selectedTower.type === 'NAT' ? (selectedTower.projectileCount || 1).toString() : selectedTower.orbiters.length.toString();
                 }
             }
         }
@@ -649,6 +682,7 @@ function populateEnemyLibrary(gameState) {
     uiElements.enemyLibraryRolodex.innerHTML = '';
 
     allEnemyTypes.forEach(type => {
+        if (type === 'PROUST') return; // Don't show the special wave in the library
         const isDiscovered = gameState.killedEnemies.has(type);
         const cardHTML = createEnemyCardHTML(type, isDiscovered);
         const cardContainer = document.createElement('div');
@@ -662,4 +696,3 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
-
