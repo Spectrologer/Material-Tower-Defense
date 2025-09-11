@@ -2,13 +2,14 @@ import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS,
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
-import { getMergeResultInfo, performMerge } from './merge-logic.js';
+import { MergeHandler } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions, generateWave } from './wave-definitions.js';
 import { playHitSound, playMoneySound, playExplosionSound, playLifeLostSound, playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled, toggleMusic } from './audio.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
+const mergeHandler = new MergeHandler();
 let canvasWidth, canvasHeight;
 let isInfiniteGold = false;
 let mazeColor = '#818181ff';
@@ -850,7 +851,7 @@ function handleCanvasAction(e) {
             }
             return tGridX === gridX && tGridY === gridY;
         });
-        const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type, gameState) : null;
+        const mergeInfo = clickedOnTower ? mergeHandler.getMergeInfo(clickedOnTower, mergingTower.type, gameState) : null;
         const isNinePin = mergingTower.type === 'NINE_PIN';
         if (mergeInfo) {
             pendingMergeState = {
@@ -985,7 +986,7 @@ canvas.addEventListener('mousemove', e => {
             return tGridX === gridX && tGridY === gridY;
         });
         if (hoveredTower) {
-            const mergeInfo = getMergeResultInfo(hoveredTower, placingTower, gameState);
+            const mergeInfo = mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState);
             if (mergeInfo) {
                 mergeTooltip.show = true;
                 mergeTooltip.info = mergeInfo;
@@ -1145,7 +1146,7 @@ canvas.addEventListener('drop', e => {
                 existingTower: targetTower,
                 mergingTower: sourceTower,
                 placingTowerType: sourceTower.type,
-                mergeInfo: getMergeResultInfo(targetTower, sourceTower.type, gameState),
+                mergeInfo: mergeHandler.getMergeInfo(targetTower, sourceTower.type, gameState),
                 placingFromCloud: transferData.source === 'cloud',
                 mergingFromCanvas: transferData.source === 'canvas',
                 originalPosition: draggedCanvasTowerOriginalGridPos
@@ -1535,7 +1536,7 @@ function performPendingMerge() {
         uiElements.mergeConfirmModal.classList.add('hidden');
         return;
     }
-    const merged = performMerge(existingTower, mergingTower.type, cost, gameState);
+    const merged = mergeHandler.executeMerge(existingTower, mergingTower.type, cost, gameState);
     if (merged) {
         if (mergeState.placingFromCloud) {
             gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
