@@ -188,30 +188,44 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         }
 
         let levelText;
-        if (selectedTower.type === 'ORBIT') {
-            const totalUpgrades = selectedTower.upgradeCount;
-            if (totalUpgrades >= 4) {
-                levelText = '<span class="material-icons">star</span> MAX LEVEL';
-            } else {
-                levelText = `LVL ${totalUpgrades + 1}`;
-            }
-        } else if (selectedTower.level === 'MAX LEVEL') {
-            levelText = '<span class="material-icons">star</span> MAX LEVEL';
-        } else if (selectedTower.level === 1 && (selectedTower.type === 'PIN' || selectedTower.type === 'CASTLE')) {
-            levelText = '';
+        const maxLevelText = `<span class="material-icons text-yellow-400 align-bottom !text-base">star</span> MAX LEVEL`;
+        const towerType = selectedTower.type;
+        const maxLevel = TOWER_TYPES[towerType].maxLevel || 5;
+
+        if (selectedTower.level === 'MAX LEVEL') {
+            levelText = maxLevelText;
         } else {
-            const visualLevel = selectedTower.level;
-            levelText = `LVL ${visualLevel}`;
+            let visualLevel;
+            if (towerType === 'ORBIT') {
+                visualLevel = (selectedTower.upgradeCount || 0) + 1;
+                const ORBIT_MAX_UPGRADES = 4;
+                if ((selectedTower.upgradeCount || 0) >= ORBIT_MAX_UPGRADES) {
+                    levelText = maxLevelText;
+                } else {
+                    levelText = `LVL ${visualLevel}`;
+                }
+            } else if (towerType === 'FORT') {
+                visualLevel = selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1;
+                if (visualLevel >= maxLevel) {
+                    levelText = maxLevelText;
+                } else {
+                    levelText = `LVL ${visualLevel}`;
+                }
+            } else {
+                visualLevel = selectedTower.stats.levelForCalc;
+                if (visualLevel >= maxLevel) {
+                    levelText = maxLevelText;
+                } else if (visualLevel === 1 && (towerType === 'PIN' || towerType === 'CASTLE')) {
+                    levelText = ''; // Keep original behavior for base towers
+                }
+                else {
+                    levelText = `LVL ${visualLevel}`;
+                }
+            }
         }
 
-        if (selectedTower.type === 'FORT') {
-            if (selectedTower.level === 'MAX LEVEL') {
-                levelText = '<span class="material-icons">star</span> MAX LEVEL';
-            } else {
-                const visualLevel = (typeof selectedTower.level === 'string' && selectedTower.level === 'MAX LEVEL') ? 5 : (selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1);
-                levelText = `LVL ${visualLevel}`;
-            }
-        }
+        if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
+
 
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
@@ -221,8 +235,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         ].forEach(p => {
             if (p) p.classList.add('hidden');
         });
-
-        if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
 
         if (uiElements.sellTowerBtn) {
             if (!isSellConfirmPending) {
@@ -423,12 +435,14 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
             }
 
-            if (uiElements.statRangeP) {
-                uiElements.statRangeP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
-                if (icon) icon.style.color = '#60a5fa'; // Blue for Range
+            if (selectedTower.type !== 'ORBIT') {
+                if (uiElements.statRangeP) {
+                    uiElements.statRangeP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
+                    if (icon) icon.style.color = '#60a5fa'; // Blue for Range
+                }
+                if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
             }
-            if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
 
             if (selectedTower.type === 'FIREPLACE') {
                 if (uiElements.statBurnP) {
@@ -685,3 +699,4 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
+
