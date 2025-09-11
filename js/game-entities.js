@@ -250,6 +250,7 @@ export class Projectile {
 
 export class Enemy {
     constructor(type, path, typeName) {
+        this.id = crypto.randomUUID(); // FIX: Give each enemy a unique ID
         this.path = path;
         this.pathIndex = 0;
         this.direction = 1;
@@ -1096,4 +1097,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-

@@ -47,7 +47,7 @@ export const waveDefinitions = [
     // Wave 5: Introduce HEAVY enemies, a pure test of single-target damage.
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 5)],
-        healthMultiplier: 1.1, healthBonus: 10,
+        healthMultiplier: 1.1, healthBonus: 15,
     },
     // Wave 6: A mix of HEAVY on main path and FAST on detour to challenge tower specialization.
     {
