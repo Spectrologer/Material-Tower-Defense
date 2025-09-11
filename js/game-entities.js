@@ -250,6 +250,7 @@ export class Projectile {
 
 export class Enemy {
     constructor(type, path, typeName) {
+        this.id = crypto.randomUUID(); // FIX: Give each enemy a unique ID
         this.path = path;
         this.pathIndex = 0;
         this.direction = 1;
@@ -272,6 +273,7 @@ export class Enemy {
         this.jostleX = 0;
         this.jostleY = 0;
         this.jostleTimer = 0;
+        this.progress = 0;
         this.isVisible = !this.type.isInvisible;
 
         if (this.type.laysEggs) {
@@ -477,6 +479,9 @@ export class Enemy {
             }
         }
 
+        if (this.path && this.path.length > 1) {
+            this.progress = this.pathIndex / (this.path.length - 1);
+        }
 
         return true; // Keep this enemy
     }
@@ -499,7 +504,7 @@ export class Tower {
         /** @type {"MAX LEVEL" | number} */
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = (type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
+        this.targetingMode = (type === 'PIN' || type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
         this.attackGroundTarget = null;
         this.damageMultiplier = 1;
         this.projectileCount = 1;
@@ -789,7 +794,7 @@ export class Tower {
                     }
                     this.target = bestTarget;
                 } else {
-                    this.target = potentialTargets.reduce((a, b) => (a.pathIndex > b.pathIndex ? a : b), potentialTargets[0]);
+                    this.target = potentialTargets.reduce((a, b) => (a.progress > b.progress ? a : b), potentialTargets[0]);
                 }
                 break;
             default: // closest
@@ -1092,4 +1097,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-
