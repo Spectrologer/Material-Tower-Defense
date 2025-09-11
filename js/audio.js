@@ -1,11 +1,22 @@
+import { startMusic, stopMusic } from "./audio-music.js";
 
 const audioContext = new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)();
 
 let isSoundEnabled = true;
+let isMusicPlaying = false;
 let isAudioResumed = false;
+
+export function toggleMusic() {
+    isMusicPlaying = !isMusicPlaying;
+    if (isSoundEnabled && isMusicPlaying) startMusic();
+    else stopMusic();
+
+    return isMusicPlaying;
+}
 
 export function toggleSoundEnabled() {
     isSoundEnabled = !isSoundEnabled;
+    toggleMusic();
     return isSoundEnabled;
 }
 

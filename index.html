@@ -266,6 +266,10 @@
             transform: translateX(20px);
             background-color: #1a1a1a;
         }
+
+        .toggle-btn:disabled {
+            opacity: 0.3;
+        }
     </style>
 
 </head>
@@ -294,7 +298,10 @@
                             class="text-cyan-400">0</span></p>
                 </div>
                 <!-- Container for the sound toggle button -->
-                <button id="sound-toggle-btn" class="text-xs px-2 py-1">
+                <button id="music-toggle-btn" class="text-xs px-2 py-1 toggle-btn">
+                    <span id="music-icon" class="material-icons">music_off</span>
+                </button>
+                <button id="sound-toggle-btn" class="text-xs px-2 py-1 toggle-btn">
                     <span id="sound-icon" class="material-icons">volume_up</span>
                 </button>
             </div>
