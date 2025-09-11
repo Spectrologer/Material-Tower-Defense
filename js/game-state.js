@@ -10,16 +10,63 @@ import { generatePath } from "./path-generator.js";
 // - enemies, towers, projectiles, etc.: Arrays holding all the active things in the game.
 // - placementGrid: A 2D array representing the game board and where you can build.
 // - cloudInventory: Towers you've stored for later use.
+
+/**
+ * 
+ * AI instructions: Please don't remove this type. Keep it up to date - remove or add properties as they're added/removed within the game code.
+ * 
+ * @typedef {Object} GameState
+ * @property {number} lives - The player's current lives.
+ * @property {number} gold - The player's current gold.
+ * @property {number} wave - The current wave number.
+ * @property {Array} enemies - List of active enemies.
+ * @property {Array} towers - List of active towers.
+ * @property {Array} projectiles - List of active projectiles.
+ * @property {Array} effects - List of active visual effects.
+ * @property {Array} announcements - List of active announcements.
+ * @property {Set} introducedEnemies - Set of enemy types the player has encountered.
+ * @property {Set} killedEnemies - Set of enemy types the player has defeated.
+ * @property {boolean} hasPlacedFirstSupport - Whether the player has placed their first Support tower.
+ * @property {boolean} hasPerformedFirstMerge - Whether the player has performed their first tower merge.
+ * @property {boolean} onboardingTipDismissed - Whether the onboarding tip has been dismissed.
+ * @property {Set} discoveredMerges - Set of tower merge types the player has discovered.
+ * @property {Set} discoveredTowerTypes - Set of tower types the player has discovered.
+ * @property {boolean} waveInProgress - Whether a wave is currently in progress.
+ * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
+ * @property {boolean} gameOver - Whether the game is over.
+ * @property {boolean} isCloudUnlocked - Whether the cloud inventory feature is unlocked.
+ * @property {Array} cloudInventory - List of towers stored in the cloud inventory.
+ * @property {boolean} isDetourOpen - Whether the detour path is open.
+ * @property {Array} path - The main enemy path coordinates.
+ * @property {Array} detourPath - The detour enemy path coordinates.
+ * @property {Array} pathWithDetour - The combined path including the detour.
+ * @property {Array} placementGrid - 2D array representing the game board for tower placement.
+ */
+
+/**
+ * @type {GameState}
+ */
 export let gameState;
 
-// Wipes the slate clean and starts a brand new game, but keeps persistent data.
-export function resetGameState() {
-    // Get the current persistent settings before wiping the state
-    const discoveredMerges = gameState ? gameState.discoveredMerges : new Set();
-    const onboardingTipDismissed = gameState ? gameState.onboardingTipDismissed : false;
-    const discoveredTowerTypes = gameState ? gameState.discoveredTowerTypes : new Set(['PIN', 'CASTLE', 'SUPPORT']);
-    const killedEnemies = gameState ? gameState.killedEnemies : new Set();
+// Wipes the slate clean and starts a brand new game.
+// Can perform a "soft" reset (keeping library progress) or a "hard" reset (wiping everything).
+export function resetGameState(hardReset = false) {
+    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies;
 
+    if (hardReset) {
+        // For a hard reset, start with fresh, default persistent data.
+        discoveredMerges = new Set();
+        onboardingTipDismissed = false;
+        discoveredTowerTypes = new Set(['PIN', 'CASTLE', 'SUPPORT']);
+        killedEnemies = new Set();
+    } else {
+        // For a soft reset, load the last state from storage to preserve persistent data.
+        const lastState = getGameStateFromStorage();
+        discoveredMerges = lastState.discoveredMerges;
+        onboardingTipDismissed = lastState.onboardingTipDismissed;
+        discoveredTowerTypes = lastState.discoveredTowerTypes;
+        killedEnemies = lastState.killedEnemies;
+    }
 
     // This just removes the 'gameState' item from local storage
     clearGameStateFromStorage();
@@ -36,7 +83,7 @@ export function resetGameState() {
     // Set the module's gameState to the newly prepared state
     gameState = newGameState;
 
-    // Immediately save this reset state so that the subsequent `init` call in main.js loads it correctly
+    // Immediately save this reset state so that it becomes the new "last saved state"
     saveGameStateToStorage();
 }
 
@@ -69,7 +116,7 @@ function saveGameStateToStorage() {
     }
 }
 
-function clearGameStateFromStorage() {
+export function clearGameStateFromStorage() {
     localStorage.removeItem("gameState");
 }
 
@@ -162,3 +209,4 @@ function deserializeGameState(serializedGameState) {
         return getInitialGameState();
     }
 }
+

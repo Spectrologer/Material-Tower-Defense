@@ -1217,8 +1217,8 @@ function getMousePos(canvas, evt) {
     };
 }
 
-function reset() {
-    resetGameState();
+function reset(hardReset = false) {
+    resetGameState(hardReset);
 
     placingTower = null;
     selectedTower = null;
@@ -1331,7 +1331,7 @@ uiElements.startWaveBtn.addEventListener('click', () => {
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
 uiElements.buyCastleBtn.addEventListener('click', () => selectTowerToPlace('CASTLE'));
 uiElements.buySupportBtn.addEventListener('click', () => selectTowerToPlace('SUPPORT'));
-uiElements.restartGameBtn.addEventListener('click', reset);
+uiElements.restartGameBtn.addEventListener('click', () => reset(false));
 
 uiElements.onboardingDismissBtn.addEventListener('click', () => {
     gameState.onboardingTipDismissed = true;
@@ -1340,7 +1340,7 @@ uiElements.onboardingDismissBtn.addEventListener('click', () => {
 });
 
 uiElements.resetGameBtn.addEventListener('click', () => {
-    reset();
+    reset(false);
     uiElements.optionsMenu.classList.add('hidden');
 });
 

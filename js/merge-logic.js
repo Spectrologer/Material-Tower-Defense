@@ -71,6 +71,7 @@ addRecipe('SUPPORT', 'NAT', {
         const projectileCountBonus = tower.projectileCount > 1 ? (tower.projectileCount - 1) : 0;
 
         tower.type = 'ANTI_AIR';
+        tower.targetingMode = 'strongest';
         tower.level = newLevel;
         tower.damageLevel = newLevel;
         tower.projectileCount = 1;
@@ -88,6 +89,7 @@ addRecipe('PIN', 'PIN', {
     resultType: 'NAT',
     apply: (tower, { existingTowerLevel }) => {
         tower.type = 'NAT';
+        tower.targetingMode = 'strongest';
         tower.level = existingTowerLevel;
         tower.damageLevel = existingTowerLevel;
         tower.projectileCount = 1;
@@ -138,6 +140,7 @@ addRecipe('CASTLE', 'SUPPORT', {
     resultType: 'FIREPLACE',
     apply: (tower, { existingTowerLevel }) => {
         tower.type = 'FIREPLACE';
+        tower.targetingMode = 'strongest';
         tower.level = existingTowerLevel;
         tower.damageLevel = existingTowerLevel;
         tower.updateStats();
@@ -153,6 +156,7 @@ addRecipe('CASTLE', 'PIN', {
     resultType: 'FORT',
     apply: (tower, { existingTowerLevel }) => {
         tower.type = 'FORT';
+        tower.targetingMode = 'furthest';
         tower.level = 1;
         tower.damageLevel = 1;
         tower.updateStats();
