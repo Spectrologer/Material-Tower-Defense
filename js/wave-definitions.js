@@ -117,12 +117,11 @@ export const waveDefinitions = [
     },
 ];
 
-// Function to generate procedurally harder waves
 export function generateWave(waveNumber) {
     const wave = {
         composition: [],
-        healthMultiplier: 1 + (waveNumber - 15) * 0.3, // Increase health by 10% per wave
-        healthBonus: (waveNumber - 15) * 5, // Add a flat health bonus
+        healthMultiplier: 1 + (waveNumber - 15) * 0.3, // Increase health by 30% per wave
+        healthBonus: (waveNumber - 15) * 10, // Add a larger flat health bonus
         detourRatio: Math.min(1, (waveNumber - 15) * 0.1), // Increase detour ratio
     };
 
@@ -131,14 +130,15 @@ export function generateWave(waveNumber) {
     wave.composition.push(comp(ENEMY_TYPES.FAST, 3 + (waveNumber - 15) * 2));
     wave.composition.push(comp(ENEMY_TYPES.HEAVY, 2 + Math.floor((waveNumber - 15) * 1.5)));
 
-    // Introduce flying and stealth enemies in later waves
-    if (waveNumber > 20) {
-        wave.composition.push(comp(ENEMY_TYPES.FLYING, 1 + Math.floor((waveNumber - 20) * 0.3)));
+    // Introduce flying and stealth enemies in later waves, and in greater numbers
+    if (waveNumber > 18) {
+        wave.composition.push(comp(ENEMY_TYPES.FLYING, 1 + Math.floor((waveNumber - 18) * 0.5)));
     }
-    if (waveNumber > 25) {
-        wave.composition.push(comp(ENEMY_TYPES.STEALTH, 1 + Math.floor((waveNumber - 25) * 0.2)));
+    if (waveNumber > 22) {
+        wave.composition.push(comp(ENEMY_TYPES.STEALTH, 1 + Math.floor((waveNumber - 22) * 0.4)));
     }
 
     return wave;
 }
+
 

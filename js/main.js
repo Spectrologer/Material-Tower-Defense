@@ -770,6 +770,7 @@ function checkForNinePinOnBoard() {
                     const centerX = (x + 1) * TILE_SIZE + TILE_SIZE / 2;
                     const centerY = (y + 1) * TILE_SIZE + TILE_SIZE / 2;
                     const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
+                    ninePin.cost = totalCost;
                     gameState.towers.push(ninePin);
                     gameState.discoveredTowerTypes.add('NINE_PIN');
 
@@ -1325,6 +1326,38 @@ consoleCommands.setWave = (waveNumber) => {
     }
 };
 
+// Function to start a specific wave from the console
+consoleCommands.startWave = (waveNumber) => {
+    if (gameState) {
+        const num = parseInt(waveNumber, 10);
+        if (isNaN(num) || num < 1) {
+            console.error("Invalid wave number provided. Example: consoleCommands.startWave(16)");
+            return;
+        }
+
+        // Clear out any active game elements from a previous wave
+        gameState.enemies = [];
+        gameState.projectiles = [];
+        gameState.effects = [];
+        gameState.announcements = [];
+        gameState.spawningEnemies = false;
+        gameState.waveInProgress = false;
+
+        // Set the game to the desired wave
+        gameState.wave = num;
+
+        console.log(`Starting wave ${num}...`);
+
+        // Update the UI to reflect the new wave number
+        updateUI(gameState);
+
+        // Immediately start the spawning process for the new wave
+        spawnWave();
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
 /** @type {typeof window & { consoleCommands: typeof consoleCommands }} */(
     window
 ).consoleCommands = consoleCommands;
@@ -1700,4 +1733,5 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+
 
