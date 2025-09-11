@@ -480,8 +480,32 @@ export class Enemy {
         }
 
         if (this.path && this.path.length > 1) {
-            this.progress = this.pathIndex / (this.path.length - 1);
+            if (this.direction === 1 && this.pathIndex >= this.path.length - 1) {
+                this.progress = 1;
+            } else if (this.direction === -1 && this.pathIndex < 0) {
+                this.progress = 0;
+            } else {
+                const currentPathIndex = Math.max(0, this.pathIndex);
+                const currentNode = this.path[currentPathIndex];
+                const nextNode = this.path[currentPathIndex + this.direction];
+
+                if (nextNode) {
+                    const segmentLength = Math.hypot(nextNode.x - currentNode.x, nextNode.y - currentNode.y);
+                    const distToNextNode = Math.hypot(this.x - nextNode.x, this.y - nextNode.y);
+
+                    const segmentProgress = segmentLength > 0 ? (1 - (distToNextNode / segmentLength)) : 0;
+
+                    if (this.direction === 1) {
+                        this.progress = (currentPathIndex + segmentProgress) / (this.path.length - 1);
+                    } else { // direction is -1
+                        this.progress = (currentPathIndex + (1 - segmentProgress)) / (this.path.length - 1);
+                    }
+                }
+            }
+        } else {
+            this.progress = 0;
         }
+
 
         return true; // Keep this enemy
     }
@@ -774,28 +798,7 @@ export class Tower {
                 this.target = potentialTargets.reduce((a, b) => (a.health < b.health ? a : b), potentialTargets[0]);
                 break;
             case 'furthest':
-                if (this.type === 'FORT') {
-                    let bestTarget = null;
-                    let maxSurrounding = -1;
-                    for (const mainEnemy of potentialTargets) {
-                        let surroundingCount = 0;
-                        for (const otherEnemy of enemies) {
-                            if (mainEnemy !== otherEnemy) {
-                                const dist = Math.hypot(mainEnemy.x - otherEnemy.x, mainEnemy.y - otherEnemy.y);
-                                if (dist <= this.splashRadius + 10) {
-                                    surroundingCount++;
-                                }
-                            }
-                        }
-                        if (surroundingCount > maxSurrounding) {
-                            maxSurrounding = surroundingCount;
-                            bestTarget = mainEnemy;
-                        }
-                    }
-                    this.target = bestTarget;
-                } else {
-                    this.target = potentialTargets.reduce((a, b) => (a.progress > b.progress ? a : b), potentialTargets[0]);
-                }
+                this.target = potentialTargets.reduce((a, b) => (a.progress > b.progress ? a : b), potentialTargets[0]);
                 break;
             default: // closest
                 this.target = potentialTargets.reduce((a, b) => (Math.hypot(this.x - a.x, this.y - a.y) < Math.hypot(this.x - b.x, this.y - b.y) ? a : b), potentialTargets[0]);
@@ -1097,3 +1100,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
