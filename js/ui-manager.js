@@ -579,9 +579,17 @@ function createTowerCardHTML(type, isDiscovered) {
     }
 
     const name = iconInfo.icon.replace(/_/g, ' ').toUpperCase();
-    let iconStyle = `font-size: 64px; color: ${stats.color};`;
-    if (iconInfo.className.includes('material-symbols')) {
-        iconStyle += ` font-variation-settings: 'FILL' 0;`;
+
+    let iconHTML;
+    const iconStyle = `font-size: 64px; color: ${stats.color};`;
+    if (iconInfo.className.startsWith('fa-')) {
+        iconHTML = `<i class="${iconInfo.className} fa-${iconInfo.icon}" style="${iconStyle}"></i>`;
+    } else {
+        let style = iconStyle;
+        if (iconInfo.className.includes('material-symbols')) {
+            style += ` font-variation-settings: 'FILL' 0;`;
+        }
+        iconHTML = `<span class="${iconInfo.className}" style="${style}">${iconInfo.icon}</span>`;
     }
 
     const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
@@ -603,7 +611,7 @@ function createTowerCardHTML(type, isDiscovered) {
     return `
         <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
             <div>
-               <span class="${iconInfo.className}" style="${iconStyle}">${iconInfo.icon}</span>
+                ${iconHTML}
                 <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
                 <p class="text-xs text-gray-400">(${type})</p>
             </div>

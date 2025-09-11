@@ -404,11 +404,17 @@ export class Enemy {
                 hatched.pathIndex = this.pathIndex; // New enemy starts from egg's path index
                 allEnemies.push(hatched);
                 if (playCrackSound) playCrackSound();
+                // FIX: Register egg as "killed" so it appears in the library.
+                onDeath(this);
                 return false; // Remove the egg
             }
         }
 
         if (this.type.isStationary) {
+            // FIX: Calculate progress for stationary enemies so they can be targeted correctly.
+            if (this.path && this.path.length > 1) {
+                this.progress = this.pathIndex / (this.path.length - 1);
+            }
             return true; // Don't move
         }
 
@@ -1128,4 +1134,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-
