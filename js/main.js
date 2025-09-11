@@ -4,7 +4,7 @@ import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfir
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
 import { getMergeResultInfo, performMerge } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
-import { waveDefinitions } from './wave-definitions.js';
+import { waveDefinitions, generateWave } from './wave-definitions.js';
 import { playHitSound, playMoneySound, playExplosionSound, playLifeLostSound, playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled, toggleMusic } from './audio.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
@@ -107,7 +107,13 @@ function spawnWave() {
     updateUI(gameState);
     uiElements.startWaveBtn.disabled = true;
     const nextWave = gameState.wave;
-    const waveDef = waveDefinitions[nextWave - 1];
+
+    let waveDef;
+    if (nextWave <= waveDefinitions.length) {
+        waveDef = waveDefinitions[nextWave - 1];
+    } else {
+        waveDef = generateWave(nextWave);
+    }
 
     if (!waveDef) {
         console.log("All waves completed!");
