@@ -188,30 +188,44 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         }
 
         let levelText;
-        if (selectedTower.type === 'ORBIT') {
-            const totalUpgrades = selectedTower.upgradeCount;
-            if (totalUpgrades >= 4) {
-                levelText = '<span class="material-icons">star</span> MAX LEVEL';
-            } else {
-                levelText = `LVL ${totalUpgrades + 1}`;
-            }
-        } else if (selectedTower.level === 'MAX LEVEL') {
-            levelText = '<span class="material-icons">star</span> MAX LEVEL';
-        } else if (selectedTower.level === 1 && (selectedTower.type === 'PIN' || selectedTower.type === 'CASTLE')) {
-            levelText = '';
+        const maxLevelText = `<span class="material-icons text-yellow-400 align-bottom !text-base">star</span> MAX LEVEL`;
+        const towerType = selectedTower.type;
+        const maxLevel = TOWER_TYPES[towerType].maxLevel || 5;
+
+        if (selectedTower.level === 'MAX LEVEL') {
+            levelText = maxLevelText;
         } else {
-            const visualLevel = selectedTower.level;
-            levelText = `LVL ${visualLevel}`;
+            let visualLevel;
+            if (towerType === 'ORBIT') {
+                visualLevel = (selectedTower.upgradeCount || 0) + 1;
+                const ORBIT_MAX_UPGRADES = 4;
+                if ((selectedTower.upgradeCount || 0) >= ORBIT_MAX_UPGRADES) {
+                    levelText = maxLevelText;
+                } else {
+                    levelText = `LVL ${visualLevel}`;
+                }
+            } else if (towerType === 'FORT') {
+                visualLevel = selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1;
+                if (visualLevel >= maxLevel) {
+                    levelText = maxLevelText;
+                } else {
+                    levelText = `LVL ${visualLevel}`;
+                }
+            } else {
+                visualLevel = selectedTower.stats.levelForCalc;
+                if (visualLevel >= maxLevel) {
+                    levelText = maxLevelText;
+                } else if (visualLevel === 1 && (towerType === 'PIN' || towerType === 'CASTLE')) {
+                    levelText = ''; // Keep original behavior for base towers
+                }
+                else {
+                    levelText = `LVL ${visualLevel}`;
+                }
+            }
         }
 
-        if (selectedTower.type === 'FORT') {
-            if (selectedTower.level === 'MAX LEVEL') {
-                levelText = '<span class="material-icons">star</span> MAX LEVEL';
-            } else {
-                const visualLevel = (typeof selectedTower.level === 'string' && selectedTower.level === 'MAX LEVEL') ? 5 : (selectedTower.level + selectedTower.damageLevel - 1);
-                levelText = `LVL ${visualLevel}`;
-            }
-        }
+        if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
+
 
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
@@ -221,8 +235,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         ].forEach(p => {
             if (p) p.classList.add('hidden');
         });
-
-        if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
 
         if (uiElements.sellTowerBtn) {
             if (!isSellConfirmPending) {
@@ -358,7 +370,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                     uiElements.statGoldP.classList.remove('hidden');
                     const icon = /** @type {HTMLElement | null} */ (uiElements.statGoldP.querySelector('span.material-icons'));
                     if (icon) {
-                        icon.style.color = '#facc15'; // Gold
                         const iconHTML = icon.outerHTML;
                         uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
                     }
@@ -424,12 +435,14 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
             }
 
-            if (uiElements.statRangeP) {
-                uiElements.statRangeP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
-                if (icon) icon.style.color = '#60a5fa'; // Blue for Range
+            if (selectedTower.type !== 'ORBIT') {
+                if (uiElements.statRangeP) {
+                    uiElements.statRangeP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
+                    if (icon) icon.style.color = '#60a5fa'; // Blue for Range
+                }
+                if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
             }
-            if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
 
             if (selectedTower.type === 'FIREPLACE') {
                 if (uiElements.statBurnP) {
@@ -554,12 +567,6 @@ function createTowerCardHTML(type, isDiscovered) {
     if (!stats) return '';
 
     const iconInfo = getTowerIconInfo(type);
-    let iconHTML;
-    if (iconInfo.className.startsWith('fa-')) {
-        iconHTML = `<i class="${iconInfo.className} fa-${iconInfo.icon}" style="font-size: 48px; color: ${stats.color};"></i>`;
-    } else {
-        iconHTML = `<span class="${iconInfo.className}" style="font-size: 64px; color: ${stats.color}; font-variation-settings: 'FILL' 1;">${iconInfo.icon}</span>`;
-    }
 
     if (!isDiscovered) {
         return `
@@ -572,9 +579,17 @@ function createTowerCardHTML(type, isDiscovered) {
     }
 
     const name = iconInfo.icon.replace(/_/g, ' ').toUpperCase();
-    let iconStyle = `font-size: 64px; color: ${stats.color};`;
-    if (type === 'ANTI_AIR') {
-        iconStyle += ` font-variation-settings: 'FILL' 0;`;
+
+    let iconHTML;
+    const iconStyle = `font-size: 64px; color: ${stats.color};`;
+    if (iconInfo.className.startsWith('fa-')) {
+        iconHTML = `<i class="${iconInfo.className} fa-${iconInfo.icon}" style="${iconStyle}"></i>`;
+    } else {
+        let style = iconStyle;
+        if (iconInfo.className.includes('material-symbols')) {
+            style += ` font-variation-settings: 'FILL' 0;`;
+        }
+        iconHTML = `<span class="${iconInfo.className}" style="${style}">${iconInfo.icon}</span>`;
     }
 
     const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
@@ -596,7 +611,7 @@ function createTowerCardHTML(type, isDiscovered) {
     return `
         <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
             <div>
-               <span class="${iconInfo.className}" style="${iconStyle}">${iconInfo.icon}</span>
+                ${iconHTML}
                 <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
                 <p class="text-xs text-gray-400">(${type})</p>
             </div>

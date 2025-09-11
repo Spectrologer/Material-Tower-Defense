@@ -2,13 +2,14 @@ import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS,
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
-import { getMergeResultInfo, performMerge } from './merge-logic.js';
+import { MergeHandler } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions, generateWave } from './wave-definitions.js';
 import { playHitSound, playMoneySound, playExplosionSound, playLifeLostSound, playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled, toggleMusic } from './audio.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
+const mergeHandler = new MergeHandler();
 let canvasWidth, canvasHeight;
 let isInfiniteGold = false;
 let mazeColor = '#818181ff';
@@ -850,7 +851,7 @@ function handleCanvasAction(e) {
             }
             return tGridX === gridX && tGridY === gridY;
         });
-        const mergeInfo = clickedOnTower ? getMergeResultInfo(clickedOnTower, mergingTower.type, gameState) : null;
+        const mergeInfo = clickedOnTower ? mergeHandler.getMergeInfo(clickedOnTower, mergingTower.type, gameState) : null;
         const isNinePin = mergingTower.type === 'NINE_PIN';
         if (mergeInfo) {
             pendingMergeState = {
@@ -985,7 +986,7 @@ canvas.addEventListener('mousemove', e => {
             return tGridX === gridX && tGridY === gridY;
         });
         if (hoveredTower) {
-            const mergeInfo = getMergeResultInfo(hoveredTower, placingTower, gameState);
+            const mergeInfo = mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState);
             if (mergeInfo) {
                 mergeTooltip.show = true;
                 mergeTooltip.info = mergeInfo;
@@ -1145,7 +1146,7 @@ canvas.addEventListener('drop', e => {
                 existingTower: targetTower,
                 mergingTower: sourceTower,
                 placingTowerType: sourceTower.type,
-                mergeInfo: getMergeResultInfo(targetTower, sourceTower.type, gameState),
+                mergeInfo: mergeHandler.getMergeInfo(targetTower, sourceTower.type, gameState),
                 placingFromCloud: transferData.source === 'cloud',
                 mergingFromCanvas: transferData.source === 'canvas',
                 originalPosition: draggedCanvasTowerOriginalGridPos
@@ -1325,6 +1326,38 @@ consoleCommands.setWave = (waveNumber) => {
     }
 };
 
+// Function to start a specific wave from the console
+consoleCommands.startWave = (waveNumber) => {
+    if (gameState) {
+        const num = parseInt(waveNumber, 10);
+        if (isNaN(num) || num < 1) {
+            console.error("Invalid wave number provided. Example: consoleCommands.startWave(16)");
+            return;
+        }
+
+        // Clear out any active game elements from a previous wave
+        gameState.enemies = [];
+        gameState.projectiles = [];
+        gameState.effects = [];
+        gameState.announcements = [];
+        gameState.spawningEnemies = false;
+        gameState.waveInProgress = false;
+
+        // Set the game to the desired wave
+        gameState.wave = num;
+
+        console.log(`Starting wave ${num}...`);
+
+        // Update the UI to reflect the new wave number
+        updateUI(gameState);
+
+        // Immediately start the spawning process for the new wave
+        spawnWave();
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
 /** @type {typeof window & { consoleCommands: typeof consoleCommands }} */(
     window
 ).consoleCommands = consoleCommands;
@@ -1379,7 +1412,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
                 const gridY = Math.floor(selectedTower.y / TILE_SIZE);
                 gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
             }
-            gameState.towers = gameState.towers.filter(t => t !== selectedTower);
+            gameState.towers = gameState.towers.filter(t => t.id !== selectedTower.id);
             selectedTower = null;
             isSellConfirmPending = false;
             updateUI(gameState);
@@ -1409,7 +1442,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
             const gridY = Math.floor(selectedTower.y / TILE_SIZE);
             gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
         }
-        gameState.towers = gameState.towers.filter(t => t !== selectedTower);
+        gameState.towers = gameState.towers.filter(t => t.id !== selectedTower.id);
         selectedTower = null;
         isSellConfirmPending = false;
         renderCloudInventory();
@@ -1433,22 +1466,26 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
 
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN')) {
-        settingAttackGroundForTower = null; // Always cancel ground target selection when cycling
 
-        const modes = ['furthest', 'strongest', 'weakest']; // 'ground' is not in this cycle
+    // If we are in the middle of selecting a ground target, this button should do nothing.
+    // This prevents the targeting mode from being cancelled unexpectedly.
+    if (settingAttackGroundForTower) {
+        return;
+    }
+
+    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN')) {
+        const modes = ['furthest', 'strongest', 'weakest'];
         let currentIndex = modes.indexOf(selectedTower.targetingMode);
 
         // If current mode is 'ground' or not in the cycle, start from the first mode.
         if (currentIndex === -1) {
-            currentIndex = 0;
-        } else {
-            currentIndex = (currentIndex + 1) % modes.length;
+            currentIndex = -1; // Will become 0 after +1
         }
 
-        const nextMode = modes[currentIndex];
+        const nextMode = modes[(currentIndex + 1) % modes.length];
         selectedTower.targetingMode = nextMode;
-        selectedTower.attackGroundTarget = null; // Clear any existing ground target
+        // When switching to an enemy-targeting mode, always clear the ground target.
+        selectedTower.attackGroundTarget = null;
 
     } else if (selectedTower && selectedTower.type !== 'PIN_HEART') {
         const modes = ['strongest', 'weakest', 'furthest'];
@@ -1535,7 +1572,7 @@ function performPendingMerge() {
         uiElements.mergeConfirmModal.classList.add('hidden');
         return;
     }
-    const merged = performMerge(existingTower, mergingTower.type, cost, gameState);
+    const merged = mergeHandler.executeMerge(existingTower, mergingTower.type, cost, gameState);
     if (merged) {
         if (mergeState.placingFromCloud) {
             gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);

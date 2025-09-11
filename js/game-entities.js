@@ -404,11 +404,17 @@ export class Enemy {
                 hatched.pathIndex = this.pathIndex; // New enemy starts from egg's path index
                 allEnemies.push(hatched);
                 if (playCrackSound) playCrackSound();
+                // FIX: Register egg as "killed" so it appears in the library.
+                onDeath(this);
                 return false; // Remove the egg
             }
         }
 
         if (this.type.isStationary) {
+            // FIX: Calculate progress for stationary enemies so they can be targeted correctly.
+            if (this.path && this.path.length > 1) {
+                this.progress = this.pathIndex / (this.path.length - 1);
+            }
             return true; // Don't move
         }
 
@@ -480,8 +486,32 @@ export class Enemy {
         }
 
         if (this.path && this.path.length > 1) {
-            this.progress = this.pathIndex / (this.path.length - 1);
+            if (this.direction === 1 && this.pathIndex >= this.path.length - 1) {
+                this.progress = 1;
+            } else if (this.direction === -1 && this.pathIndex < 0) {
+                this.progress = 0;
+            } else {
+                const currentPathIndex = Math.max(0, this.pathIndex);
+                const currentNode = this.path[currentPathIndex];
+                const nextNode = this.path[currentPathIndex + this.direction];
+
+                if (nextNode) {
+                    const segmentLength = Math.hypot(nextNode.x - currentNode.x, nextNode.y - currentNode.y);
+                    const distToNextNode = Math.hypot(this.x - nextNode.x, this.y - nextNode.y);
+
+                    const segmentProgress = segmentLength > 0 ? (1 - (distToNextNode / segmentLength)) : 0;
+
+                    if (this.direction === 1) {
+                        this.progress = (currentPathIndex + segmentProgress) / (this.path.length - 1);
+                    } else { // direction is -1
+                        this.progress = (currentPathIndex + (1 - segmentProgress)) / (this.path.length - 1);
+                    }
+                }
+            }
+        } else {
+            this.progress = 0;
         }
+
 
         return true; // Keep this enemy
     }
@@ -493,126 +523,235 @@ export class Enemy {
     }
 }
 
-export class Tower {
-    constructor(x, y, type) {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-        this.id = crypto.randomUUID();
-        /** @type {"MAX LEVEL" | number} */
-        this.level = 1;
-        /** @type {"MAX LEVEL" | number} */
-        this.damageLevel = 1;
-        this.mode = 'boost';
-        this.targetingMode = (type === 'PIN' || type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
-        this.attackGroundTarget = null;
-        this.damageMultiplier = 1;
-        this.projectileCount = 1;
-        this.damageMultiplierFromMerge = 1;
-        this.goldBonus = 0;
-        this.fragmentBounces = 0;
-        this.bounceDamageFalloff = 0.5;
-        this.hasFragmentingShot = false;
-        this.killCount = 0;
-        this.isUnderDiversifyAura = false;
-        // Add new properties here to prevent TypeScript errors
-        this.natCastleBonus = 0;
-        this.burnDps = 0;
-        this.burnDuration = 0;
-        this.attackSpeedBoost = 1;
-        this.damageBoost = 1;
-        this.enemySlow = 1;
-        if (this.type === 'CAT') {
-            this.goldGenerated = 0;
-        }
-        const baseStats = TOWER_TYPES[type];
-        this.splashRadius = baseStats.splashRadius || 0; // Ensure splashRadius is always a number
-        if (type === 'FIREPLACE') {
-            this.burnDps = baseStats.burnDps;
-            this.burnDuration = baseStats.burnDuration;
-        }
-        this.updateStats();
-        this.cooldown = 0;
-        this.target = null;
-        if (type === 'ORBIT') {
-            this.upgradeCount = 0; // NEW: Track total upgrades for the Orbit tower
-            this.orbitMode = 'far';
-            this.orbiters = [
-                new Projectile(this, null, 0),
-                new Projectile(this, null, Math.PI)
-            ];
-        }
-        if (this.type === 'NINE_PIN') {
-            this.level = 'MAX LEVEL';
-            this.damageLevel = 'MAX LEVEL';
-            this.targetingMode = 'strongest';
-        }
+class TowerStats {
+    constructor(tower) {
+        this.tower = tower;
     }
+
     get maxLevel() {
-        return TOWER_TYPES[this.type].maxLevel || 5;
+        return TOWER_TYPES[this.tower.type].maxLevel || 5;
     }
+
     get levelForCalc() {
-        return this.level === 'MAX LEVEL' ? this.maxLevel : this.level;
+        return this.tower.level === 'MAX LEVEL' ? this.maxLevel : this.tower.level;
     }
+
     get damageLevelForCalc() {
-        return this.damageLevel === 'MAX LEVEL' ? this.maxLevel : this.damageLevel;
+        return this.tower.damageLevel === 'MAX LEVEL' ? this.maxLevel : this.tower.damageLevel;
     }
-    updateStats() {
-        const baseStats = TOWER_TYPES[this.type];
-        if (this.type === 'ENT' || this.type === 'CAT') {
-            this.level = 'MAX LEVEL';
-            this.cost = baseStats.cost;
-            this.range = baseStats.range;
-            this.attackSpeedBoost = baseStats.attackSpeedBoost;
-            this.damageBoost = baseStats.damageBoost;
-            this.enemySlow = baseStats.enemySlow;
-            if (this.type === 'CAT') {
-                this.goldBonus = baseStats.goldBonus;
+
+    update() {
+        const tower = this.tower;
+        const baseStats = TOWER_TYPES[tower.type];
+
+        if (tower.type === 'ENT' || tower.type === 'CAT') {
+            tower.level = 'MAX LEVEL';
+            tower.cost = baseStats.cost;
+            tower.range = baseStats.range;
+            tower.attackSpeedBoost = baseStats.attackSpeedBoost;
+            tower.damageBoost = baseStats.damageBoost;
+            tower.enemySlow = baseStats.enemySlow;
+            if (tower.type === 'CAT') {
+                tower.goldBonus = baseStats.goldBonus;
             }
             return;
         }
-        this.cost = baseStats.cost * this.levelForCalc;
-        this.range = baseStats.range;
-        if (this.type === 'FIREPLACE') {
-            this.damage = baseStats.damage;
+
+        tower.cost = baseStats.cost * this.levelForCalc;
+        tower.range = baseStats.range;
+        if (tower.type === 'FIREPLACE') {
+            tower.damage = baseStats.damage;
         } else {
-            this.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (this.damageMultiplierFromMerge || 1);
+            tower.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (tower.damageMultiplierFromMerge || 1);
         }
 
-        if (this.type === 'ANTI_AIR' && this.natCastleBonus) {
-            this.splashRadius = 10 * this.natCastleBonus;
+        if (tower.type === 'ANTI_AIR' && tower.natCastleBonus) {
+            tower.splashRadius = 10 * tower.natCastleBonus;
         } else {
-            this.splashRadius = baseStats.splashRadius || 0;
+            tower.splashRadius = baseStats.splashRadius || 0;
         }
 
-        this.permFireRate = baseStats.fireRate * Math.pow(0.9, this.levelForCalc - 1);
-        this.fireRate = this.permFireRate;
-        this.color = this.color || baseStats.color;
-        this.projectileSpeed = baseStats.projectileSpeed;
-        if (!this.projectileSize) {
-            this.projectileSize = baseStats.projectileSize;
+        tower.permFireRate = baseStats.fireRate * Math.pow(0.9, this.levelForCalc - 1);
+        tower.fireRate = tower.permFireRate;
+        tower.color = tower.color || baseStats.color;
+        tower.projectileSpeed = baseStats.projectileSpeed;
+        if (!tower.projectileSize) {
+            tower.projectileSize = baseStats.projectileSize;
         }
-        this.projectileColor = baseStats.projectileColor;
-        if (this.type === 'SUPPORT') {
-            this.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, this.levelForCalc - 1);
+        tower.projectileColor = baseStats.projectileColor;
+        if (tower.type === 'SUPPORT') {
+            tower.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, this.levelForCalc - 1);
         }
     }
+}
+
+class TowerController {
+    constructor(tower) {
+        this.tower = tower;
+    }
+
+    findTarget(enemies, frameTargetedEnemies) {
+        const tower = this.tower;
+        tower.target = null;
+        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
+
+        if (tower.isUnderDiversifyAura) {
+            potentialTargets = potentialTargets.filter(enemy => !frameTargetedEnemies.has(enemy.id));
+        }
+
+        if (tower.type === 'ANTI_AIR') {
+            potentialTargets = potentialTargets.filter(enemy => enemy.type.isFlying);
+        } else {
+            const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
+            if (groundOnlyTowers.includes(tower.type)) {
+                potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
+            }
+        }
+
+        if (potentialTargets.length === 0) {
+            if (tower.isUnderDiversifyAura) {
+                potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
+            } else {
+                return;
+            }
+        };
+
+        switch (tower.targetingMode) {
+            case 'strongest':
+                tower.target = potentialTargets.reduce((a, b) => (a.health > b.health ? a : b), potentialTargets[0]);
+                break;
+            case 'weakest':
+                tower.target = potentialTargets.reduce((a, b) => (a.health < b.health ? a : b), potentialTargets[0]);
+                break;
+            case 'furthest':
+                tower.target = potentialTargets.reduce((a, b) => (a.progress > b.progress ? a : b), potentialTargets[0]);
+                break;
+            default: // closest
+                tower.target = potentialTargets.reduce((a, b) => (Math.hypot(tower.x - a.x, tower.y - a.y) < Math.hypot(tower.x - b.x, tower.y - b.y) ? a : b), potentialTargets[0]);
+                break;
+        }
+
+        if (tower.target && tower.isUnderDiversifyAura) {
+            frameTargetedEnemies.add(tower.target.id);
+        }
+    }
+
+    isInRange(enemy) {
+        return Math.hypot(this.tower.x - enemy.x, this.tower.y - enemy.y) <= this.tower.range;
+    }
+
+    shoot(projectiles) {
+        const tower = this.tower;
+        if (!tower.target && !((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.targetingMode === 'ground' && tower.attackGroundTarget)) return;
+
+        if (tower.type === 'FORT') {
+            const locationTarget = (tower.targetingMode === 'ground' && tower.attackGroundTarget)
+                ? { x: tower.attackGroundTarget.x, y: tower.attackGroundTarget.y, health: 1 }
+                : { x: tower.target.x, y: tower.target.y, health: 1 };
+            projectiles.push(new Projectile(tower, locationTarget));
+            return;
+        }
+        if (tower.type === 'NINE_PIN') {
+            const targetPoint = (tower.targetingMode === 'ground' && tower.attackGroundTarget)
+                ? tower.attackGroundTarget
+                : tower.target;
+            if (!targetPoint) return;
+            const angle = Math.atan2(targetPoint.y - tower.y, targetPoint.x - tower.x);
+            const fakeTarget = {
+                x: tower.x + Math.cos(angle) * 2000,
+                y: tower.y + Math.sin(angle) * 2000,
+                health: Infinity,
+            };
+            projectiles.push(new Projectile(tower, fakeTarget));
+            return;
+        }
+        if (tower.projectileCount > 1 && tower.target) {
+            const angleToTarget = Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x);
+            const spreadAngle = Math.PI / 24;
+            projectiles.push(new Projectile(tower, tower.target));
+            for (let i = 1; i < tower.projectileCount; i++) {
+                const side = (i % 2 === 0) ? -1 : 1;
+                const magnitude = Math.ceil(i / 2);
+                const offsetAngle = angleToTarget + (spreadAngle * magnitude * side);
+                const fakeTarget = {
+                    x: tower.x + Math.cos(offsetAngle) * (tower.range + 50),
+                    y: tower.y + Math.sin(offsetAngle) * (tower.range + 50),
+                    health: Infinity
+                };
+                projectiles.push(new Projectile(tower, fakeTarget));
+            }
+        } else {
+            projectiles.push(new Projectile(tower, tower.target));
+        }
+    }
+
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
+        const tower = this.tower;
+        if (tower.type === 'SUPPORT' || tower.type === 'ENT' || tower.type === 'CAT') {
+            return;
+        }
+        if (tower.type === 'ORBIT') {
+            tower.orbiters.forEach(orbiter => {
+                orbiter.update(null, null, null, deltaTime);
+                enemies.forEach(enemy => {
+                    if (enemy.type.isFlying) return;
+                    const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
+                    if (dist < enemy.size + tower.projectileSize) {
+                        if (!orbiter.hitEnemies.has(enemy)) {
+                            const finalDamage = tower.damage * tower.damageMultiplier;
+                            if (enemy.takeDamage(finalDamage)) {
+                                tower.killCount++;
+                                onEnemyDeath(enemy);
+                            }
+                            orbiter.hitEnemies.add(enemy);
+                            orbiter.hitCooldown = 0.25; // seconds
+                        }
+                    }
+                });
+            });
+            return;
+        }
+
+        if (tower.cooldown > 0) tower.cooldown -= deltaTime;
+
+        if ((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.targetingMode === 'ground' && tower.attackGroundTarget) {
+            tower.target = null; // Ensure no enemy is targeted
+            if (tower.cooldown <= 0) {
+                this.shoot(projectiles);
+                tower.cooldown = tower.fireRate / 60;
+            }
+        } else {
+            this.findTarget(enemies, frameTargetedEnemies);
+            if (tower.target && tower.cooldown <= 0) {
+                this.shoot(projectiles);
+                tower.cooldown = tower.fireRate / 60; // Cooldown in seconds
+            }
+        }
+    }
+}
+
+class TowerRenderer {
+    constructor(tower) {
+        this.tower = tower;
+    }
+
     draw(ctx) {
+        const tower = this.tower;
         ctx.save();
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 0;
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 4;
-        if (this.type === 'NINE_PIN') {
-            let targetPoint = this.target;
-            if (this.targetingMode === 'ground' && this.attackGroundTarget) {
-                targetPoint = this.attackGroundTarget;
+        if (tower.type === 'NINE_PIN') {
+            let targetPoint = tower.target;
+            if (tower.targetingMode === 'ground' && tower.attackGroundTarget) {
+                targetPoint = tower.attackGroundTarget;
             }
-            const angle = targetPoint ? Math.atan2(targetPoint.y - this.y, targetPoint.x - this.x) : 0;
+            const angle = targetPoint ? Math.atan2(targetPoint.y - tower.y, targetPoint.x - tower.x) : 0;
             ctx.save();
-            ctx.translate(this.x, this.y);
+            ctx.translate(tower.x, tower.y);
             ctx.rotate(angle);
-            ctx.fillStyle = this.color;
+            ctx.fillStyle = tower.color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.font = `900 90px 'Material Symbols Outlined'`;
@@ -621,15 +760,15 @@ export class Tower {
             ctx.restore();
             return;
         }
-        const visualLevel = this.level === 'MAX LEVEL' ? 6 : this.level;
+        const visualLevel = tower.stats.levelForCalc;
         let iconSize = 28 + (visualLevel * 2);
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = tower.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         let icon;
         let iconFamily = 'Material Icons';
         let fontWeight = '400';
-        switch (this.type) {
+        switch (tower.type) {
             case 'PIN': icon = 'location_pin'; break;
             case 'CASTLE': icon = 'castle'; break;
             case 'FORT': icon = 'fort'; break;
@@ -637,7 +776,6 @@ export class Tower {
             case 'PIN_HEART':
                 icon = 'map_pin_heart';
                 iconFamily = "'Material Symbols Outlined'";
-
                 break;
             case 'FIREPLACE':
                 icon = 'fireplace';
@@ -650,9 +788,9 @@ export class Tower {
             case 'ENT':
                 icon = 'ent';
                 iconFamily = "'Material Symbols Outlined'";
-                if (this.mode === 'boost') {
+                if (tower.mode === 'boost') {
                     ctx.fillStyle = '#65a30d';
-                } else if (this.mode === 'slow') {
+                } else if (tower.mode === 'slow') {
                     ctx.fillStyle = '#0891b2';
                 } else { // Diversify
                     ctx.fillStyle = '#f5c60bff';
@@ -667,9 +805,9 @@ export class Tower {
                 iconFamily = '"Font Awesome 6 Free"';
                 fontWeight = '900';
                 iconSize *= TOWER_TYPES.CAT.iconSize;
-                if (this.mode === 'boost') {
+                if (tower.mode === 'boost') {
                     ctx.fillStyle = '#65a30d';
-                } else if (this.mode === 'slow') {
+                } else if (tower.mode === 'slow') {
                     ctx.fillStyle = '#0891b2';
                 } else { // Diversify
                     ctx.fillStyle = '#f5c60bff';
@@ -681,44 +819,46 @@ export class Tower {
                 break;
         }
         ctx.font = `${fontWeight} ${iconSize}px ${iconFamily}`;
-        const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : 0;
+        const angle = tower.target ? Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x) : 0;
         ctx.save();
-        ctx.translate(this.x, this.y);
+        ctx.translate(tower.x, tower.y);
 
-        // Quiver effect for certain towers
-        if (this.type === 'NAT' || this.type === 'ANTI_AIR') {
-            if (this.target && this.cooldown > 0 && this.cooldown < 0.33) {
-                const quiverAmount = this.levelForCalc > 5 ? 2.5 : 1.5;
+        if (tower.type === 'NAT' || tower.type === 'ANTI_AIR') {
+            if (tower.target && tower.cooldown > 0 && tower.cooldown < 0.33) {
+                const quiverAmount = tower.stats.levelForCalc > 5 ? 2.5 : 1.5;
                 ctx.translate((Math.random() - 0.5) * quiverAmount, (Math.random() - 0.5) * quiverAmount);
             }
         }
 
-        // Rotation logic
-        if (this.type === 'NAT') {
+        if (tower.type === 'NAT') {
             ctx.rotate(angle);
-        } else if (this.type === 'PIN' || this.type === 'PIN_HEART') {
+        } else if (tower.type === 'PIN' || tower.type === 'PIN_HEART') {
             ctx.rotate(angle - Math.PI / 2);
-        } else if (this.type === 'ANTI_AIR') {
+        } else if (tower.type === 'ANTI_AIR') {
             ctx.rotate(angle + Math.PI / 2);
         }
 
         ctx.fillText(icon, 0, 0);
         ctx.restore();
-        if (this.type === 'ORBIT') {
-            this.orbiters.forEach(orbiter => orbiter.draw(ctx));
+        if (tower.type === 'ORBIT') {
+            tower.orbiters.forEach(orbiter => orbiter.draw(ctx));
         }
         ctx.restore();
     }
+
     drawRange(ctx) {
-        if (this.type === 'ORBIT' || this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') return;
+        const tower = this.tower;
+        if (tower.type === 'ORBIT' || tower.type === 'SUPPORT' || tower.type === 'ENT' || tower.type === 'CAT') return;
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
+        ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
         ctx.stroke();
     }
+
     drawBuffEffect(ctx) {
-        const auraColor = (this.type === 'ENT' && this.mode === 'slow') ? '#0891b2' : ((this.type === 'CAT' && this.mode === 'slow') ? '#0891b2' : this.color);
+        const tower = this.tower;
+        const auraColor = (tower.type === 'ENT' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
         const dashLength = 10;
         const spaceLength = 5;
         const totalLength = dashLength + spaceLength;
@@ -730,8 +870,8 @@ export class Tower {
         ctx.lineWidth = 2;
         ctx.setLineDash([dashLength, spaceLength]);
         ctx.lineDashOffset = -offset;
-        const startX = this.x - TILE_SIZE * 1.5;
-        const startY = this.y - TILE_SIZE * 1.5;
+        const startX = tower.x - TILE_SIZE * 1.5;
+        const startY = tower.y - TILE_SIZE * 1.5;
         const size = TILE_SIZE * 3;
         ctx.beginPath();
         ctx.rect(startX, startY, size, size);
@@ -740,163 +880,84 @@ export class Tower {
         ctx.fillRect(startX, startY, size, size);
         ctx.restore();
     }
-    findTarget(enemies, frameTargetedEnemies) {
+}
+
+
+export class Tower {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.id = crypto.randomUUID();
+        this.level = 1;
+        this.damageLevel = 1;
+        this.mode = 'boost';
+        this.targetingMode = (type === 'PIN' || type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
+        this.attackGroundTarget = null;
+        this.damageMultiplier = 1;
+        this.projectileCount = 1;
+        this.damageMultiplierFromMerge = 1;
+        this.goldBonus = 0;
+        this.fragmentBounces = 0;
+        this.bounceDamageFalloff = 0.5;
+        this.hasFragmentingShot = false;
+        this.killCount = 0;
+        this.isUnderDiversifyAura = false;
+        this.natCastleBonus = 0;
+        this.burnDps = 0;
+        this.burnDuration = 0;
+        this.attackSpeedBoost = 1;
+        this.damageBoost = 1;
+        this.enemySlow = 1;
+
+        // Properties to be populated by updateStats
+        this.cost = 0;
+        this.range = 0;
+        this.damage = 0;
+        this.splashRadius = 0;
+        this.permFireRate = 0;
+        this.fireRate = 0;
+        this.color = '';
+        this.projectileSpeed = 0;
+        this.projectileSize = 0;
+        this.projectileColor = '';
+
+        if (this.type === 'CAT') {
+            this.goldGenerated = 0;
+        }
+
+        this.stats = new TowerStats(this);
+        this.controller = new TowerController(this);
+        this.renderer = new TowerRenderer(this);
+
+        this.updateStats();
+        this.cooldown = 0;
         this.target = null;
-        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
-
-        if (this.isUnderDiversifyAura) {
-            potentialTargets = potentialTargets.filter(enemy => !frameTargetedEnemies.has(enemy.id));
-        }
-
-        // Special targeting rules
-        if (this.type === 'ANTI_AIR') {
-            potentialTargets = potentialTargets.filter(enemy => enemy.type.isFlying);
-        } else {
-            const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
-            if (groundOnlyTowers.includes(this.type)) {
-                potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
-            }
-        }
-
-        if (potentialTargets.length === 0) {
-            if (this.isUnderDiversifyAura) { // Fallback for diversify
-                potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
-            } else {
-                return;
-            }
-        };
-
-        switch (this.targetingMode) {
-            case 'strongest':
-                this.target = potentialTargets.reduce((a, b) => (a.health > b.health ? a : b), potentialTargets[0]);
-                break;
-            case 'weakest':
-                this.target = potentialTargets.reduce((a, b) => (a.health < b.health ? a : b), potentialTargets[0]);
-                break;
-            case 'furthest':
-                if (this.type === 'FORT') {
-                    let bestTarget = null;
-                    let maxSurrounding = -1;
-                    for (const mainEnemy of potentialTargets) {
-                        let surroundingCount = 0;
-                        for (const otherEnemy of enemies) {
-                            if (mainEnemy !== otherEnemy) {
-                                const dist = Math.hypot(mainEnemy.x - otherEnemy.x, mainEnemy.y - otherEnemy.y);
-                                if (dist <= this.splashRadius + 10) {
-                                    surroundingCount++;
-                                }
-                            }
-                        }
-                        if (surroundingCount > maxSurrounding) {
-                            maxSurrounding = surroundingCount;
-                            bestTarget = mainEnemy;
-                        }
-                    }
-                    this.target = bestTarget;
-                } else {
-                    this.target = potentialTargets.reduce((a, b) => (a.progress > b.progress ? a : b), potentialTargets[0]);
-                }
-                break;
-            default: // closest
-                this.target = potentialTargets.reduce((a, b) => (Math.hypot(this.x - a.x, this.y - a.y) < Math.hypot(this.x - b.x, this.y - b.y) ? a : b), potentialTargets[0]);
-                break;
-        }
-
-        if (this.target && this.isUnderDiversifyAura) {
-            frameTargetedEnemies.add(this.target.id);
-        }
-    }
-    isInRange(enemy) {
-        return Math.hypot(this.x - enemy.x, this.y - enemy.y) <= this.range;
-    }
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
-        if (this.type === 'SUPPORT' || this.type === 'ENT' || this.type === 'CAT') {
-            return;
-        }
-        if (this.type === 'ORBIT') {
-            this.orbiters.forEach(orbiter => {
-                orbiter.update(null, null, null, deltaTime);
-                enemies.forEach(enemy => {
-                    if (enemy.type.isFlying) return;
-                    const dist = Math.hypot(orbiter.x - enemy.x, orbiter.y - enemy.y);
-                    if (dist < enemy.size + this.projectileSize) {
-                        if (!orbiter.hitEnemies.has(enemy)) {
-                            const finalDamage = this.damage * this.damageMultiplier;
-                            if (enemy.takeDamage(finalDamage)) {
-                                this.killCount++;
-                                onEnemyDeath(enemy);
-                            }
-                            orbiter.hitEnemies.add(enemy);
-                            orbiter.hitCooldown = 0.25; // seconds
-                        }
-                    }
-                });
-            });
-            return;
-        }
-
-        if (this.cooldown > 0) this.cooldown -= deltaTime;
-
-        if ((this.type === 'FORT' || this.type === 'NINE_PIN') && this.targetingMode === 'ground' && this.attackGroundTarget) {
-            this.target = null; // Ensure no enemy is targeted
-            if (this.cooldown <= 0) {
-                this.shoot(projectiles);
-                this.cooldown = this.fireRate / 60;
-            }
-        } else {
-            this.findTarget(enemies, frameTargetedEnemies);
-            if (this.target && this.cooldown <= 0) {
-                this.shoot(projectiles);
-                this.cooldown = this.fireRate / 60; // Cooldown in seconds
-            }
-        }
-    }
-    shoot(projectiles) {
-        if (!this.target && !((this.type === 'FORT' || this.type === 'NINE_PIN') && this.targetingMode === 'ground' && this.attackGroundTarget)) return;
-
-        if (this.type === 'FORT') {
-            // Mortar targets a location, not the enemy object itself.
-            const locationTarget = (this.targetingMode === 'ground' && this.attackGroundTarget)
-                ? { x: this.attackGroundTarget.x, y: this.attackGroundTarget.y, health: 1 }
-                : { x: this.target.x, y: this.target.y, health: 1 }; // health > 0 to be valid
-            projectiles.push(new Projectile(this, locationTarget));
-            return;
+        if (type === 'ORBIT') {
+            this.upgradeCount = 0;
+            this.orbitMode = 'far';
+            this.orbiters = [
+                new Projectile(this, null, 0),
+                new Projectile(this, null, Math.PI)
+            ];
         }
         if (this.type === 'NINE_PIN') {
-            const targetPoint = (this.targetingMode === 'ground' && this.attackGroundTarget)
-                ? this.attackGroundTarget
-                : this.target;
-
-            if (!targetPoint) return;
-
-            const angle = Math.atan2(targetPoint.y - this.y, targetPoint.x - this.x);
-            const fakeTarget = {
-                x: this.x + Math.cos(angle) * 2000,
-                y: this.y + Math.sin(angle) * 2000,
-                health: Infinity,
-            };
-            projectiles.push(new Projectile(this, fakeTarget));
-            return;
-        }
-        if (this.projectileCount > 1 && this.target) {
-            const angleToTarget = Math.atan2(this.target.y - this.y, this.target.x - this.x);
-            const spreadAngle = Math.PI / 24;
-            projectiles.push(new Projectile(this, this.target));
-            for (let i = 1; i < this.projectileCount; i++) {
-                const side = (i % 2 === 0) ? -1 : 1;
-                const magnitude = Math.ceil(i / 2);
-                const offsetAngle = angleToTarget + (spreadAngle * magnitude * side);
-                const fakeTarget = {
-                    x: this.x + Math.cos(offsetAngle) * (this.range + 50),
-                    y: this.y + Math.sin(offsetAngle) * (this.range + 50),
-                    health: Infinity
-                };
-                projectiles.push(new Projectile(this, fakeTarget));
-            }
-        } else {
-            projectiles.push(new Projectile(this, this.target));
+            this.level = 'MAX LEVEL';
+            this.damageLevel = 'MAX LEVEL';
+            this.targetingMode = 'strongest';
         }
     }
+
+    // --- DELEGATED METHODS ---
+    updateStats() { this.stats.update(); }
+    draw(ctx) { this.renderer.draw(ctx); }
+    drawRange(ctx) { this.renderer.drawRange(ctx); }
+    drawBuffEffect(ctx) { this.renderer.drawBuffEffect(ctx); }
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
+        this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies);
+    }
+
+    // --- SERIALIZATION ---
     toJSON() {
         const data = {
             x: this.x,
@@ -923,9 +984,9 @@ export class Tower {
             natCastleBonus: this.natCastleBonus,
         };
 
-        // Add tower-type specific properties
         if (this.type === 'ORBIT') {
             data.orbitMode = this.orbitMode;
+            data.upgradeCount = this.upgradeCount;
         }
         if (this.type === 'FIREPLACE') {
             data.burnDps = this.burnDps;
@@ -942,39 +1003,17 @@ export class Tower {
         if (this.type === 'SUPPORT') {
             data.attackSpeedBoost = this.attackSpeedBoost;
         }
-
         return data;
     }
+
     static fromJSON(data) {
         const tower = new Tower(data.x, data.y, data.type);
-
         const fields = [
-            "id",
-            "level",
-            "damageLevel",
-            "mode",
-            "targetingMode",
-            "attackGroundTarget",
-            "damageMultiplier",
-            "projectileCount",
-            "damageMultiplierFromMerge",
-            "fragmentBounces",
-            "bounceDamageFalloff",
-            "hasFragmentingShot",
-            "goldBonus",
-            "splashRadius",
-            "color",
-            "projectileSize",
-            "burnDps",
-            "burnDuration",
-            "attackSpeedBoost",
-            "damageBoost",
-            "enemySlow",
-            "goldBonus",
-            "orbitMode",
-            "killCount",
-            "goldGenerated",
-            "natCastleBonus",
+            "id", "level", "damageLevel", "mode", "targetingMode", "attackGroundTarget",
+            "damageMultiplier", "projectileCount", "damageMultiplierFromMerge", "fragmentBounces",
+            "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color",
+            "projectileSize", "burnDps", "burnDuration", "attackSpeedBoost", "damageBoost",
+            "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount"
         ];
 
         for (const field of fields) {
@@ -983,18 +1022,16 @@ export class Tower {
             }
         }
 
-        // Restore tower-type specific properties
         if (data.type === 'ORBIT') {
-            // Recreate orbiters
-            tower.orbiters = [
-                new Projectile(tower, null, 0),
-                new Projectile(tower, null, Math.PI)
-            ];
+            tower.orbiters = [];
+            const orbiterCount = 2 + (tower.upgradeCount || 0);
+            const angleStep = (2 * Math.PI) / orbiterCount;
+            for (let i = 0; i < orbiterCount; i++) {
+                tower.orbiters.push(new Projectile(tower, null, i * angleStep));
+            }
         }
 
-        // Recalculate stats to ensure everything is properly set up
         tower.updateStats();
-
         return tower;
     }
 }

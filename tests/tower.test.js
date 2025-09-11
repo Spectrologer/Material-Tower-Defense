@@ -1,6 +1,9 @@
 import assert from 'assert';
-import { Tower } from '../js/game-entities.js';
-import { TOWER_TYPES } from '../js/constants.js';
+import { Tower, Projectile } from '../js/game-entities.js';
+import { Enemy } from '../js/game-entities.js';
+import { TOWER_TYPES, ENEMY_TYPES } from '../js/constants.js';
+
+const DELTA_TIME = 1 / 60; // Simulate a 60 FPS game loop
 
 test('Tower should serialize and deserialize basic properties', () => {
     const tower = new Tower(100, 200, 'PIN');
@@ -63,16 +66,15 @@ test('Tower should preserve visual properties', () => {
 test('ORBIT tower should recreate orbiters on deserialization', () => {
     const tower = new Tower(100, 100, 'ORBIT');
     tower.orbitMode = 'near';
-    tower.level = 2;
+    tower.upgradeCount = 2; // Should result in 4 orbiters (2 base + 2 upgrades)
 
     const json = tower.toJSON();
     const restored = Tower.fromJSON(json);
 
     assert.equal(restored.type, 'ORBIT');
     assert.equal(restored.orbitMode, 'near');
-    assert.equal(restored.level, 2);
     assert.ok(restored.orbiters);
-    assert.equal(restored.orbiters.length, 2);
+    assert.equal(restored.orbiters.length, 4, 'Should have 4 orbiters after upgrade');
 });
 
 test('FIREPLACE tower should preserve burn properties', () => {
@@ -168,4 +170,49 @@ test('Tower updateStats should be called after deserialization', () => {
     assert.ok(restored.damage > 0);
     assert.ok(restored.range > 0);
     assert.ok(restored.fireRate > 0);
+});
+
+test('Tower should shoot a projectile when cooldown is ready', () => {
+    const tower = new Tower(100, 100, 'PIN');
+    const enemy = new Enemy(ENEMY_TYPES.NORMAL, [{ x: 110, y: 100 }], 'NORMAL');
+    const projectiles = [];
+    tower.cooldown = 0; // Ready to fire
+
+    tower.update([enemy], projectiles, () => { }, DELTA_TIME, new Set());
+
+    assert.equal(projectiles.length, 1, 'Tower should have fired one projectile');
+    assert.ok(tower.cooldown > 0, 'Tower cooldown should be reset after firing');
+});
+
+test('Tower should not shoot if cooldown is not ready', () => {
+    const tower = new Tower(100, 100, 'PIN');
+    const enemy = new Enemy(ENEMY_TYPES.NORMAL, [{ x: 110, y: 100 }], 'NORMAL');
+    const projectiles = [];
+    tower.cooldown = 1; // Not ready to fire
+
+    tower.update([enemy], projectiles, () => { }, DELTA_TIME, new Set());
+
+    assert.equal(projectiles.length, 0, 'Tower should not fire when on cooldown');
+});
+
+test('Tower should target the strongest enemy', () => {
+    const tower = new Tower(100, 100, 'PIN');
+    tower.targetingMode = 'strongest';
+    const weakEnemy = new Enemy(ENEMY_TYPES.NORMAL, [{ x: 110, y: 100 }], 'NORMAL');
+    const strongEnemy = new Enemy(ENEMY_TYPES.HEAVY, [{ x: 120, y: 100 }], 'HEAVY');
+
+    tower.update([weakEnemy, strongEnemy], [], () => { }, DELTA_TIME, new Set());
+
+    assert.equal(tower.target.type, ENEMY_TYPES.HEAVY, 'Tower should target the HEAVY enemy');
+});
+
+test('ANTI-AIR tower should only target flying enemies', () => {
+    const tower = new Tower(100, 100, 'ANTI_AIR');
+    const groundEnemy = new Enemy(ENEMY_TYPES.NORMAL, [{ x: 110, y: 100 }], 'NORMAL');
+    const flyingEnemy = new Enemy(ENEMY_TYPES.FLYING, [{ x: 120, y: 100 }], 'FLYING');
+
+    tower.update([groundEnemy, flyingEnemy], [], () => { }, DELTA_TIME, new Set());
+
+    assert.ok(tower.target, 'ANTI-AIR tower should have a target');
+    assert.equal(tower.target.type, ENEMY_TYPES.FLYING, 'ANTI-AIR tower should target the FLYING enemy');
 });
