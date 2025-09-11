@@ -770,7 +770,6 @@ function checkForNinePinOnBoard() {
                     const centerX = (x + 1) * TILE_SIZE + TILE_SIZE / 2;
                     const centerY = (y + 1) * TILE_SIZE + TILE_SIZE / 2;
                     const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
-                    ninePin.cost = totalCost;
                     gameState.towers.push(ninePin);
                     gameState.discoveredTowerTypes.add('NINE_PIN');
 
