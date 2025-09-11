@@ -336,4 +336,3 @@ export function getTowerIconInfo(type) {
     }
     return { icon, className };
 }
-

@@ -208,7 +208,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             if (selectedTower.level === 'MAX LEVEL') {
                 levelText = '<span class="material-icons">star</span> MAX LEVEL';
             } else {
-                const visualLevel = (typeof selectedTower.level === 'string' && selectedTower.level === 'MAX LEVEL') ? 5 : (selectedTower.level + selectedTower.damageLevel - 1);
+                const visualLevel = (typeof selectedTower.level === 'string' && selectedTower.level === 'MAX LEVEL') ? 5 : (selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1);
                 levelText = `LVL ${visualLevel}`;
             }
         }
@@ -358,7 +358,6 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                     uiElements.statGoldP.classList.remove('hidden');
                     const icon = /** @type {HTMLElement | null} */ (uiElements.statGoldP.querySelector('span.material-icons'));
                     if (icon) {
-                        icon.style.color = '#facc15'; // Gold
                         const iconHTML = icon.outerHTML;
                         uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
                     }
@@ -554,12 +553,6 @@ function createTowerCardHTML(type, isDiscovered) {
     if (!stats) return '';
 
     const iconInfo = getTowerIconInfo(type);
-    let iconHTML;
-    if (iconInfo.className.startsWith('fa-')) {
-        iconHTML = `<i class="${iconInfo.className} fa-${iconInfo.icon}" style="font-size: 48px; color: ${stats.color};"></i>`;
-    } else {
-        iconHTML = `<span class="${iconInfo.className}" style="font-size: 64px; color: ${stats.color}; font-variation-settings: 'FILL' 1;">${iconInfo.icon}</span>`;
-    }
 
     if (!isDiscovered) {
         return `
@@ -573,7 +566,7 @@ function createTowerCardHTML(type, isDiscovered) {
 
     const name = iconInfo.icon.replace(/_/g, ' ').toUpperCase();
     let iconStyle = `font-size: 64px; color: ${stats.color};`;
-    if (type === 'ANTI_AIR') {
+    if (iconInfo.className.includes('material-symbols')) {
         iconStyle += ` font-variation-settings: 'FILL' 0;`;
     }
 
@@ -692,4 +685,5 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
+
 

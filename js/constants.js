@@ -27,7 +27,6 @@ export const TOWER_TYPES = {
     ANTI_AIR: { cost: 110, range: 350, damage: 50, fireRate: 180, color: '#a9a9a9', projectileSpeed: .1, projectileSize: 24, projectileColor: '#cccccc', special: 'Air units only', comment: "Causes severe turbulence." },
 };
 
-console.log(TOWER_TYPES.ANTI_AIR.special);
 // All the stats for each type of enemy that can spawn.
 export const ENEMY_TYPES = {
     NORMAL: { speed: 1.5, health: 12, color: '#ae2f2fff', size: 16, gold: 1, icon: 'person', iconFamily: "'Material Symbols Outlined'", damagesLives: true, comment: "Just some guy. Don't feel too bad." },
