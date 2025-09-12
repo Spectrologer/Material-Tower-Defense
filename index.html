@@ -324,19 +324,23 @@
                 </label>
             </div>
             <button id="library-btn" class="pixel-button text-sm py-2 text-center mt-2">LIBRARY</button>
-            <div class="relative">
-                <button id="changelog-btn" class="pixel-button text-sm py-2 text-center w-full">CHANGELOG</button>
-                <span id="changelog-indicator"
-                    class="hidden absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 bg-red-600 text-white text-[8px] font-bold rounded-full">NEW</span>
-            </div>
             <button id="trophies-btn" class="pixel-button text-sm py-2 text-center">TROPHIES</button>
             <button id="reset-game-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] text-sm py-2 text-center mt-2">RESET
                 GAME</button>
-            <a href="https://github.com/Spectrologer" target="_blank"
-                class="pixel-button bg-blue-700 text-white border-blue-500 shadow-[0_4px_0_#1e40af] text-sm py-2 text-center mt-auto">
-                <span class="material-symbols-outlined align-middle !text-lg">link</span> My Website
-            </a>
+            <div class="flex gap-2 mt-auto pt-2">
+                <div class="relative w-1/2">
+                    <button id="changelog-btn" class="pixel-button text-sm py-2 text-center w-full flex items-center justify-center">
+                        <span class="material-symbols-outlined align-middle !text-lg">history</span>
+                    </button>
+                    <span id="changelog-indicator"
+                        class="hidden absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 bg-red-600 text-white text-[8px] font-bold rounded-full">NEW</span>
+                </div>
+                <a href="https://github.com/Spectrologer" target="_blank"
+                    class="pixel-button bg-blue-700 text-white border-blue-500 shadow-[0_4px_0_#1e40af] text-sm py-2 text-center w-1/2 flex items-center justify-center">
+                    <span class="material-symbols-outlined align-middle !text-lg">link</span>
+                </a>
+            </div>
         </div>
 
 
