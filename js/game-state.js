@@ -29,7 +29,7 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} onboardingTipDismissed - Whether the onboarding tip has been dismissed.
  * @property {Set} discoveredMerges - Set of tower merge types the player has discovered.
  * @property {Set} discoveredTowerTypes - Set of tower types the player has discovered.
- * @property {Set} unlockedTrophies - Set of unlocked trophy IDs.
+ * @property {Set<string>} unlockedTrophies - Set of unlocked trophy IDs.
  * @property {boolean} usedPinHeartTower - Whether a PIN_HEART tower has been used in the current game.
  * @property {boolean} waveInProgress - Whether a wave is currently in progress.
  * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
@@ -158,6 +158,13 @@ function getInitialGameState() {
     };
 }
 
+export function addTower(tower) {
+    if (tower.type === 'PIN_HEART') {
+        gameState.usedPinHeartTower = true;
+    }
+    gameState.towers.push(tower);
+}
+
 // Grabs the saved game data from local storage. If there's no save, it starts a new game.
 function getGameStateFromStorage() {
     const value = localStorage.getItem("gameState");
@@ -212,6 +219,7 @@ function deserializeGameState(serializedGameState) {
             discoveredMerges: new Set(discoveredMerges || []),
             discoveredTowerTypes: new Set(discoveredTowerTypes || ['PIN', 'CASTLE', 'SUPPORT']),
             unlockedTrophies: new Set(unlockedTrophies || []),
+            usedPinHeartTower: basicData.usedPinHeartTower || false,
         };
     } catch (e) {
         console.error("Failed to load saved game state:", e);

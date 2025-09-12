@@ -3,7 +3,7 @@ import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entit
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
-import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
+import { gameState, addTower, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions, generateWave } from './wave-definitions.js';
 import {
     playHitSound, playMoneySound, playExplosionSound, playLifeLostSound,
@@ -662,14 +662,6 @@ function gameLoop(currentTime) {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function checkTrophies() {
-    // Trophy: NO_HEARTS_15
-    if (gameState.wave === 16 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
-        gameState.unlockedTrophies.add('NO_HEARTS_15');
-        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth));
-    }
-}
-
 function onEndWave() {
     gameState.wave++;
     uiElements.startWaveBtn.disabled = false;
@@ -684,7 +676,12 @@ function onEndWave() {
     const waveBonus = 20 + gameState.wave;
     gameState.gold += waveBonus;
 
-    checkTrophies();
+    // Check for trophies at the end of the wave
+    // Trophy: NO_HEARTS_15 (Beat wave 15)
+    if (gameState.wave === 16 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
+        gameState.unlockedTrophies.add('NO_HEARTS_15');
+        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth));
+    }
     updateUI(gameState);
     persistGameState(0);
 }
@@ -946,7 +943,7 @@ function handleCanvasClick(e) {
             } else {
                 gameState.placementGrid[gridY][gridX] = GRID_TOWER;
             }
-            gameState.towers.push(newTower);
+            addTower(newTower);
             if (newTower.type === 'PIN') {
                 checkForNinePinOnBoard();
             }
@@ -1693,9 +1690,10 @@ function performPendingMerge() {
     }
     const merged = mergeHandler.executeMerge(existingTower, mergingTower.type, cost, gameState);
     if (merged) {
-        if (existingTower.type === 'PIN_HEART') {
+        if (existingTower.type === 'PIN_HEART' || mergeState.mergeInfo.resultType === 'PIN_HEART') {
             gameState.usedPinHeartTower = true;
         }
+
         if (mergeState.placingFromCloud) {
             gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
         } else if (mergingFromCanvas) {
@@ -1871,4 +1869,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-

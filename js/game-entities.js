@@ -560,10 +560,9 @@ class TowerStats {
         tower.cost = baseStats.cost * this.levelForCalc;
         tower.range = baseStats.range;
         if (tower.type === 'FIREPLACE') {
-            tower.damage = baseStats.damage; // Keep base damage
-            // burnDps is now managed by merge-logic, so we don't reset it here
+            tower.damage = baseStats.damage;
+            tower.burnDps = baseStats.burnDps;
             tower.burnDuration = baseStats.burnDuration;
-            // splashRadius is also managed by merge-logic, so we don't reset it here
         } else {
             tower.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (tower.damageMultiplierFromMerge || 1);
         }
@@ -571,9 +570,7 @@ class TowerStats {
         if (tower.type === 'ANTI_AIR' && tower.natCastleBonus) {
             tower.splashRadius = 10 * tower.natCastleBonus;
         } else {
-            if (tower.type !== 'FIREPLACE') {
-                tower.splashRadius = baseStats.splashRadius || 0;
-            }
+            tower.splashRadius = baseStats.splashRadius || 0;
         }
 
         tower.permFireRate = baseStats.fireRate * Math.pow(0.9, this.levelForCalc - 1);
@@ -924,7 +921,6 @@ export class Tower {
         this.level = 1;
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = (type === 'PIN' || type === 'PIN_HEART') ? 'weakest' : 'strongest';
         this.attackGroundTarget = null;
         this.damageMultiplier = 1;
         this.projectileCount = 1;
@@ -942,6 +938,17 @@ export class Tower {
         this.damageBoost = 1;
         this.enemySlow = 1;
         this.rotation = 0;
+
+        // Explicitly set default targeting modes
+        if (type === 'CASTLE' || type === 'FORT') {
+            this.targetingMode = 'strongest';
+        } else if (type === 'PIN' || type === 'PIN_HEART') {
+            this.targetingMode = 'weakest';
+        } else {
+            // A sensible default for most other offensive towers
+            this.targetingMode = 'strongest';
+        }
+
 
         const baseStats = TOWER_TYPES[this.type];
         if (baseStats.isMobile) {

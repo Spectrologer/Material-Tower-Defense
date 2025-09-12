@@ -89,13 +89,13 @@ export const waveDefinitions = [
     // Wave 12: A difficult pincer attack with HEAVY and FAST enemies on separate paths.
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.FAST, 13)],
-        healthMultiplier: 1.9, healthBonus: 15,
+        healthMultiplier: 1.9, healthBonus: 35,
         detourRatio: 1.0,
     },
     // Wave 13: Mixed wave including STEALTH to test layered defenses.
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.STEALTH, 4), comp(ENEMY_TYPES.FAST, 4)],
-        healthMultiplier: 2.2, healthBonus: 15,
+        healthMultiplier: 2.2, healthBonus: 35,
         detourRatio: 0.5,
     },
     // Wave 14: Pre-boss wave with a mix of all major threats.
@@ -106,7 +106,7 @@ export const waveDefinitions = [
             comp(ENEMY_TYPES.SWARM, 4),
             comp(ENEMY_TYPES.STEALTH, 4)
         ],
-        healthMultiplier: 2, healthBonus: 10,
+        healthMultiplier: 2, healthBonus: 30,
         detourRatio: 0.75,
         endOfWaveAnnouncement: { text: "ALERT:\nFLUTTERDASH APPROACHING!", color: '#f542e9ff' }
     },
