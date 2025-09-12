@@ -324,6 +324,11 @@
                 </label>
             </div>
             <button id="library-btn" class="pixel-button text-sm py-2 text-center mt-2">LIBRARY</button>
+            <div class="relative">
+                <button id="changelog-btn" class="pixel-button text-sm py-2 text-center w-full">CHANGELOG</button>
+                <span id="changelog-indicator"
+                    class="hidden absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 bg-red-600 text-white text-[8px] font-bold rounded-full">NEW</span>
+            </div>
             <button id="trophies-btn" class="pixel-button text-sm py-2 text-center">TROPHIES</button>
             <button id="reset-game-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] text-sm py-2 text-center mt-2">RESET
@@ -567,6 +572,20 @@
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
         </div>
     </div>
+
+    <!-- Changelog Modal -->
+    <div id="changelog-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
+        <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
+            <h3 class="text-lg sm:text-xl text-green-400 mb-4 text-center">CHANGELOG</h3>
+            <div id="changelog-list"
+                class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto flex flex-col gap-4">
+                <!-- Changelog items will be generated here -->
+            </div>
+            <button id="changelog-close-btn"
+                class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
+        </div>
+    </div>
+
 
     <script type="module" src="js/main.js"></script>
 

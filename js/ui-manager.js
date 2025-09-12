@@ -72,6 +72,11 @@ export const uiElements = {
     trophiesModal: document.getElementById('trophies-modal'),
     trophiesList: document.getElementById('trophies-list'),
     trophiesCloseBtn: getButton('trophies-close-btn'),
+    changelogBtn: getButton('changelog-btn'),
+    changelogModal: document.getElementById('changelog-modal'),
+    changelogList: document.getElementById('changelog-list'),
+    changelogCloseBtn: getButton('changelog-close-btn'),
+    changelogIndicator: document.getElementById('changelog-indicator'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
@@ -739,5 +744,28 @@ export function populateTrophies(gameState, trophiesData) {
             </div>
         `;
         uiElements.trophiesList.appendChild(trophyElement);
+    }
+}
+
+export function populateChangelog(changelogData) {
+    if (!uiElements.changelogList) return;
+    uiElements.changelogList.innerHTML = '';
+
+    for (const entry of changelogData) {
+        const entryElement = document.createElement('div');
+        entryElement.className = 'p-4 border-b border-gray-700 text-white';
+
+        const changesList = entry.changes.map(change => `<li class="ml-4 list-disc">${change}</li>`).join('');
+
+        entryElement.innerHTML = `
+            <div class="flex justify-between items-baseline">
+                <h4 class="text-lg font-bold text-yellow-400">v${entry.version}</h4>
+                <p class="text-xs text-gray-400">${entry.date}</p>
+            </div>
+            <ul class="mt-2 text-sm">
+                ${changesList}
+            </ul>
+        `;
+        uiElements.changelogList.appendChild(entryElement);
     }
 }

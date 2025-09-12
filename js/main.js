@@ -1,16 +1,19 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, addTower, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions, generateWave } from './wave-definitions.js';
+import { changelog } from './changelog.js';
 import {
     playHitSound, playMoneySound, playExplosionSound, playLifeLostSound,
     playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled,
     toggleMusic, setMusicOptions, setMusicTrack, nextMusicTrack, previousMusicTrack,
     SpecialTrack
 } from './audio.js';
+
+export const CHANGELOG_VERSION = changelog[0]?.version || '1.0.0';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
@@ -1869,8 +1872,25 @@ uiElements.trophiesCloseBtn.addEventListener('click', () => {
     uiElements.trophiesModal.classList.add('hidden');
 });
 
+uiElements.changelogBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    uiElements.optionsMenu.classList.add('hidden');
+    populateChangelog(changelog);
+    uiElements.changelogModal.classList.remove('hidden');
+    // The checkChangelog function is defined in index.html, so it's not directly accessible here.
+    // The indicator will be hidden when the modal is opened, and the version is saved.
+    // The actual check for new changelog is done on page load in index.html.
+    localStorage.setItem('lastSeenChangelogVersion', CHANGELOG_VERSION);
+});
+
+uiElements.changelogCloseBtn.addEventListener('click', () => {
+    uiElements.changelogModal.classList.add('hidden');
+});
+
 
 window.addEventListener('resize', resizeCanvas);
+
+// Handles clicks for closing the options menu
 window.addEventListener('click', (event) => {
     // Check if the options menu is visible
     if (!uiElements.optionsMenu.classList.contains('hidden')) {
@@ -1882,8 +1902,13 @@ window.addEventListener('click', (event) => {
     }
 });
 
-document.fonts.ready.catch(err => {
-    console.error("Font loading failed, starting game anyway.", err);
-}).finally(() => {
-    init();
+// Initialize the game when the DOM is fully loaded
+window.addEventListener('DOMContentLoaded', () => {
+    document.fonts.ready.catch(err => {
+        console.error("Font loading failed, starting game anyway.", err);
+    }).finally(() => {
+        // If checkChangelog is defined, call it; otherwise, skip.
+        // This function is defined in index.html, so it's not directly accessible here.
+        init();
+    });
 });
