@@ -9,6 +9,7 @@ import {
     playHitSound, playMoneySound, playExplosionSound, playLifeLostSound,
     playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled,
     toggleMusic, setMusicOptions, setMusicTrack, nextMusicTrack, previousMusicTrack,
+    SpecialTrack
 } from './audio.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
@@ -540,7 +541,7 @@ function gameLoop(currentTime) {
                 if (gameState.lives <= 0) {
                     gameState.gameOver = true;
                     triggerGameOver(false, gameState.wave - 1);
-                    setMusicTrack(1, { bossMode: false });
+                    setMusicTrack(SpecialTrack.gameOver, { bossMode: false });
                 }
             }
         },
@@ -1371,6 +1372,7 @@ function reset(hardReset = false) {
 
 function init() {
     loadGameStateFromStorage();
+    setMusicTrack(1, { bossMode: false });
 
     // Load saved settings
     const savedMergeConfirm = localStorage.getItem('mergeConfirmation');

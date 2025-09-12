@@ -8,6 +8,7 @@ export const Track = Object.freeze({
 // These tracks won't be in the regular rotation, but can be triggered for special events.
 export const SpecialTrack = Object.freeze({
     flutterDash: `"¯\\_(ツ)_/¯" by Hiddenist (vFlutterdash)`,
+    gameOver: "Game over (placeholder)",
 });
 
 // When switching between tracks in a group, the new track will continue from the same position seamlessly.

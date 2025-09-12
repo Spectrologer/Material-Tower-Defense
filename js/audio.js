@@ -1,5 +1,5 @@
 import { startMusic, Track, SpecialTrack } from "./audio-music.js";
-export { Track } from "./audio-music.js";
+export { Track, SpecialTrack } from "./audio-music.js";
 
 const audioContext = new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)();
 
