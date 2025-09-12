@@ -127,7 +127,7 @@ export function generateWave(waveNumber) {
 
     // Add a mix of enemies, increasing the count and difficulty
     wave.composition.push(comp(ENEMY_TYPES.NORMAL, 5 + (waveNumber - 15) * 3));
-    wave.composition.push(comp(ENEMY_TYPES.FAST, 3 + (waveNumber - 15) * 2));
+    wave.composition.push(comp(ENEMY_TYPES.FAST, 3 + (waveNumber - 15) * 3));
     wave.composition.push(comp(ENEMY_TYPES.HEAVY, 2 + Math.floor((waveNumber - 15) * 1.5)));
 
     // Introduce flying and stealth enemies in later waves, and in greater numbers

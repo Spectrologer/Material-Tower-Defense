@@ -718,16 +718,16 @@ export function populateTrophies(gameState, trophiesData) {
 
         const icon = isUnlocked ? data.icon : 'lock';
         const name = isUnlocked ? data.name : '???';
+        const color = isUnlocked && data.color ? data.color : (isUnlocked ? '#facc15' : '#6b7280');
         const description = isUnlocked ? data.description : '????????????????????????';
 
         trophyElement.innerHTML = `
-            <span class="material-symbols-outlined text-4xl ${isUnlocked ? 'text-yellow-400' : 'text-gray-600'}">${icon}</span>
+            <span class="material-symbols-outlined text-4xl" style="color: ${color};">${icon}</span>
             <div>
-                <h4 class="text-lg font-bold">${name}</h4>
+                <h4 class="text-lg font-bold" style="color: ${color};">${name}</h4>
                 <p class="text-sm">${description}</p>
             </div>
         `;
         uiElements.trophiesList.appendChild(trophyElement);
     }
 }
-

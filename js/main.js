@@ -25,6 +25,7 @@ const TROPHIES = {
         name: "Heartless",
         description: "Reach Flutterdash without building a PIN_HEART tower.",
         icon: 'heart_broken',
+        color: '#ff69b4',
     }
 };
 
