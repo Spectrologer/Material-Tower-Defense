@@ -287,6 +287,19 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     ctx.restore();
 }
 
+// NEW FUNCTION: Draws the selection rectangle when dragging
+export function drawSelectionRect(ctx, start, end) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.8)';
+    ctx.lineWidth = 1;
+    const width = end.x - start.x;
+    const height = end.y - start.y;
+    ctx.fillRect(start.x, start.y, width, height);
+    ctx.strokeRect(start.x, start.y, width, height);
+    ctx.restore();
+}
+
 
 // A helper function to get the right icon name and font for a tower type.
 export function getTowerIconInfo(type) {
@@ -330,9 +343,14 @@ export function getTowerIconInfo(type) {
             icon = 'open_jam';
             className = "material-symbols-outlined";
             break;
+        case 'FIRE_TRUCK':
+            icon = 'fire_truck';
+            className = "material-symbols-outlined";
+            break;
         default:
             icon = 'help';
             break;
     }
     return { icon, className };
 }
+

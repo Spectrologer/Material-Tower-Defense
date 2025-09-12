@@ -1,7 +1,7 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries } from './ui-manager.js';
-import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel } from './drawing-function.js';
+import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions, generateWave } from './wave-definitions.js';
@@ -17,7 +17,7 @@ let detourMazeColor = '#666666ff'; // Darker gray for the detour path
 
 // UI/Interaction State (not part of core game data)
 let placingTower = null;
-let selectedTower = null;
+let selectedTowers = [];
 let selectedEnemy = null;
 let gameSpeed = 1;
 let placingFromCloud = null;
@@ -35,6 +35,51 @@ let isSellConfirmPending = false;
 let libraryCurrentIndex = 0;
 let libraryEnemyCurrentIndex = 0;
 let libraryActiveTab = 'towers';
+let isSelecting = false;
+let selectionStart = { x: 0, y: 0 };
+let selectionEnd = { x: 0, y: 0 };
+
+function attemptFireTruckCreation(mergingTower, targetEnemy, source, cost) {
+    if (!mergingTower || mergingTower.type !== 'FIREPLACE' || !targetEnemy || targetEnemy.type !== ENEMY_TYPES.NORMAL) {
+        return false;
+    }
+
+    // 1. Remove enemy
+    gameState.enemies = gameState.enemies.filter(e => e.id !== targetEnemy.id);
+
+    // 2. Remove source tower/cost
+    if (source === 'cloud') {
+        gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
+        renderCloudInventory();
+    } else if (source === 'canvas') {
+        const gridX = Math.floor(mergingTower.x / TILE_SIZE);
+        const gridY = Math.floor(mergingTower.y / TILE_SIZE);
+        gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
+        gameState.towers = gameState.towers.filter(t => t.id !== mergingTower.id);
+    } else { // 'click'
+        gameState.gold -= cost;
+    }
+
+    // 3. Create FIRE_TRUCK
+    const newTower = new Tower(targetEnemy.x, targetEnemy.y, 'FIRE_TRUCK');
+    newTower.pathIndex = targetEnemy.pathIndex;
+    newTower.progress = targetEnemy.progress;
+    newTower.cost = TOWER_TYPES.FIREPLACE.cost;
+    gameState.towers.push(newTower);
+    gameState.discoveredTowerTypes.add('FIRE_TRUCK');
+    gameState.announcements.push(new TextAnnouncement("FIRE TRUCK!", canvasWidth / 2, 50, 3, '#d32f2f', canvasWidth));
+
+    // 4. Cleanup state
+    placingTower = null;
+    placingFromCloud = null;
+    draggedCloudTower = null;
+    draggedCanvasTower = null;
+    updateUI(gameState);
+    updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending);
+    persistGameState(0);
+    return true;
+}
+
 
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
@@ -387,7 +432,7 @@ function handleProjectileHit(projectile, hitEnemy) {
 
     if (!splashCenter) return; // Should not happen if not a mortar
 
-    if (projectile.owner.type === 'FIREPLACE') {
+    if (projectile.owner.type === 'FIREPLACE' || projectile.owner.type === 'FIRE_TRUCK') {
         gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 0.33));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
@@ -464,7 +509,7 @@ function gameLoop(currentTime) {
 
     const newlySpawnedEnemies = [];
 
-    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies));
+    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies, gameState.path));
     gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects, effectiveDeltaTime));
     gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
         (e) => { // onFinish
@@ -506,8 +551,8 @@ function gameLoop(currentTime) {
         gameState.gold = 99999;
     }
 
-    if (selectedTower) {
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+    if (selectedTowers.length > 0) {
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 
     if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.spawningEnemies) {
@@ -550,23 +595,27 @@ function gameLoop(currentTime) {
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
 
     // Draw ground target marker if one is set for the selected tower
-    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') && selectedTower.attackGroundTarget) {
-        const target = selectedTower.attackGroundTarget;
-        ctx.save();
-        ctx.strokeStyle = '#ff4d4d';
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(target.x - 10, target.y - 10);
-        ctx.lineTo(target.x + 10, target.y + 10);
-        ctx.moveTo(target.x + 10, target.y - 10);
-        ctx.lineTo(target.x - 10, target.y + 10);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(target.x, target.y, 15, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
+    if (selectedTowers.length === 1) {
+        const selectedTower = selectedTowers[0];
+        if ((selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') && selectedTower.attackGroundTarget) {
+            const target = selectedTower.attackGroundTarget;
+            ctx.save();
+            ctx.strokeStyle = '#ff4d4d';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(target.x - 10, target.y - 10);
+            ctx.lineTo(target.x + 10, target.y + 10);
+            ctx.moveTo(target.x + 10, target.y - 10);
+            ctx.lineTo(target.x - 10, target.y + 10);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 15, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
     }
+
 
     gameState.enemies.forEach(enemy => {
         enemy.draw(ctx);
@@ -575,9 +624,11 @@ function gameLoop(currentTime) {
         drawPlacementGrid(ctx, canvasWidth, canvasHeight, gameState.placementGrid, mouse);
     }
     gameState.towers.forEach(tower => tower.draw(ctx));
-    if (selectedTower) {
-        selectedTower.drawRange(ctx);
-        if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) selectedTower.drawBuffEffect(ctx);
+    if (selectedTowers.length > 0) {
+        selectedTowers.forEach(t => {
+            t.drawRange(ctx);
+            if (['SUPPORT', 'MIND', 'CAT'].includes(t.type)) t.drawBuffEffect(ctx);
+        });
     }
     gameState.projectiles.forEach(p => p.draw(ctx));
     gameState.effects.forEach(effect => effect.draw(ctx));
@@ -639,6 +690,9 @@ function gameLoop(currentTime) {
         }
     }
     drawMergeTooltip(ctx, mergeTooltip, canvasWidth);
+    if (isSelecting) {
+        drawSelectionRect(ctx, selectionStart, selectionEnd);
+    }
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
@@ -686,10 +740,10 @@ function selectTowerToPlace(towerType) {
             renderCloudInventory();
         }
         placingTower = (placingTower === towerType) ? null : towerType;
-        selectedTower = null;
+        selectedTowers = [];
         isSellConfirmPending = false;
         selectedEnemy = null;
-        updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending);
+        updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending);
         uiElements.buyPinBtn.classList.toggle('selected', placingTower === 'PIN');
         uiElements.buyCastleBtn.classList.toggle('selected', placingTower === 'CASTLE');
         uiElements.buySupportBtn.classList.toggle('selected', placingTower === 'SUPPORT');
@@ -705,10 +759,10 @@ function handleCloudTowerClick(towerToPlace) {
     }
     placingFromCloud = towerToPlace;
     placingTower = towerToPlace.type;
-    selectedTower = null;
+    selectedTowers = [];
     isSellConfirmPending = false;
     selectedEnemy = null;
-    updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending);
+    updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending);
     renderCloudInventory();
 }
 
@@ -782,7 +836,7 @@ function checkForNinePinOnBoard() {
                     }
 
                     gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 3, '#FFFFFF', canvasWidth));
-                    selectedTower = ninePin;
+                    selectedTowers = [ninePin];
                     return; // Found and created one, so we are done.
                 }
             }
@@ -790,9 +844,8 @@ function checkForNinePinOnBoard() {
     }
 }
 
-function handleCanvasAction(e) {
-    resumeAudioContext();
-    const previouslySelectedTower = selectedTower;
+function handleCanvasClick(e) {
+    const previouslySelectedTowers = [...selectedTowers];
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
@@ -811,35 +864,37 @@ function handleCanvasAction(e) {
             }
         }
         settingAttackGroundForTower = null;
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
         return; // This action is complete.
     }
 
     // Prioritize clicking on an enemy
     const clickedOnEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
-    if (clickedOnEnemy) {
+    if (clickedOnEnemy && !isPlacingMode) {
         selectedEnemy = clickedOnEnemy;
-        selectedTower = null; // Deselect any tower
+        selectedTowers = []; // Deselect any tower
         actionTaken = true;
     } else if (isPlacingMode) {
         const towerToPlaceType = placingTower;
         let mergingTower = null;
         let mergingFromCloud = false;
-        let mergingFromCanvas = false;
         let costOfPlacingTower;
+
         if (placingFromCloud) {
             mergingTower = placingFromCloud;
             mergingFromCloud = true;
             costOfPlacingTower = mergingTower.cost;
-        } else if (draggedCanvasTower) {
-            mergingTower = draggedCanvasTower;
-            mergingFromCanvas = true;
-            costOfPlacingTower = mergingTower.cost;
-        } else {
+        } else { // Placing from buy menu
             costOfPlacingTower = TOWER_TYPES[towerToPlaceType].cost;
             mergingTower = { type: towerToPlaceType, cost: costOfPlacingTower, id: crypto.randomUUID() };
         }
-        if (gameState.gold < costOfPlacingTower && !mergingFromCloud && !mergingFromCanvas && !isInfiniteGold) return;
+
+        if (gameState.gold < costOfPlacingTower && !mergingFromCloud && !isInfiniteGold) return;
+
+        if (clickedOnEnemy && attemptFireTruckCreation(mergingTower, clickedOnEnemy, placingFromCloud ? 'cloud' : 'click', costOfPlacingTower)) {
+            return;
+        }
+
         const clickedOnTower = gameState.towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
@@ -860,7 +915,7 @@ function handleCanvasAction(e) {
                 placingTowerType: mergingTower.type,
                 mergeInfo: mergeInfo,
                 placingFromCloud: mergingFromCloud,
-                mergingFromCanvas: mergingFromCanvas,
+                mergingFromCanvas: false, // Cannot be dragging when clicking
                 originalPosition: draggedCanvasTowerOriginalGridPos
             };
             if (isMergeConfirmationEnabled) {
@@ -871,25 +926,22 @@ function handleCanvasAction(e) {
             placingTower = null;
             placingFromCloud = null;
             draggedCloudTower = null;
-            selectedTower = null; // Deselect after a merge is initiated
+            selectedTowers = []; // Deselect after a merge is initiated
             actionTaken = true;
         } else if (isValidPlacement(snappedX, snappedY, isNinePin)) {
-            const newTowerType = mergingTower.type;
-            const newTower = new Tower(snappedX, snappedY, newTowerType);
-            if (mergingFromCloud || mergingFromCanvas) {
-                Object.assign(newTower, mergingTower);
+            let newTower;
+            if (mergingFromCloud) {
+                newTower = mergingTower;
                 newTower.x = snappedX;
                 newTower.y = snappedY;
-                if (mergingFromCloud) {
-                    gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
-                    renderCloudInventory();
-                } else if (mergingFromCanvas) {
-                    gameState.towers = gameState.towers.filter(t => t.id !== mergingTower.id);
-                    gameState.placementGrid[draggedCanvasTowerOriginalGridPos.y][draggedCanvasTowerOriginalGridPos.x] = GRID_EMPTY;
-                }
-            } else {
+                gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
+                renderCloudInventory();
+            } else { // Placing a new tower from the buy menu
+                const newTowerType = mergingTower.type;
+                newTower = new Tower(snappedX, snappedY, newTowerType);
                 gameState.gold -= costOfPlacingTower;
             }
+
             if (newTower.type === 'SUPPORT' && !gameState.hasPlacedFirstSupport) {
                 gameState.announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 3, undefined, canvasWidth));
                 gameState.hasPlacedFirstSupport = true;
@@ -906,7 +958,7 @@ function handleCanvasAction(e) {
                 gameState.placementGrid[gridY][gridX] = GRID_TOWER;
             }
             gameState.towers.push(newTower);
-            if (newTowerType === 'PIN') {
+            if (newTower.type === 'PIN') {
                 checkForNinePinOnBoard();
             }
             placingTower = null;
@@ -924,7 +976,7 @@ function handleCanvasAction(e) {
             uiElements.buySupportBtn.classList.remove('selected');
         }
     } else {
-        selectedTower = gameState.towers.find(t => {
+        const clickedTower = gameState.towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
             // For Nine Pin, check the whole 3x3 area for a click
@@ -936,20 +988,17 @@ function handleCanvasAction(e) {
             return tGridX === gridX && tGridY === gridY;
         });
 
-
-        console.log("Selected tower", selectedTower);
-
-        if (selectedTower) {
-            selectedEnemy = null; // Deselect any enemy if a tower is selected
-        } else {
-            // Click was on empty space, deselect everything
+        if (clickedTower) {
+            selectedTowers = [clickedTower];
             selectedEnemy = null;
-            selectedTower = null;
+        } else {
+            selectedTowers = [];
+            selectedEnemy = null;
         }
         actionTaken = true;
     }
 
-    if (previouslySelectedTower !== selectedTower) {
+    if (previouslySelectedTowers.length !== selectedTowers.length || !previouslySelectedTowers.every(t => selectedTowers.includes(t))) {
         isSellConfirmPending = false;
     }
 
@@ -961,22 +1010,30 @@ function handleCanvasAction(e) {
 
     if (actionTaken) {
         updateUI(gameState);
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 
     if (actionTaken) {
         persistGameState(0);
     }
 }
-canvas.addEventListener('click', handleCanvasAction);
+
+canvas.addEventListener('mousedown', e => {
+    if (placingTower) return;
+    isSelecting = true;
+    selectionStart = getMousePos(canvas, e);
+    selectionEnd = selectionStart;
+});
+
 canvas.addEventListener('mousemove', e => {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    mouse.x = mouseX * scaleX;
-    mouse.y = mouseY * scaleY;
+    const mousePos = getMousePos(canvas, e);
+    mouse.x = mousePos.x;
+    mouse.y = mousePos.y;
+
+    if (isSelecting) {
+        selectionEnd = mousePos;
+    }
+
     if (placingTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);
@@ -1005,6 +1062,41 @@ canvas.addEventListener('mousemove', e => {
         mergeTooltip.info = null;
     }
 });
+
+canvas.addEventListener('mouseup', e => {
+    if (placingTower) {
+        handleCanvasClick(e);
+        return;
+    }
+    if (isSelecting) {
+        isSelecting = false;
+        const start = selectionStart;
+        const end = selectionEnd;
+
+        // If it was a click (not a drag), handle it as a single selection
+        if (Math.hypot(end.x - start.x, end.y - start.y) < 10) {
+            handleCanvasClick(e);
+            return;
+        }
+
+        const rect = {
+            x: Math.min(start.x, end.x),
+            y: Math.min(start.y, end.y),
+            width: Math.abs(start.x - end.x),
+            height: Math.abs(start.y - end.y)
+        };
+
+        selectedTowers = gameState.towers.filter(tower =>
+            tower.x >= rect.x &&
+            tower.x <= rect.x + rect.width &&
+            tower.y >= rect.y &&
+            tower.y <= rect.y + rect.height
+        );
+        isSellConfirmPending = false;
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending);
+    }
+});
+
 canvas.addEventListener('dragover', e => {
     e.preventDefault();
     if (draggedCloudTower) {
@@ -1034,9 +1126,19 @@ canvas.addEventListener('dragstart', (e) => {
     const towerToDrag = gameState.towers.find(t => {
         const tGridX = Math.floor(t.x / TILE_SIZE);
         const tGridY = Math.floor(t.y / TILE_SIZE);
+        // Add check for Nine Pin tower's 3x3 collision area
+        if (t.type === 'NINE_PIN') {
+            const startX = tGridX - 1;
+            const startY = tGridY - 1;
+            return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
+        }
         return tGridX === gridX && tGridY === gridY;
     });
+
     if (towerToDrag) {
+        // If we start dragging a tower, we are not performing a selection.
+        isSelecting = false;
+
         draggedCanvasTower = towerToDrag;
         draggedCanvasTowerOriginalGridPos = { x: gridX, y: gridY };
         e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'canvas', towerId: towerToDrag.id }));
@@ -1064,6 +1166,8 @@ canvas.addEventListener('dragstart', (e) => {
 });
 canvas.addEventListener('dragend', () => {
     document.body.classList.remove('is-dragging');
+    draggedCanvasTower = null;
+    placingTower = null;
 });
 uiElements.cloudInventoryPanel.addEventListener('dragover', e => {
     e.preventDefault();
@@ -1097,8 +1201,8 @@ uiElements.cloudInventoryPanel.addEventListener('drop', e => {
                 gameState.towers = gameState.towers.filter(t => t.id !== towerToMove.id);
                 gameState.cloudInventory.push(towerToMove);
                 renderCloudInventory();
-                selectedTower = null;
-                updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending);
+                selectedTowers = [];
+                updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending);
             }
         }
     } catch (e) {
@@ -1121,6 +1225,16 @@ canvas.addEventListener('drop', e => {
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
     const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
     const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
+
+    const sourceTower = draggedCanvasTower || gameState.cloudInventory.find(t => t.id === transferData.towerId);
+    const droppedOnEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
+
+    if (attemptFireTruckCreation(sourceTower, droppedOnEnemy, transferData.source, 0)) {
+        placingTower = null;
+        return;
+    }
+
+
     const targetTower = gameState.towers.find(t => {
         const tGridX = Math.floor(t.x / TILE_SIZE);
         const tGridY = Math.floor(t.y / TILE_SIZE);
@@ -1132,12 +1246,7 @@ canvas.addEventListener('drop', e => {
         }
         return tGridX === gridX && tGridY === gridY;
     });
-    let sourceTower;
-    if (transferData.source === 'cloud') {
-        sourceTower = gameState.cloudInventory.find(t => t.id === transferData.towerId);
-    } else if (transferData.source === 'canvas') {
-        sourceTower = gameState.towers.find(t => t.id === transferData.towerId);
-    }
+
     const isNinePin = sourceTower?.type === 'NINE_PIN';
     let actionTaken = false;
     if (sourceTower) {
@@ -1159,7 +1268,7 @@ canvas.addEventListener('drop', e => {
             placingTower = null;
             placingFromCloud = null;
             draggedCloudTower = null;
-            selectedTower = null; // Deselect after a merge is initiated
+            selectedTowers = []; // Deselect after a merge is initiated
             actionTaken = true;
         }
         else if (!targetTower && isValidPlacement(snappedX, snappedY, isNinePin)) {
@@ -1170,8 +1279,8 @@ canvas.addEventListener('drop', e => {
                 gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== sourceTower.id);
             } else if (transferData.source === 'canvas') {
                 if (sourceTower.type === 'NINE_PIN') {
-                    const startX = Math.floor(sourceTower.x / TILE_SIZE) - 1;
-                    const startY = Math.floor(sourceTower.y / TILE_SIZE) - 1;
+                    const startX = draggedCanvasTowerOriginalGridPos.x - 1;
+                    const startY = draggedCanvasTowerOriginalGridPos.y - 1;
                     for (let j = 0; j < 3; j++) {
                         for (let i = 0; i < 3; i++) {
                             gameState.placementGrid[startY + j][startX + i] = GRID_EMPTY;
@@ -1228,7 +1337,7 @@ function reset(hardReset = false) {
     resetGameState(hardReset);
 
     placingTower = null;
-    selectedTower = null;
+    selectedTowers = [];
     selectedEnemy = null;
     gameSpeed = 1;
     placingFromCloud = null;
@@ -1264,7 +1373,7 @@ function init() {
     uiElements.cloudInventoryPanel.classList.add('hidden');
     renderCloudInventory();
     updateUI(gameState);
-    updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending);
+    updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending);
     canvas.width = GRID_COLS * TILE_SIZE;
     canvas.height = GRID_ROWS * TILE_SIZE;
     canvasWidth = canvas.width;
@@ -1385,45 +1494,52 @@ uiElements.resetGameBtn.addEventListener('click', () => {
 
 uiElements.sellTowerBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower) {
+    if (selectedTowers.length > 0) {
         if (!isSellConfirmPending) {
             isSellConfirmPending = true;
             uiElements.sellTowerBtn.textContent = 'ARE YOU SURE?';
             uiElements.sellTowerBtn.classList.remove('bg-red-700', 'text-yellow-300', 'border-yellow-400', 'shadow-[0_4px_0_#9a3412]');
             uiElements.sellTowerBtn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-600', 'shadow-[0_4px_0_#ca8a04]');
-
         } else {
-            // Confirmed sale
-            gameState.gold += Math.floor(selectedTower.cost * 0.5);
-            if (selectedTower.type === 'NINE_PIN') {
-                const centerX = Math.floor(selectedTower.x / TILE_SIZE);
-                const centerY = Math.floor(selectedTower.y / TILE_SIZE);
-                const startX = centerX - 1;
-                const startY = centerY - 1;
-                for (let j = 0; j < 3; j++) {
-                    for (let i = 0; i < 3; i++) {
-                        if (gameState.placementGrid[startY + j] && gameState.placementGrid[startY + j][startX + i] !== undefined) {
-                            gameState.placementGrid[startY + j][startX + i] = GRID_EMPTY;
+            let totalSellValue = 0;
+            selectedTowers.forEach(selectedTower => {
+                totalSellValue += Math.floor(selectedTower.cost * 0.5);
+                if (selectedTower.type === 'NINE_PIN') {
+                    const centerX = Math.floor(selectedTower.x / TILE_SIZE);
+                    const centerY = Math.floor(selectedTower.y / TILE_SIZE);
+                    const startX = centerX - 1;
+                    const startY = centerY - 1;
+                    for (let j = 0; j < 3; j++) {
+                        for (let i = 0; i < 3; i++) {
+                            if (gameState.placementGrid[startY + j] && gameState.placementGrid[startY + j][startX + i] !== undefined) {
+                                gameState.placementGrid[startY + j][startX + i] = GRID_EMPTY;
+                            }
                         }
                     }
+                } else {
+                    const gridX = Math.floor(selectedTower.x / TILE_SIZE);
+                    const gridY = Math.floor(selectedTower.y / TILE_SIZE);
+                    gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
                 }
-            } else {
-                const gridX = Math.floor(selectedTower.x / TILE_SIZE);
-                const gridY = Math.floor(selectedTower.y / TILE_SIZE);
-                gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
-            }
-            gameState.towers = gameState.towers.filter(t => t.id !== selectedTower.id);
-            selectedTower = null;
+            });
+
+            gameState.gold += totalSellValue;
+            const selectedIds = new Set(selectedTowers.map(t => t.id));
+            gameState.towers = gameState.towers.filter(t => !selectedIds.has(t.id));
+
+            selectedTowers = [];
             isSellConfirmPending = false;
             updateUI(gameState);
-            updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+            updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
         }
     }
 });
 
+
 uiElements.moveToCloudBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower && gameState.isCloudUnlocked) {
+    if (selectedTowers.length === 1 && gameState.isCloudUnlocked) {
+        const selectedTower = selectedTowers[0];
         gameState.cloudInventory.push(selectedTower);
         if (selectedTower.type === 'NINE_PIN') {
             const centerX = Math.floor(selectedTower.x / TILE_SIZE);
@@ -1443,62 +1559,71 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
             gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
         }
         gameState.towers = gameState.towers.filter(t => t.id !== selectedTower.id);
-        selectedTower = null;
+        selectedTowers = [];
         isSellConfirmPending = false;
         renderCloudInventory();
-        updateSellPanel(null, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+        updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 });
 
 uiElements.toggleModeBtn.addEventListener('click', () => {
     resumeAudioContext();
-    if (selectedTower) {
-        if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
-            const modes = ['boost', 'slow', 'diversify'];
-            const currentIndex = modes.indexOf(selectedTower.mode);
-            selectedTower.mode = modes[(currentIndex + 1) % modes.length];
-        } else if (selectedTower.type === 'ORBIT') {
-            selectedTower.orbitMode = selectedTower.orbitMode === 'far' ? 'near' : 'far';
-        }
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+    if (selectedTowers.length > 0) {
+        selectedTowers.forEach(selectedTower => {
+            if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
+                const modes = ['boost', 'slow', 'diversify'];
+                const currentIndex = modes.indexOf(selectedTower.mode);
+                selectedTower.mode = modes[(currentIndex + 1) % modes.length];
+            } else if (selectedTower.type === 'ORBIT') {
+                selectedTower.orbitMode = selectedTower.orbitMode === 'far' ? 'near' : 'far';
+            }
+        });
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 });
 
 uiElements.toggleTargetingBtn.addEventListener('click', () => {
     resumeAudioContext();
 
-    // If we are in the middle of selecting a ground target, this button should do nothing.
-    // This prevents the targeting mode from being cancelled unexpectedly.
     if (settingAttackGroundForTower) {
         return;
     }
 
-    if (selectedTower && (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN')) {
-        const modes = ['furthest', 'strongest', 'weakest'];
-        let currentIndex = modes.indexOf(selectedTower.targetingMode);
+    if (selectedTowers.length > 0) {
+        const primaryTowerType = selectedTowers[0].type;
+        const allSameType = selectedTowers.every(t => t.type === primaryTowerType);
 
-        // If current mode is 'ground' or not in the cycle, start from the first mode.
-        if (currentIndex === -1) {
-            currentIndex = -1; // Will become 0 after +1
+        if (allSameType) {
+            const currentMode = selectedTowers[0].targetingMode;
+            let modes;
+            if (primaryTowerType === 'FORT' || primaryTowerType === 'NINE_PIN') {
+                modes = ['furthest', 'strongest', 'weakest'];
+            } else if (primaryTowerType !== 'PIN_HEART') {
+                modes = ['strongest', 'weakest', 'furthest'];
+            } else {
+                return; // PIN_HEART is locked
+            }
+
+            let currentIndex = modes.indexOf(currentMode);
+            if (currentIndex === -1) currentIndex = -1; // handles 'ground' case for FORT
+            const nextMode = modes[(currentIndex + 1) % modes.length];
+
+            selectedTowers.forEach(tower => {
+                tower.targetingMode = nextMode;
+                tower.attackGroundTarget = null; // Clear ground target when changing mode
+            });
         }
-
-        const nextMode = modes[(currentIndex + 1) % modes.length];
-        selectedTower.targetingMode = nextMode;
-        // When switching to an enemy-targeting mode, always clear the ground target.
-        selectedTower.attackGroundTarget = null;
-
-    } else if (selectedTower && selectedTower.type !== 'PIN_HEART') {
-        const modes = ['strongest', 'weakest', 'furthest'];
-        const currentIndex = modes.indexOf(selectedTower.targetingMode);
-        selectedTower.targetingMode = modes[(currentIndex + 1) % modes.length];
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
-    updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
 });
+
 
 if (uiElements.setGroundTargetBtn) {
     uiElements.setGroundTargetBtn.addEventListener('click', () => {
         resumeAudioContext();
-        if (!selectedTower || (selectedTower.type !== 'FORT' && selectedTower.type !== 'NINE_PIN')) return;
+        if (selectedTowers.length !== 1) return;
+        const selectedTower = selectedTowers[0];
+        if (selectedTower.type !== 'FORT' && selectedTower.type !== 'NINE_PIN') return;
 
         // Toggle setting mode
         if (settingAttackGroundForTower === selectedTower) {
@@ -1507,9 +1632,10 @@ if (uiElements.setGroundTargetBtn) {
             settingAttackGroundForTower = selectedTower; // Enter selection mode
         }
         // Update the UI to reflect the change (e.g., button icon)
-        updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     });
 }
+
 
 uiElements.speedToggleBtn.addEventListener('click', () => {
     resumeAudioContext();
@@ -1586,7 +1712,7 @@ function performPendingMerge() {
                 gameState.gold -= cost;
             }
         }
-        selectedTower = existingTower; // The fix is here: assign the merged tower to selectedTower.
+        selectedTowers = [existingTower];
     }
     uiElements.mergeConfirmModal.classList.add('hidden');
     draggedCanvasTower = null;
@@ -1602,7 +1728,7 @@ function performPendingMerge() {
     uiElements.buySupportBtn.classList.remove('selected');
 
     updateUI(gameState);
-    updateSellPanel(selectedTower, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+    updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     renderCloudInventory();
 }
 
@@ -1737,3 +1863,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+

@@ -119,7 +119,9 @@ export function updateUI(state) {
     }
 }
 
-export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
+export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
+    const selectedTower = selectedTowers.length === 1 ? selectedTowers[0] : null;
+
     // Always remove the icon first to handle deselection correctly.
     const existingIndicator = uiElements.sellPanel.querySelector('.detection-indicator-container');
     if (existingIndicator) {
@@ -128,104 +130,24 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
 
     if (uiElements.setGroundTargetBtn) uiElements.setGroundTargetBtn.classList.add('hidden');
 
-    if (selectedTower) {
+    if (selectedTowers.length > 0) {
         uiElements.towerButtons.classList.add('hidden');
         uiElements.gameControls.classList.add('hidden');
         uiElements.towersTitle.classList.add('hidden');
         uiElements.sellPanel.classList.remove('hidden');
 
-        // Add the detection icon if the tower type is correct.
-        if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) {
-            const detectionRange = TOWER_TYPES[selectedTower.type].stealthDetectionRange;
+        let totalSellValue = 0;
+        selectedTowers.forEach(t => totalSellValue += Math.floor(t.cost * 0.5));
 
-            const indicatorContainer = document.createElement('div');
-            indicatorContainer.className = 'detection-indicator-container absolute top-2 left-2 flex items-center gap-1 text-white';
-            indicatorContainer.style.textShadow = '1px 1px 3px #000';
-
-            const eyeIcon = document.createElement('span');
-            eyeIcon.className = 'material-icons';
-            eyeIcon.textContent = 'visibility';
-
-            const rangeText = document.createElement('span');
-            rangeText.className = 'text-sm font-bold';
-            rangeText.textContent = `${detectionRange}x${detectionRange}`;
-
-            indicatorContainer.appendChild(eyeIcon);
-            indicatorContainer.appendChild(rangeText);
-
-            uiElements.sellPanel.classList.add('relative'); // Ensure positioning context
-            uiElements.sellPanel.prepend(indicatorContainer);
-        }
-
-        const sellValue = Math.floor(selectedTower.cost * 0.5);
-
-        // Hide the move to cloud button entirely if cloud is not unlocked
-        if (isCloudUnlocked) {
+        // Hide move to cloud if more than one tower selected
+        const canMoveToCloud = isCloudUnlocked && selectedTowers.length === 1;
+        if (canMoveToCloud) {
             if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'flex';
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.remove('col-span-2');
         } else {
             if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'none';
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.add('col-span-2');
         }
-
-        const killCountIcon = /** @type {HTMLElement | null} */ (uiElements.towerKillCount.querySelector('span.material-symbols-outlined'));
-        if (selectedTower.type === 'CAT') {
-            uiElements.towerKillCount.classList.remove('hidden');
-            if (killCountIcon) {
-                killCountIcon.textContent = 'paid';
-                killCountIcon.style.color = '#facc15'; // Gold
-            }
-            uiElements.killCountValue.textContent = selectedTower.goldGenerated || 0;
-        } else if (selectedTower.type === 'SUPPORT' || selectedTower.type === 'MIND') {
-            uiElements.towerKillCount.classList.add('hidden');
-        } else {
-            uiElements.towerKillCount.classList.remove('hidden');
-            if (killCountIcon) {
-                killCountIcon.textContent = 'skull';
-                killCountIcon.style.color = '#e0e0e0'; // White
-            }
-            uiElements.killCountValue.textContent = selectedTower.killCount || 0;
-        }
-
-        let levelText;
-        const maxLevelText = `<span class="material-icons text-yellow-400 align-bottom !text-base">star</span> MAX LEVEL`;
-        const towerType = selectedTower.type;
-        const maxLevel = TOWER_TYPES[towerType].maxLevel || 5;
-
-        if (selectedTower.level === 'MAX LEVEL') {
-            levelText = maxLevelText;
-        } else {
-            let visualLevel;
-            if (towerType === 'ORBIT') {
-                visualLevel = (selectedTower.upgradeCount || 0) + 1;
-                const ORBIT_MAX_UPGRADES = 4;
-                if ((selectedTower.upgradeCount || 0) >= ORBIT_MAX_UPGRADES) {
-                    levelText = maxLevelText;
-                } else {
-                    levelText = `LVL ${visualLevel}`;
-                }
-            } else if (towerType === 'FORT') {
-                visualLevel = selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1;
-                if (visualLevel >= maxLevel) {
-                    levelText = maxLevelText;
-                } else {
-                    levelText = `LVL ${visualLevel}`;
-                }
-            } else {
-                visualLevel = selectedTower.stats.levelForCalc;
-                if (visualLevel >= maxLevel) {
-                    levelText = maxLevelText;
-                } else if (visualLevel === 1 && (towerType === 'PIN' || towerType === 'CASTLE')) {
-                    levelText = ''; // Keep original behavior for base towers
-                }
-                else {
-                    levelText = `LVL ${visualLevel}`;
-                }
-            }
-        }
-
-        if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
-
 
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
@@ -238,229 +160,139 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
 
         if (uiElements.sellTowerBtn) {
             if (!isSellConfirmPending) {
-                uiElements.sellTowerBtn.textContent = `SELL FOR ${sellValue}G`;
+                uiElements.sellTowerBtn.textContent = `SELL FOR ${totalSellValue}G`;
                 uiElements.sellTowerBtn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-600', 'shadow-[0_4px_0_#ca8a04]');
                 uiElements.sellTowerBtn.classList.add('bg-red-700', 'text-yellow-300', 'border-yellow-400', 'shadow-[0_4px_0_#9a3412]');
             }
         }
 
-        if (isCloudUnlocked) {
-            if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'flex';
-            if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.remove('col-span-2');
-        } else {
-            if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'none';
-            if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.add('col-span-2');
-        }
         if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.add('hidden');
         if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.add('hidden');
-        if (['MIND', 'ORBIT', 'CAT'].includes(selectedTower.type)) {
-            if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.remove('hidden');
-            if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
-                if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
-            } else if (selectedTower.type === 'ORBIT') {
-                if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
-            }
-        }
 
-        if (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') {
-            if (uiElements.setGroundTargetBtn) {
-                uiElements.setGroundTargetBtn.classList.remove('hidden');
-                if (settingAttackGroundForTower === selectedTower) {
-                    uiElements.setGroundTargetBtn.innerHTML = `<span class="material-symbols-outlined">cancel</span>`;
-                    uiElements.setGroundTargetBtn.classList.add('active');
-                } else {
-                    uiElements.setGroundTargetBtn.innerHTML = `<span class="material-symbols-outlined">gps_fixed</span>`;
-                    uiElements.setGroundTargetBtn.classList.remove('active');
-                }
+        if (selectedTower) {
+            // SINGLE TOWER SELECTED
+            if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) {
+                const detectionRange = TOWER_TYPES[selectedTower.type].stealthDetectionRange;
+                const indicatorContainer = document.createElement('div');
+                indicatorContainer.className = 'detection-indicator-container absolute top-2 left-2 flex items-center gap-1 text-white';
+                indicatorContainer.style.textShadow = '1px 1px 3px #000';
+                const eyeIcon = document.createElement('span');
+                eyeIcon.className = 'material-icons';
+                eyeIcon.textContent = 'visibility';
+                const rangeText = document.createElement('span');
+                rangeText.className = 'text-sm font-bold';
+                rangeText.textContent = `${detectionRange}x${detectionRange}`;
+                indicatorContainer.appendChild(eyeIcon);
+                indicatorContainer.appendChild(rangeText);
+                uiElements.sellPanel.classList.add('relative');
+                uiElements.sellPanel.prepend(indicatorContainer);
             }
-            if (uiElements.toggleTargetingBtn) {
-                uiElements.toggleTargetingBtn.classList.remove('hidden');
-                uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'border-red-400', 'text-yellow-300', 'bg-yellow-400', 'border-yellow-300', 'text-black', 'bg-blue-800', 'border-blue-400', 'text-cyan-300');
 
-                switch (selectedTower.targetingMode) {
-                    case 'ground':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: GROUND';
-                        uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                        break;
-                    case 'strongest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: STRONGEST';
-                        uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
-                        break;
-                    case 'weakest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: WEAKEST';
-                        uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
-                        break;
-                    case 'furthest':
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
-                        uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                        break;
-                    default:
-                        uiElements.toggleTargetingBtn.innerHTML = 'TARGET: FURTHEST';
-                        uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                        break;
-                }
-            }
-        } else if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'MIND' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
-            if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
-            let targetingText = selectedTower.targetingMode.toUpperCase();
-            let lockIcon = '';
-            if (selectedTower.type === 'PIN_HEART') {
-                lockIcon = '<span class="material-symbols-outlined !text-base !leading-none">lock</span>';
-            }
-            if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.innerHTML = `TARGET: ${targetingText} ${lockIcon}`;
-            if (uiElements.toggleTargetingBtn) {
-                uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'bg-yellow-400', 'bg-blue-800', 'border-red-400', 'border-yellow-300', 'border-blue-400', 'text-black', 'text-yellow-300', 'text-cyan-300');
-                if (selectedTower.type === 'PIN_HEART') {
-                    // Locked to weakest, so apply weakest styling
-                    uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
-                } else {
-                    switch (selectedTower.targetingMode) {
-                        case 'strongest':
-                            uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
-                            break;
-                        case 'weakest':
-                            uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
-                            break;
-                        case 'furthest':
-                            uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
-                            break;
-                    }
-                }
-            }
-        }
-
-        const baseStats = TOWER_TYPES[selectedTower.type];
-        if (baseStats.special) {
-            let specialText = baseStats.special;
-            if (selectedTower.type === 'FORT' && selectedTower.hasShrapnel) {
-                specialText += " + AA Shrapnel";
-            }
-            if (uiElements.statSpecialP) {
-                uiElements.statSpecialP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
-                if (icon) icon.style.color = '#facc15'; // Gold for Special
-            }
-            if (uiElements.statSpecial) uiElements.statSpecial.textContent = specialText;
-        }
-
-        if (selectedTower.hasFragmentingShot) {
-            if (uiElements.statFragsP) {
-                uiElements.statFragsP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statFragsP.querySelector('span'));
-                if (icon) icon.style.color = '#f472b6'; // Pink for Fragments
-            }
-            if (uiElements.statFrags) uiElements.statFrags.textContent = selectedTower.fragmentBounces;
-            if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Fragmenting Shot';
-        }
-
-        if (selectedTower.splashRadius > 0) {
-            if (uiElements.statSplashP) {
-                uiElements.statSplashP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statSplashP.querySelector('span'));
-                if (icon) icon.style.color = '#c084fc'; // Purple for Splash
-            }
-            if (uiElements.statSplash) {
-                uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius).toString();
-            }
-        }
-
-        if (selectedTower.type === 'MIND' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
+            const killCountIcon = /** @type {HTMLElement | null} */ (uiElements.towerKillCount.querySelector('span.material-symbols-outlined'));
             if (selectedTower.type === 'CAT') {
-                if (uiElements.statGoldP) {
-                    uiElements.statGoldP.classList.remove('hidden');
-                    const icon = /** @type {HTMLElement | null} */ (uiElements.statGoldP.querySelector('span.material-icons'));
-                    if (icon) {
-                        const iconHTML = icon.outerHTML;
-                        uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
-                    }
+                uiElements.towerKillCount.classList.remove('hidden');
+                if (killCountIcon) {
+                    killCountIcon.textContent = 'paid';
+                    killCountIcon.style.color = '#facc15';
                 }
-            }
-            if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
-                if (selectedTower.mode === 'boost') {
-                    if (uiElements.statBoostP) {
-                        uiElements.statBoostP.classList.remove('hidden');
-                        const icon = /** @type {HTMLElement | null} */ (uiElements.statBoostP.querySelector('span'));
-                        if (icon) icon.style.color = '#f59e0b'; // Amber
-                    }
-                    if (uiElements.statBoost) {
-                        const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
-                        uiElements.statBoost.textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
-                    }
-                } else if (selectedTower.mode === 'slow') {
-                    if (uiElements.statSlowP) {
-                        uiElements.statSlowP.classList.remove('hidden');
-                        const icon = /** @type {HTMLElement | null} */ (uiElements.statSlowP.querySelector('span'));
-                        if (icon) icon.style.color = '#38bdf8'; // Sky Blue
-                    }
-                    if (uiElements.statSlow) {
-                        const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
-                        uiElements.statSlow.textContent = `${slowPercent}%`;
-                    }
-                } else { // Diversify
-                    if (uiElements.statSpecialP) {
-                        uiElements.statSpecialP.classList.remove('hidden');
-                        const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
-                        if (icon) icon.style.color = '#facc15'; // Gold for Special
-                    }
-                    if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Aura: Towers attack different enemies';
+                uiElements.killCountValue.textContent = selectedTower.goldGenerated || 0;
+            } else if (selectedTower.type === 'SUPPORT' || selectedTower.type === 'MIND') {
+                uiElements.towerKillCount.classList.add('hidden');
+            } else {
+                uiElements.towerKillCount.classList.remove('hidden');
+                if (killCountIcon) {
+                    killCountIcon.textContent = 'skull';
+                    killCountIcon.style.color = '#e0e0e0';
                 }
-            } else { // SUPPORT tower
-                if (uiElements.statBoostP) {
-                    uiElements.statBoostP.classList.remove('hidden');
-                    const icon = /** @type {HTMLElement | null} */ (uiElements.statBoostP.querySelector('span'));
-                    if (icon) icon.style.color = '#f59e0b'; // Amber
-                }
-                if (uiElements.statBoost) {
-                    const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
-                    uiElements.statBoost.textContent = `${boostPercent}%`;
-                }
-            }
-        } else { // Attacking towers
-            if (uiElements.statDamageP) {
-                uiElements.statDamageP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statDamageP.querySelector('span'));
-                if (icon) icon.style.color = '#ef4444'; // Red for Damage
-            }
-            if (uiElements.statDamage) {
-                const finalDamage = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
-                uiElements.statDamage.textContent = finalDamage;
+                uiElements.killCountValue.textContent = selectedTower.killCount || 0;
             }
 
-            if (uiElements.statSpeedP && selectedTower.type !== 'ORBIT') {
-                uiElements.statSpeedP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statSpeedP.querySelector('span'));
-                if (icon) icon.style.color = '#4ade80'; // Green for Speed
+            let levelText;
+            const maxLevelText = `<span class="material-icons text-yellow-400 align-bottom !text-base">star</span> MAX LEVEL`;
+            const towerType = selectedTower.type;
+            const maxLevel = TOWER_TYPES[towerType].maxLevel || 5;
+
+            if (selectedTower.level === 'MAX LEVEL') {
+                levelText = maxLevelText;
+            } else {
+                let visualLevel;
+                if (towerType === 'ORBIT') {
+                    visualLevel = (selectedTower.upgradeCount || 0) + 1;
+                    const ORBIT_MAX_UPGRADES = 4;
+                    if ((selectedTower.upgradeCount || 0) >= ORBIT_MAX_UPGRADES) {
+                        levelText = maxLevelText;
+                    } else {
+                        levelText = `LVL ${visualLevel}`;
+                    }
+                } else if (towerType === 'FORT') {
+                    visualLevel = selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1;
+                    if (visualLevel >= maxLevel) {
+                        levelText = maxLevelText;
+                    } else {
+                        levelText = `LVL ${visualLevel}`;
+                    }
+                } else {
+                    visualLevel = selectedTower.stats.levelForCalc;
+                    if (visualLevel >= maxLevel) {
+                        levelText = maxLevelText;
+                    } else if (visualLevel === 1 && (towerType === 'PIN' || towerType === 'CASTLE')) {
+                        levelText = '';
+                    } else {
+                        levelText = `LVL ${visualLevel}`;
+                    }
+                }
             }
-            if (uiElements.statSpeed && selectedTower.type !== 'ORBIT') {
-                uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
+            if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.innerHTML = `${selectedTower.type.replace('_', ' ')} ${levelText}`;
+
+            // Show single tower stats and buttons
+            if (['MIND', 'ORBIT', 'CAT'].includes(selectedTower.type)) {
+                if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.remove('hidden');
+                if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
+                    if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
+                } else if (selectedTower.type === 'ORBIT') {
+                    if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
+                }
             }
 
-            if (selectedTower.type !== 'ORBIT') {
-                if (uiElements.statRangeP) {
-                    uiElements.statRangeP.classList.remove('hidden');
-                    const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
-                    if (icon) icon.style.color = '#60a5fa'; // Blue for Range
+            if (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') {
+                if (uiElements.setGroundTargetBtn) {
+                    uiElements.setGroundTargetBtn.classList.remove('hidden');
+                    if (settingAttackGroundForTower === selectedTower) {
+                        uiElements.setGroundTargetBtn.innerHTML = `<span class="material-symbols-outlined">cancel</span>`;
+                        uiElements.setGroundTargetBtn.classList.add('active');
+                    } else {
+                        uiElements.setGroundTargetBtn.innerHTML = `<span class="material-symbols-outlined">gps_fixed</span>`;
+                        uiElements.setGroundTargetBtn.classList.remove('active');
+                    }
                 }
-                if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
             }
 
-            if (selectedTower.type === 'FIREPLACE') {
-                if (uiElements.statBurnP) {
-                    uiElements.statBurnP.classList.remove('hidden');
-                    const icon = /** @type {HTMLElement | null} */ (uiElements.statBurnP.querySelector('span'));
-                    if (icon) icon.style.color = '#f97316'; // Orange for Burn
-                }
-                if (uiElements.statBurn) uiElements.statBurn.textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;
+            if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'MIND' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
+                if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
             }
 
-            if (selectedTower.type === 'NAT' || selectedTower.type === 'ORBIT') {
-                if (uiElements.statProjectilesP) {
-                    uiElements.statProjectilesP.classList.remove('hidden');
-                    const icon = /** @type {HTMLElement | null} */ (uiElements.statProjectilesP.querySelector('span'));
-                    if (icon) icon.style.color = '#e0e0e0'; // White for Projectiles
+            updateTargetingButton(selectedTower.targetingMode, selectedTower.type);
+            updateStatsDisplay(selectedTower);
+
+        } else {
+            // MULTIPLE TOWERS SELECTED
+            if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.textContent = `${selectedTowers.length} TOWERS SELECTED`;
+            uiElements.towerKillCount.classList.add('hidden');
+
+            const allSameType = selectedTowers.every(t => t.type === selectedTowers[0].type);
+            if (allSameType) {
+                const type = selectedTowers[0].type;
+                if (['MIND', 'CAT', 'ORBIT'].includes(type)) {
+                    if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.remove('hidden');
+                    if (type === 'ORBIT') {
+                        uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTowers[0].orbitMode.toUpperCase()}`;
+                    } else {
+                        uiElements.toggleModeBtn.textContent = `MODE: ${selectedTowers[0].mode.toUpperCase()}`;
+                    }
                 }
-                if (uiElements.statProjectiles) {
-                    uiElements.statProjectiles.textContent = selectedTower.type === 'NAT' ? (selectedTower.projectileCount || 1) : selectedTower.orbiters.length;
+                if (type !== 'SUPPORT' && type !== 'MIND' && type !== 'CAT' && type !== 'ORBIT') {
+                    if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
+                    updateTargetingButton(selectedTowers[0].targetingMode, type);
                 }
             }
         }
@@ -473,6 +305,169 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.textContent = '';
     }
 }
+
+
+function updateTargetingButton(targetingMode, towerType) {
+    if (!uiElements.toggleTargetingBtn) return;
+    let targetingText = targetingMode.toUpperCase();
+    let lockIcon = '';
+    if (towerType === 'PIN_HEART') {
+        lockIcon = '<span class="material-symbols-outlined !text-base !leading-none">lock</span>';
+    }
+    uiElements.toggleTargetingBtn.innerHTML = `TARGET: ${targetingText} ${lockIcon}`;
+    uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'bg-yellow-400', 'bg-blue-800', 'border-red-400', 'border-yellow-300', 'border-blue-400', 'text-black', 'text-yellow-300', 'text-cyan-300');
+    if (towerType === 'PIN_HEART') {
+        uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+    } else {
+        switch (targetingMode) {
+            case 'strongest':
+                uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                break;
+            case 'weakest':
+                uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+                break;
+            case 'furthest':
+                uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                break;
+        }
+    }
+}
+
+function updateStatsDisplay(selectedTower) {
+    // This function now only handles displaying stats for a single tower.
+    const baseStats = TOWER_TYPES[selectedTower.type];
+    if (baseStats.special) {
+        let specialText = baseStats.special;
+        if (selectedTower.type === 'FORT' && selectedTower.hasShrapnel) {
+            specialText += " + AA Shrapnel";
+        }
+        if (uiElements.statSpecialP) {
+            uiElements.statSpecialP.classList.remove('hidden');
+            const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
+            if (icon) icon.style.color = '#facc15';
+        }
+        if (uiElements.statSpecial) uiElements.statSpecial.textContent = specialText;
+    }
+
+    if (selectedTower.hasFragmentingShot) {
+        if (uiElements.statFragsP) {
+            uiElements.statFragsP.classList.remove('hidden');
+            const icon = /** @type {HTMLElement | null} */ (uiElements.statFragsP.querySelector('span'));
+            if (icon) icon.style.color = '#f472b6';
+        }
+        if (uiElements.statFrags) uiElements.statFrags.textContent = selectedTower.fragmentBounces;
+        if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Fragmenting Shot';
+    }
+
+    if (selectedTower.splashRadius > 0) {
+        if (uiElements.statSplashP) {
+            uiElements.statSplashP.classList.remove('hidden');
+            const icon = /** @type {HTMLElement | null} */ (uiElements.statSplashP.querySelector('span'));
+            if (icon) icon.style.color = '#c084fc';
+        }
+        if (uiElements.statSplash) {
+            uiElements.statSplash.textContent = Math.round(selectedTower.splashRadius).toString();
+        }
+    }
+
+    if (selectedTower.type === 'MIND' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
+        if (selectedTower.type === 'CAT') {
+            if (uiElements.statGoldP) {
+                uiElements.statGoldP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statGoldP.querySelector('span.material-icons'));
+                if (icon) {
+                    const iconHTML = icon.outerHTML;
+                    uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
+                }
+            }
+        }
+        if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
+            if (selectedTower.mode === 'boost') {
+                if (uiElements.statBoostP) {
+                    uiElements.statBoostP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statBoostP.querySelector('span'));
+                    if (icon) icon.style.color = '#f59e0b';
+                }
+                if (uiElements.statBoost) {
+                    const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
+                    uiElements.statBoost.textContent = `${boostPercent}% Spd & ${((selectedTower.damageBoost - 1) * 100).toFixed(0)}% Dmg`;
+                }
+            } else if (selectedTower.mode === 'slow') {
+                if (uiElements.statSlowP) {
+                    uiElements.statSlowP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statSlowP.querySelector('span'));
+                    if (icon) icon.style.color = '#38bdf8';
+                }
+                if (uiElements.statSlow) {
+                    const slowPercent = ((1 - selectedTower.enemySlow) * 100).toFixed(0);
+                    uiElements.statSlow.textContent = `${slowPercent}%`;
+                }
+            } else { // Diversify
+                if (uiElements.statSpecialP) {
+                    uiElements.statSpecialP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
+                    if (icon) icon.style.color = '#facc15';
+                }
+                if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Aura: Towers attack different enemies';
+            }
+        } else { // SUPPORT tower
+            if (uiElements.statBoostP) {
+                uiElements.statBoostP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statBoostP.querySelector('span'));
+                if (icon) icon.style.color = '#f59e0b';
+            }
+            if (uiElements.statBoost) {
+                const boostPercent = ((1 - selectedTower.attackSpeedBoost) * 100).toFixed(0);
+                uiElements.statBoost.textContent = `${boostPercent}%`;
+            }
+        }
+    } else { // Attacking towers
+        if (uiElements.statDamageP) {
+            uiElements.statDamageP.classList.remove('hidden');
+            const icon = /** @type {HTMLElement | null} */ (uiElements.statDamageP.querySelector('span'));
+            if (icon) icon.style.color = '#ef4444';
+        }
+        if (uiElements.statDamage) {
+            const finalDamage = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
+            uiElements.statDamage.textContent = finalDamage;
+        }
+        if (uiElements.statSpeedP && selectedTower.type !== 'ORBIT') {
+            uiElements.statSpeedP.classList.remove('hidden');
+            const icon = /** @type {HTMLElement | null} */ (uiElements.statSpeedP.querySelector('span'));
+            if (icon) icon.style.color = '#4ade80';
+        }
+        if (uiElements.statSpeed && selectedTower.type !== 'ORBIT') {
+            uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
+        }
+        if (selectedTower.type !== 'ORBIT') {
+            if (uiElements.statRangeP) {
+                uiElements.statRangeP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
+                if (icon) icon.style.color = '#60a5fa';
+            }
+            if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
+        }
+        if (selectedTower.type === 'FIREPLACE') {
+            if (uiElements.statBurnP) {
+                uiElements.statBurnP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statBurnP.querySelector('span'));
+                if (icon) icon.style.color = '#f97316';
+            }
+            if (uiElements.statBurn) uiElements.statBurn.textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;
+        }
+        if (selectedTower.type === 'NAT' || selectedTower.type === 'ORBIT') {
+            if (uiElements.statProjectilesP) {
+                uiElements.statProjectilesP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statProjectilesP.querySelector('span'));
+                if (icon) icon.style.color = '#e0e0e0';
+            }
+            if (uiElements.statProjectiles) {
+                uiElements.statProjectiles.textContent = selectedTower.type === 'NAT' ? (selectedTower.projectileCount || 1) : selectedTower.orbiters.length;
+            }
+        }
+    }
+}
+
 
 function createAndAppendIcon(container, type) {
     const iconInfo = getTowerIconInfo(type);
@@ -707,3 +702,4 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
+

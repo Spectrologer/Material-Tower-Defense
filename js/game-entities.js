@@ -559,7 +559,7 @@ class TowerStats {
 
         tower.cost = baseStats.cost * this.levelForCalc;
         tower.range = baseStats.range;
-        if (tower.type === 'FIREPLACE') {
+        if (tower.type === 'FIREPLACE' || tower.type === 'FIRE_TRUCK') {
             tower.damage = baseStats.damage;
         } else {
             tower.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (tower.damageMultiplierFromMerge || 1);
@@ -602,7 +602,7 @@ class TowerController {
         if (tower.type === 'ANTI_AIR') {
             potentialTargets = potentialTargets.filter(enemy => enemy.type.isFlying);
         } else {
-            const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
+            const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE', 'FIRE_TRUCK'];
             if (groundOnlyTowers.includes(tower.type)) {
                 potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
             }
@@ -685,8 +685,33 @@ class TowerController {
         }
     }
 
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path) {
         const tower = this.tower;
+
+        if (tower.isMobile && path && path.length > tower.pathIndex + 1) {
+            if (tower.pathIndex >= path.length - 1) {
+                // Stop at end
+            } else {
+                const targetNode = path[tower.pathIndex + 1];
+                const dx = targetNode.x - tower.x;
+                const dy = targetNode.y - tower.y;
+                const distance = Math.hypot(dx, dy);
+                const moveDistance = tower.speed * 60 * deltaTime;
+
+                tower.rotation = Math.atan2(dy, dx);
+
+                if (distance < moveDistance) {
+                    tower.x = targetNode.x;
+                    tower.y = targetNode.y;
+                    tower.pathIndex++;
+                } else {
+                    tower.x += (dx / distance) * moveDistance;
+                    tower.y += (dy / distance) * moveDistance;
+                }
+            }
+        }
+
+
         if (tower.type === 'SUPPORT' || tower.type === 'MIND' || tower.type === 'CAT') {
             return;
         }
@@ -817,6 +842,10 @@ class TowerRenderer {
                 icon = 'open_jam';
                 iconFamily = "'Material Symbols Outlined'";
                 break;
+            case 'FIRE_TRUCK':
+                icon = 'fire_truck';
+                iconFamily = "'Material Symbols Outlined'";
+                break;
         }
         ctx.font = `${fontWeight} ${iconSize}px ${iconFamily}`;
         const angle = tower.target ? Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x) : 0;
@@ -830,7 +859,9 @@ class TowerRenderer {
             }
         }
 
-        if (tower.type === 'NAT') {
+        if (tower.isMobile) {
+            ctx.rotate(tower.rotation);
+        } else if (tower.type === 'NAT') {
             ctx.rotate(angle);
         } else if (tower.type === 'PIN' || tower.type === 'PIN_HEART') {
             ctx.rotate(angle - Math.PI / 2);
@@ -909,6 +940,16 @@ export class Tower {
         this.attackSpeedBoost = 1;
         this.damageBoost = 1;
         this.enemySlow = 1;
+        this.rotation = 0;
+
+        const baseStats = TOWER_TYPES[this.type];
+        if (baseStats.isMobile) {
+            this.isMobile = true;
+            this.speed = baseStats.speed;
+            this.pathIndex = 0;
+            this.progress = 0;
+        }
+
 
         // Properties to be populated by updateStats
         this.cost = 0;
@@ -953,9 +994,10 @@ export class Tower {
     draw(ctx) { this.renderer.draw(ctx); }
     drawRange(ctx) { this.renderer.drawRange(ctx); }
     drawBuffEffect(ctx) { this.renderer.drawBuffEffect(ctx); }
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
-        this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies);
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path) {
+        this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path);
     }
+
 
     // --- SERIALIZATION ---
     toJSON() {
@@ -984,11 +1026,19 @@ export class Tower {
             natCastleBonus: this.natCastleBonus,
         };
 
+        if (this.isMobile) {
+            data.isMobile = this.isMobile;
+            data.speed = this.speed;
+            data.pathIndex = this.pathIndex;
+            data.progress = this.progress;
+            data.rotation = this.rotation;
+        }
+
         if (this.type === 'ORBIT') {
             data.orbitMode = this.orbitMode;
             data.upgradeCount = this.upgradeCount;
         }
-        if (this.type === 'FIREPLACE') {
+        if (this.type === 'FIREPLACE' || this.type === 'FIRE_TRUCK') {
             data.burnDps = this.burnDps;
             data.burnDuration = this.burnDuration;
         }
@@ -1013,8 +1063,10 @@ export class Tower {
             "damageMultiplier", "projectileCount", "damageMultiplierFromMerge", "fragmentBounces",
             "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color",
             "projectileSize", "burnDps", "burnDuration", "attackSpeedBoost", "damageBoost",
-            "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount"
+            "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount",
+            "isMobile", "speed", "pathIndex", "progress", "rotation"
         ];
+
 
         for (const field of fields) {
             if (field in data) {

@@ -286,10 +286,8 @@ export class MergeHandler {
             apply: (tower, { originalTowerColor, mergingTowerType }) => {
                 tower.splashRadius += 10;
                 tower.level++;
-                tower.cost += tower.cost;
                 tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
                 tower.updateStats();
-                tower.damage = TOWER_TYPES.FIREPLACE.damage;
             }
         });
 
@@ -300,10 +298,32 @@ export class MergeHandler {
             apply: (tower, { originalTowerColor, mergingTowerType }) => {
                 tower.burnDps += 1;
                 tower.level++;
-                tower.cost += tower.cost;
                 tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
                 tower.updateStats();
-                tower.damage = TOWER_TYPES.FIREPLACE.damage;
+            }
+        });
+
+        this._addRecipe('FIRE_TRUCK', 'CASTLE', {
+            resultType: 'FIRE_TRUCK', text: 'Upgrade',
+            upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
+            canApply: (tower) => tower.level < 3,
+            apply: (tower, { originalTowerColor, mergingTowerType }) => {
+                tower.splashRadius += 10;
+                tower.level++;
+                tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+                tower.updateStats();
+            }
+        });
+
+        this._addRecipe('FIRE_TRUCK', 'PIN', {
+            resultType: 'FIRE_TRUCK', text: 'Upgrade',
+            upgrade: { text: '+ Burn', icon: 'local_fire_department', family: 'material-symbols-outlined' },
+            canApply: (tower) => tower.level < 3,
+            apply: (tower, { originalTowerColor, mergingTowerType }) => {
+                tower.burnDps += 1.5;
+                tower.level++;
+                tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+                tower.updateStats();
             }
         });
     }
@@ -316,9 +336,10 @@ export class MergeHandler {
      * @returns {object|null} An object with info for the merge tooltip, or null if no merge is possible.
      */
     getMergeInfo(existingTower, placingType, gameState) {
-        if (existingTower.type === 'NINE_PIN' || placingType === 'NINE_PIN' || TOWER_TYPES[existingTower.type].unmergeable) {
+        if (existingTower.type === 'NINE_PIN' || placingType === 'NINE_PIN' || TOWER_TYPES[existingTower.type].unmergeable || TOWER_TYPES[placingType].isMobile || TOWER_TYPES[existingTower.type].isMobile) {
             return null;
         }
+
 
         const key = createRecipeKey(existingTower.type, placingType);
         const recipe = this.recipes.get(key);
@@ -376,10 +397,11 @@ export class MergeHandler {
                 if (tower.upgradeCount === 4) {
                     tower.level = 'MAX LEVEL';
                 }
-            } else if (tower.level === maxLevel) {
+            } else if (tower.level >= maxLevel) {
                 tower.level = 'MAX LEVEL';
                 if (tower.damageLevel) tower.damageLevel = 'MAX LEVEL';
             }
+
 
             if (tower.type === 'FORT') {
                 const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.stats.levelForCalc + tower.stats.damageLevelForCalc - 1);
