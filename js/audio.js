@@ -7,9 +7,10 @@ let isSoundEnabled = true;
 let isMusicPlaying = false;
 let isAudioResumed = false;
 
-const trackNames = [...Object.values(Track), ...Object.values(SpecialTrack)];
+const trackRotation = Object.values(Track);
+const allValidTracks = [...trackRotation, ...Object.values(SpecialTrack)];
 const currentTrack = {
-    track: trackNames[0],
+    track: trackRotation[0],
     options: { volume: 40, isMuted: true }
 };
 
@@ -20,8 +21,8 @@ export function setMusicOptions(options) {
 
 export function setMusicTrack(trackNameOrNumber, options) {
     if (typeof trackNameOrNumber === 'number') {
-        currentTrack.track = trackNames[(trackNameOrNumber - 1) % trackNames.length];
-    } else if (trackNames.includes(trackNameOrNumber)) {
+        currentTrack.track = trackRotation[(trackNameOrNumber - 1) % trackRotation.length];
+    } else if (allValidTracks.includes(trackNameOrNumber)) {
         currentTrack.track = trackNameOrNumber;
     } else {
         throw new Error(`Invalid track: ${trackNameOrNumber}`);
@@ -30,9 +31,9 @@ export function setMusicTrack(trackNameOrNumber, options) {
 }
 
 export function nextMusicTrack(n = 1) {
-    const currentIndex = trackNames.indexOf(currentTrack.track);
-    const nextIndex = (currentIndex + n) % trackNames.length;
-    currentTrack.track = trackNames[nextIndex];
+    const currentIndex = trackRotation.indexOf(currentTrack.track);
+    const nextIndex = (currentIndex + n) % trackRotation.length;
+    currentTrack.track = trackRotation[nextIndex];
     setMusicOptions(currentTrack.options);
     return currentTrack.track;
 }
