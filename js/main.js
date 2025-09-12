@@ -1369,14 +1369,14 @@ function reset(hardReset = false) {
 
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-    init();
+    init(true);
 }
 
-function init() {
+function init(fromReset = false) {
     loadGameStateFromStorage();
-    if (gameState.gameOver) {
-        reset();
-    }
+
+    if (!fromReset && gameState.gameOver) return reset();
+
     setMusicTrack(1, { bossMode: false });
 
     // Load saved settings
