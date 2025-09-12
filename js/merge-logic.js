@@ -39,17 +39,17 @@ export class MergeHandler {
     _initializeRecipes() {
         // --- TOWER TRANSFORMATION RECIPES ---
         this._addRecipe('SUPPORT', 'SUPPORT', {
-            resultType: 'ENT',
+            resultType: 'MIND',
             apply: (tower) => {
-                tower.type = 'ENT';
+                tower.type = 'MIND';
                 tower.level = 1;
                 tower.damageLevel = 1;
                 tower.updateStats();
-                tower.color = TOWER_TYPES.ENT.color;
+                tower.color = TOWER_TYPES.MIND.color;
             }
         });
 
-        this._addRecipe('ENT', 'SUPPORT', {
+        this._addRecipe('MIND', 'SUPPORT', {
             resultType: 'CAT',
             apply: (tower) => {
                 tower.type = 'CAT';

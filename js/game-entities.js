@@ -544,7 +544,7 @@ class TowerStats {
         const tower = this.tower;
         const baseStats = TOWER_TYPES[tower.type];
 
-        if (tower.type === 'ENT' || tower.type === 'CAT') {
+        if (tower.type === 'MIND' || tower.type === 'CAT') {
             tower.level = 'MAX LEVEL';
             tower.cost = baseStats.cost;
             tower.range = baseStats.range;
@@ -687,7 +687,7 @@ class TowerController {
 
     update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies) {
         const tower = this.tower;
-        if (tower.type === 'SUPPORT' || tower.type === 'ENT' || tower.type === 'CAT') {
+        if (tower.type === 'SUPPORT' || tower.type === 'MIND' || tower.type === 'CAT') {
             return;
         }
         if (tower.type === 'ORBIT') {
@@ -785,8 +785,8 @@ class TowerRenderer {
                 icon = 'nat';
                 iconFamily = "'Material Symbols Outlined'";
                 break;
-            case 'ENT':
-                icon = 'ent';
+            case 'MIND':
+                icon = 'cognition';
                 iconFamily = "'Material Symbols Outlined'";
                 if (tower.mode === 'boost') {
                     ctx.fillStyle = '#65a30d';
@@ -848,7 +848,7 @@ class TowerRenderer {
 
     drawRange(ctx) {
         const tower = this.tower;
-        if (tower.type === 'ORBIT' || tower.type === 'SUPPORT' || tower.type === 'ENT' || tower.type === 'CAT') return;
+        if (tower.type === 'ORBIT' || tower.type === 'SUPPORT' || tower.type === 'MIND' || tower.type === 'CAT') return;
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -858,7 +858,7 @@ class TowerRenderer {
 
     drawBuffEffect(ctx) {
         const tower = this.tower;
-        const auraColor = (tower.type === 'ENT' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
+        const auraColor = (tower.type === 'MIND' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
         const dashLength = 10;
         const spaceLength = 5;
         const totalLength = dashLength + spaceLength;
@@ -992,7 +992,7 @@ export class Tower {
             data.burnDps = this.burnDps;
             data.burnDuration = this.burnDuration;
         }
-        if (this.type === 'ENT' || this.type === 'CAT') {
+        if (this.type === 'MIND' || this.type === 'CAT') {
             data.attackSpeedBoost = this.attackSpeedBoost;
             data.damageBoost = this.damageBoost;
             data.enemySlow = this.enemySlow;

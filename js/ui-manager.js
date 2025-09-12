@@ -135,7 +135,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         uiElements.sellPanel.classList.remove('hidden');
 
         // Add the detection icon if the tower type is correct.
-        if (['SUPPORT', 'ENT', 'CAT'].includes(selectedTower.type)) {
+        if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) {
             const detectionRange = TOWER_TYPES[selectedTower.type].stealthDetectionRange;
 
             const indicatorContainer = document.createElement('div');
@@ -176,7 +176,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                 killCountIcon.style.color = '#facc15'; // Gold
             }
             uiElements.killCountValue.textContent = selectedTower.goldGenerated || 0;
-        } else if (selectedTower.type === 'SUPPORT' || selectedTower.type === 'ENT') {
+        } else if (selectedTower.type === 'SUPPORT' || selectedTower.type === 'MIND') {
             uiElements.towerKillCount.classList.add('hidden');
         } else {
             uiElements.towerKillCount.classList.remove('hidden');
@@ -253,9 +253,9 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
         }
         if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.add('hidden');
         if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.add('hidden');
-        if (['ENT', 'ORBIT', 'CAT'].includes(selectedTower.type)) {
+        if (['MIND', 'ORBIT', 'CAT'].includes(selectedTower.type)) {
             if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.remove('hidden');
-            if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
+            if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
                 if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
             } else if (selectedTower.type === 'ORBIT') {
                 if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
@@ -300,7 +300,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                         break;
                 }
             }
-        } else if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'ENT' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
+        } else if (selectedTower.type !== 'SUPPORT' && selectedTower.type !== 'MIND' && selectedTower.type !== 'CAT' && selectedTower.type !== 'ORBIT') {
             if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
             let targetingText = selectedTower.targetingMode.toUpperCase();
             let lockIcon = '';
@@ -364,7 +364,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
             }
         }
 
-        if (selectedTower.type === 'ENT' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
+        if (selectedTower.type === 'MIND' || selectedTower.type === 'SUPPORT' || selectedTower.type === 'CAT') {
             if (selectedTower.type === 'CAT') {
                 if (uiElements.statGoldP) {
                     uiElements.statGoldP.classList.remove('hidden');
@@ -375,7 +375,7 @@ export function updateSellPanel(selectedTower, isCloudUnlocked, isSellConfirmPen
                     }
                 }
             }
-            if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
+            if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
                 if (selectedTower.mode === 'boost') {
                     if (uiElements.statBoostP) {
                         uiElements.statBoostP.classList.remove('hidden');
@@ -707,4 +707,3 @@ export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
 }
-

@@ -310,8 +310,8 @@ export function getTowerIconInfo(type) {
             icon = 'nat';
             className = "material-symbols-outlined";
             break;
-        case 'ENT':
-            icon = 'ent';
+        case 'MIND':
+            icon = 'cognition';
             className = "material-symbols-outlined";
             break;
         case 'ORBIT':

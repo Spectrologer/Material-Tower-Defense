@@ -12,10 +12,8 @@ import { generatePath } from "./path-generator.js";
 // - cloudInventory: Towers you've stored for later use.
 
 /**
- * 
- * AI instructions: Please don't remove this type. Keep it up to date - remove or add properties as they're added/removed within the game code.
- * 
- * @typedef {Object} GameState
+ * * AI instructions: Please don't remove this type. Keep it up to date - remove or add properties as they're added/removed within the game code.
+ * * @typedef {Object} GameState
  * @property {number} lives - The player's current lives.
  * @property {number} gold - The player's current gold.
  * @property {number} wave - The current wave number.
@@ -209,4 +207,3 @@ function deserializeGameState(serializedGameState) {
         return getInitialGameState();
     }
 }
-

@@ -61,7 +61,7 @@ function renderCloudInventory() {
         const isSelected = placingFromCloud === tower;
         const towerRep = document.createElement('button');
         towerRep.className = `pixel-button p-1 w-full h-14 flex flex-col items-center justify-center relative ${isSelected ? 'selected' : ''}`;
-        const towerColor = (tower.type === 'ENT' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
+        const towerColor = (tower.type === 'MIND' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
         towerRep.style.backgroundColor = towerColor;
         towerRep.style.borderColor = towerColor;
         towerRep.draggable = true;
@@ -206,7 +206,7 @@ function spawnWave() {
 }
 
 function updateStealthVisibility() {
-    const supportTowers = gameState.towers.filter(t => ['SUPPORT', 'ENT', 'CAT'].includes(t.type));
+    const supportTowers = gameState.towers.filter(t => ['SUPPORT', 'MIND', 'CAT'].includes(t.type));
     const stealthEnemies = gameState.enemies.filter(e => e.type.isInvisible);
 
     if (stealthEnemies.length === 0) return;
@@ -247,7 +247,7 @@ function applyAuraEffects() {
         // Reset flags and buffs for this frame
         targetTower.isUnderDiversifyAura = false;
 
-        if (!['SUPPORT', 'ENT', 'CAT'].includes(targetTower.type)) {
+        if (!['SUPPORT', 'MIND', 'CAT'].includes(targetTower.type)) {
             // Reset to base stats before calculating this frame's buffs
             targetTower.fireRate = targetTower.permFireRate;
             targetTower.damageMultiplier = 1;
@@ -265,7 +265,7 @@ function applyAuraEffects() {
 
             // Find all adjacent aura towers and determine the best buff/flag they offer
             gameState.towers.forEach(auraTower => {
-                if (['SUPPORT', 'ENT', 'CAT'].includes(auraTower.type)) {
+                if (['SUPPORT', 'MIND', 'CAT'].includes(auraTower.type)) {
                     const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
                     const auraGridY = Math.floor(auraTower.y / TILE_SIZE);
 
@@ -278,7 +278,7 @@ function applyAuraEffects() {
                         // Check for buffs
                         if (auraTower.type === 'SUPPORT') {
                             bestSpeedBoost = Math.min(bestSpeedBoost, auraTower.attackSpeedBoost);
-                        } else if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'boost') {
+                        } else if (['MIND', 'CAT'].includes(auraTower.type) && auraTower.mode === 'boost') {
                             bestSpeedBoost = Math.min(bestSpeedBoost, auraTower.attackSpeedBoost);
                             bestDamageBoost = Math.max(bestDamageBoost, auraTower.damageBoost);
                         }
@@ -303,7 +303,7 @@ function applyAuraEffects() {
 
     // Handle enemy slowing auras separately
     gameState.towers.forEach(auraTower => {
-        if (['ENT', 'CAT'].includes(auraTower.type) && auraTower.mode === 'slow') {
+        if (['MIND', 'CAT'].includes(auraTower.type) && auraTower.mode === 'slow') {
             const auraGridX = Math.floor(auraTower.x / TILE_SIZE);
             const auraGridY = Math.floor(auraTower.y / TILE_SIZE);
             gameState.enemies.forEach(enemy => {
@@ -577,7 +577,7 @@ function gameLoop(currentTime) {
     gameState.towers.forEach(tower => tower.draw(ctx));
     if (selectedTower) {
         selectedTower.drawRange(ctx);
-        if (['SUPPORT', 'ENT', 'CAT'].includes(selectedTower.type)) selectedTower.drawBuffEffect(ctx);
+        if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) selectedTower.drawBuffEffect(ctx);
     }
     gameState.projectiles.forEach(p => p.draw(ctx));
     gameState.effects.forEach(effect => effect.draw(ctx));
@@ -1044,7 +1044,7 @@ canvas.addEventListener('dragstart', (e) => {
         tempCanvas.width = TILE_SIZE;
         tempCanvas.height = TILE_SIZE;
         const tempCtx = tempCanvas.getContext('2d');
-        const towerColor = (towerToDrag.type === 'ENT' && towerToDrag.mode === 'slow') ? '#0891b2' : ((towerToDrag.type === 'CAT' && towerToDrag.mode === 'slow') ? '#0891b2' : towerToDrag.color);
+        const towerColor = (towerToDrag.type === 'MIND' && towerToDrag.mode === 'slow') ? '#0891b2' : ((towerToDrag.type === 'CAT' && towerToDrag.mode === 'slow') ? '#0891b2' : towerToDrag.color);
         const towerIconInfo = getTowerIconInfo(towerToDrag.type);
         const fontStyle = towerIconInfo.className === 'fa-solid' ? '900' : '400';
         tempCtx.font = `${fontStyle} 24px "${towerIconInfo.className.replace('fa-solid', 'Font Awesome 6 Free').replace('material-symbols-outlined', 'Material Symbols Outlined').replace('material-icons', 'Material Icons')}"`;
@@ -1453,7 +1453,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
 uiElements.toggleModeBtn.addEventListener('click', () => {
     resumeAudioContext();
     if (selectedTower) {
-        if (selectedTower.type === 'ENT' || selectedTower.type === 'CAT') {
+        if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
             const modes = ['boost', 'slow', 'diversify'];
             const currentIndex = modes.indexOf(selectedTower.mode);
             selectedTower.mode = modes[(currentIndex + 1) % modes.length];
@@ -1737,4 +1737,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-
