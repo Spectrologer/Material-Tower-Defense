@@ -90,18 +90,24 @@ test('FIREPLACE tower should preserve burn properties', () => {
     assert.equal(restored.splashRadius, tower.splashRadius);
 });
 
-test('ENT tower should preserve aura properties', () => {
-    const tower = new Tower(200, 200, 'ENT');
-    tower.mode = 'slow';
+test('MIND tower should preserve aura properties', () => {
+    const tower = new Tower(200, 200, 'MIND');
 
     const json = tower.toJSON();
     const restored = Tower.fromJSON(json);
 
-    const towerProps = Object.keys(tower);
+    const towerProps = Object.keys(tower).filter(prop => 
+        prop !== 'stats' && prop !== 'controller' && prop !== 'renderer'
+    );
 
     for (const prop of towerProps) {
         assert.deepEqual(restored[prop], tower[prop], `Property ${prop} does not match on restored tower`);
     }
+    
+    // Test that aura properties are preserved
+    assert.strictEqual(restored.attackSpeedBoost, tower.attackSpeedBoost);
+    assert.strictEqual(restored.damageBoost, tower.damageBoost);
+    assert.strictEqual(restored.enemySlow, tower.enemySlow);
 });
 
 test('CAT tower should preserve properties', () => {

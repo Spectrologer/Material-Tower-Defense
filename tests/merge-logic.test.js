@@ -17,7 +17,7 @@ function beforeEach() {
     };
 }
 
-test('MergeHandler should perform a basic same-type merge (PIN + PIN)', () => {
+test('MergeHandler should perform a transformation merge (PIN + PIN -> NAT)', () => {
     beforeEach();
     const tower = new Tower(100, 100, 'PIN');
     const initialLevel = tower.level;
@@ -27,12 +27,13 @@ test('MergeHandler should perform a basic same-type merge (PIN + PIN)', () => {
     const success = mergeHandler.executeMerge(tower, 'PIN', costToAdd, gameState);
 
     assert.strictEqual(success, true, 'Merge should be successful');
-    assert.strictEqual(tower.level, initialLevel + 1, 'Tower level should increase by 1');
+    assert.strictEqual(tower.type, 'NAT', 'Tower type should transform to NAT');
+    assert.strictEqual(tower.level, initialLevel, 'Tower level should remain the same');
     assert.strictEqual(tower.cost, initialCost + costToAdd, 'Tower cost should be updated');
     assert.strictEqual(gameState.hasPerformedFirstMerge, true, 'GameState should track first merge');
 });
 
-test('MergeHandler should perform a transformation merge (SUPPORT + SUPPORT -> ENT)', () => {
+test('MergeHandler should perform a transformation merge (SUPPORT + SUPPORT -> MIND)', () => {
     beforeEach();
     const tower = new Tower(100, 100, 'SUPPORT');
     const costToAdd = TOWER_TYPES.SUPPORT.cost;
@@ -41,11 +42,11 @@ test('MergeHandler should perform a transformation merge (SUPPORT + SUPPORT -> E
     const success = mergeHandler.executeMerge(tower, 'SUPPORT', costToAdd, gameState);
 
     assert.strictEqual(success, true, 'Merge should be successful');
-    assert.strictEqual(tower.type, 'ENT', 'Tower type should transform to ENT');
-    assert.strictEqual(tower.level, 1, 'Transformed tower should reset to level 1');
+    assert.strictEqual(tower.type, 'MIND', 'Tower type should transform to MIND');
+    assert.strictEqual(tower.level, 'MAX LEVEL', 'MIND tower should be MAX LEVEL');
     assert.strictEqual(tower.cost, initialCost + costToAdd, 'Cost should be updated');
     assert(gameState.discoveredMerges.has('SUPPORT+SUPPORT'), 'SUPPORT+SUPPORT merge should be discovered');
-    assert(gameState.discoveredTowerTypes.has('ENT'), 'ENT tower type should be discovered');
+    assert(gameState.discoveredTowerTypes.has('MIND'), 'MIND tower type should be discovered');
 });
 
 test('MergeHandler should perform an upgrade merge (NAT + CASTLE)', () => {
@@ -79,8 +80,8 @@ test('getMergeInfo should return correct info for a valid, undiscovered merge', 
     const info = mergeHandler.getMergeInfo(supportTower, 'SUPPORT', gameState);
 
     assert.deepStrictEqual(info, {
-        resultType: 'ENT',
-        text: 'ENT',
+        resultType: 'MIND',
+        text: 'MIND',
         upgrade: undefined,
         isDiscovered: false
     });
