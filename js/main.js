@@ -174,6 +174,10 @@ function spawnWave() {
 
     gameState.isDetourOpen = (waveDef.detourRatio || 0) > 0;
 
+    if (!waveDef.isBoss) {
+        setMusicTrack(1, { bossMode: false });
+    }
+
     const enemiesToSpawn = [];
     waveDef.composition.forEach(comp => {
         for (let i = 0; i < comp.count; i++) {
@@ -536,6 +540,7 @@ function gameLoop(currentTime) {
                 if (gameState.lives <= 0) {
                     gameState.gameOver = true;
                     triggerGameOver(false, gameState.wave - 1);
+                    setMusicTrack(1, { bossMode: false });
                 }
             }
         },
