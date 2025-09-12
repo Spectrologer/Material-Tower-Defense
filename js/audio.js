@@ -19,21 +19,26 @@ export function setMusicOptions(options) {
 }
 
 export function setMusicTrack(trackNameOrNumber, options) {
-    const isTrackChange = currentTrack.track !== trackNameOrNumber;
-    if (isTrackChange) {
-        // Stop current track so the new one starts from the beginning
-        stopMusic();
-
-        if (typeof trackNameOrNumber === 'number') {
-            currentTrack.track = trackNames[(trackNameOrNumber - 1) % trackNames.length];
-        } else if (trackNames.includes(trackNameOrNumber)) {
-            currentTrack.track = trackNameOrNumber;
-        } else {
-            throw new Error(`Invalid track: ${trackNameOrNumber}`);
-        }
+    if (typeof trackNameOrNumber === 'number') {
+        currentTrack.track = trackNames[(trackNameOrNumber - 1) % trackNames.length];
+    } else if (trackNames.includes(trackNameOrNumber)) {
+        currentTrack.track = trackNameOrNumber;
+    } else {
+        throw new Error(`Invalid track: ${trackNameOrNumber}`);
     }
-
     setMusicOptions(options);
+}
+
+export function nextMusicTrack(n = 1) {
+    const currentIndex = trackNames.indexOf(currentTrack.track);
+    const nextIndex = (currentIndex + n) % trackNames.length;
+    currentTrack.track = trackNames[nextIndex];
+    setMusicOptions(currentTrack.options);
+    return currentTrack.track;
+}
+
+export function previousMusicTrack(n = 1) {
+    return nextMusicTrack(-n);
 }
 
 export function toggleMusic() {

@@ -5,7 +5,11 @@ import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTower
 import { MergeHandler } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions, generateWave } from './wave-definitions.js';
-import { playHitSound, playMoneySound, playExplosionSound, playLifeLostSound, playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled, toggleMusic } from './audio.js';
+import {
+    playHitSound, playMoneySound, playExplosionSound, playLifeLostSound,
+    playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled,
+    toggleMusic, setMusicOptions, setMusicTrack, nextMusicTrack, previousMusicTrack,
+} from './audio.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
@@ -213,6 +217,7 @@ function spawnWave() {
         let finalHealth;
         if (waveDef.isBoss) {
             finalHealth = enemyType.health;
+            setMusicTrack(enemyType.musicTrack, { bossMode: true });
         } else {
             finalHealth = (enemyType.health * waveDef.healthMultiplier) + (waveDef.healthBonus || 0);
         }
@@ -568,20 +573,7 @@ function gameLoop(currentTime) {
             }, 1500);
         }
 
-        gameState.wave++;
-        uiElements.startWaveBtn.disabled = false;
-        if (gameState.wave > 1) {
-            const interestEarned = Math.floor(gameState.gold * 0.05);
-            if (interestEarned > 0) {
-                gameState.gold += interestEarned;
-                gameState.announcements.push(new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 3, undefined, canvasWidth));
-            }
-        }
-        const waveBonus = 20 + gameState.wave;
-        gameState.gold += waveBonus;
-
-        updateUI(gameState);
-        persistGameState(0);
+        onEndWave();
     }
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
@@ -694,6 +686,24 @@ function gameLoop(currentTime) {
         drawSelectionRect(ctx, selectionStart, selectionEnd);
     }
     animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function onEndWave() {
+    gameState.wave++;
+    uiElements.startWaveBtn.disabled = false;
+    setMusicTrack(1, { bossMode: false });
+    if (gameState.wave > 1) {
+        const interestEarned = Math.floor(gameState.gold * 0.05);
+        if (interestEarned > 0) {
+            gameState.gold += interestEarned;
+            gameState.announcements.push(new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 3, undefined, canvasWidth));
+        }
+    }
+    const waveBonus = 20 + gameState.wave;
+    gameState.gold += waveBonus;
+
+    updateUI(gameState);
+    persistGameState(0);
 }
 
 function isValidNinePinPlacement(gridX, gridY) {
@@ -1385,6 +1395,11 @@ function init() {
 }
 
 const consoleCommands = {};
+
+consoleCommands.setTrack = setMusicTrack;
+consoleCommands.setMusicOptions = setMusicOptions;
+consoleCommands.nextTrack = nextMusicTrack;
+consoleCommands.prevTrack = previousMusicTrack;
 
 // Function to spawn Flutterdash from the console
 consoleCommands.spawnFlutterdash = () => {

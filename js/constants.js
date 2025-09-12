@@ -1,6 +1,8 @@
 // holds all the core numbers and settings for the game.
 // central place to easily tweak the game's balance and layout.
 
+import { Track } from './audio-music.js';
+
 // Sets up the size of the game grid.
 export const GRID_COLS = 11;
 export const GRID_ROWS = 18;
@@ -43,7 +45,7 @@ export const ENEMY_TYPES = {
     SWARM: { speed: 3.0, health: 4, color: '#00e6e6', size: 10, gold: 1, icon: 'bug_report', iconFamily: 'Material Icons', damagesLives: true, comment: "It's a bug, and a feature.", prefersDetour: true },
     FLYING: { speed: 2.0, health: 15, color: '#5e359fff', size: 16, gold: 2, icon: 'helicopter', iconFamily: "'Material Symbols Outlined'", isFlying: true, splashImmune: true, damagesLives: true, comment: "Ignores ground rules. And your ground towers." },
     BITCOIN: { speed: 2.0, health: 20, color: '#F7931A', size: 15, gold: 0, icon: 'currency_bitcoin', iconFamily: 'Material Symbols Outlined', isFlying: false, splashImmune: false, damagesLives: false, comment: "Volatile. Will drain your assets." },
-    BOSS: { speed: 1.2, health: 5400, color: '#f589ffff', size: 28, gold: 50, icon: 'flutter_dash', iconFamily: 'Material Icons', isFlying: true, damagesLives: false, laysEggs: true, layEggInterval: 5, eggLayStopTime: 1.5, wiggleTime: 1, splashImmune: true, comment: "Lays eggs. Has commitment issues." },
+    BOSS: { speed: 1.2, health: 5400, color: '#f589ffff', size: 28, gold: 50, icon: 'flutter_dash', iconFamily: 'Material Icons', isFlying: true, damagesLives: false, laysEggs: true, layEggInterval: 5, eggLayStopTime: 1.5, wiggleTime: 1, splashImmune: true, comment: "Lays eggs. Has commitment issues.", musicTrack: Track.flutterDash },
     EGG: { speed: 0, health: 200, color: '#ffedceff', size: 12, gold: 0, icon: 'egg', iconFamily: 'Material Symbols Outlined', damagesLives: false, hatchTime: 5, hatchesTo: 'HATCHED', isStationary: true, comment: "What's inside? It's probably not a surprise party." },
     HATCHED: { speed: 2.5, health: 200, color: '#90CAF9', size: 14, gold: 0, icon: 'boy', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "Why." },
     STEALTH: { speed: 2.2, health: 15, color: '#BDBDBD', size: 16, gold: 5, icon: 'settings_accessibility', iconFamily: "'Material Symbols Outlined'", damagesLives: true, isInvisible: true, prefersDetour: true, comment: "He's  not your a11y." }

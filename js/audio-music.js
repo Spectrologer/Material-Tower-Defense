@@ -2,10 +2,13 @@
 import * as strudel from "https://unpkg.com/@strudel/web@1.2.0/dist/index.mjs";
 
 export const Track = Object.freeze({
-    // "¯\_(ツ)_/¯" @by Hiddenist
-    // @version 0.2
-    shrug: `"Shrug" by Hiddenist (v0.2)`,
+    shrug: `"¯\\_(ツ)_/¯" by Hiddenist (v0.2)`,
+    flutterDash: `"¯\\_(ツ)_/¯" by Hiddenist (vFlutterdash)`,
 });
+
+export const syncedTrackSets = [
+    [Track.shrug, Track.flutterDash],
+];
 
 /**
  * Note for AI: please do not remove typedefs - and please maintain them when modifying the code.
@@ -14,13 +17,16 @@ export const Track = Object.freeze({
  * @property {boolean} [bossMode=false] Whether to enable boss mode (more intense music)
  * @property {number} [volume=50] Volume level (0 to 100)
  * @property {boolean} [isMuted=false] Whether the music is muted
+ * @property {number} [cps] Cycles per second (tempo). If not provided, uses default for the track.
  */
+
+/** @type {Record<string, (_strudel: typeof strudel, options: TrackOptions) => any>} */
 const tracks = Object.freeze({
     [Track.shrug]({
         stack, sound, cat, note, rev, jux
-    }, { bossMode = false } = {}) {
+    }, { bossMode = false, cps } = {}) {
 
-        const cyclesPerSecond = bossMode ? 1 : 0.5;
+        const cyclesPerSecond = cps ?? (bossMode ? 1 : 0.5);
 
         repl.setCps(cyclesPerSecond);
 
@@ -41,6 +47,22 @@ const tracks = Object.freeze({
             ).gain(0.25).decay(.04).sustain(0)
         );
     },
+    [Track.flutterDash]({
+        stack, sound, cat, rev,
+    }, { bossMode = true, ...opts } = {}) {
+        const baseTrack = tracks[Track.shrug](strudel, opts);
+
+        // Add some extra percussion for the boss track
+        const percussion = cat(
+            sound("hh*8").gain(0.1).decay(0.02).sustain(0),
+            sound("hh*4").gain(0.2).decay(0.04).sustain(0).jux(rev).delay(0.125)
+        );
+
+        return stack(
+            baseTrack,
+            percussion
+        ).slow(1.75).vibrato(1).delay(.5).release(.5);
+    }
 });
 
 const defaultTrackName = (
@@ -84,13 +106,14 @@ async function loadMusicPlayerIfNotLoaded() {
 }
 
 
-
+let lastPlayedTrack = null;
 /**
  * @param {string} trackName 
  * @param {TrackOptions} options 
- * @returns {strudel.Pattern}
  */
-function playTrackPattern(trackName = defaultTrackName, options) {
+export async function startMusic(trackName = defaultTrackName, options) {
+    await loadMusicPlayerIfNotLoaded();
+
     let trackCb = tracks[trackName];
 
     if (!trackCb) {
@@ -98,20 +121,29 @@ function playTrackPattern(trackName = defaultTrackName, options) {
         trackCb = tracks[defaultTrackName];
     }
 
+    const syncsWithLast = shouldTracksSync(trackName, lastPlayedTrack);
+    if (!syncsWithLast) {
+        stopMusic();
+    }
+    lastPlayedTrack = trackName;
+
     const gain = options.isMuted ? 0 : (options.volume ?? 50) / 100;
 
     console.debug(`Playing track "${trackName}" with options:`, options, `=> gain: ${gain}`);
 
-    return trackCb(strudel, options).gain(gain).play();
+    trackCb(strudel, options).gain(gain).play();
 }
 
-/**
- * @param {string} trackName 
- * @param {TrackOptions?} options 
- */
-export async function startMusic(trackName, options = {}) {
-    await loadMusicPlayerIfNotLoaded();
-    playTrackPattern(trackName, options);
+function shouldTracksSync(newTrack, oldTrack) {
+    if (!newTrack || !oldTrack) return false;
+    if (newTrack === oldTrack) return true;
+
+    for (const trackSet of syncedTrackSets) {
+        if (trackSet.includes(newTrack) && trackSet.includes(oldTrack)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
