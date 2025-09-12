@@ -59,7 +59,7 @@ const tracks = Object.freeze({
         );
 
         return stack(
-            baseTrack,
+            baseTrack.sound("<sine,triangle triangle square>"),
             percussion
         ).slow(1.75).vibrato(1).delay(.5).release(.5);
     }
