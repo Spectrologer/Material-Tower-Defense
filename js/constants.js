@@ -1,7 +1,7 @@
 // holds all the core numbers and settings for the game.
 // central place to easily tweak the game's balance and layout.
 
-import { SpecialTrack } from './audio-music.js';
+import { SpecialTrack } from './tracks.js';
 
 // Sets up the size of the game grid.
 export const GRID_COLS = 11;
