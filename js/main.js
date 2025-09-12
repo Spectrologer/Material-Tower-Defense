@@ -23,7 +23,7 @@ let detourMazeColor = '#666666ff'; // Darker gray for the detour path
 const TROPHIES = {
     'NO_HEARTS_15': {
         name: "Heartless",
-        description: "Beat wave 15 without building a PIN_HEART tower.",
+        description: "Reach Flutterdash without building a PIN_HEART tower.",
         icon: 'heart_broken',
     }
 };
@@ -118,11 +118,23 @@ function gcd(a, b) {
     return b === 0 ? a : gcd(b, a % b);
 }
 
+function checkTrophies() {
+    // Trophy: NO_HEARTS_15 (Reach wave 15)
+    if (gameState.wave === 15 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
+        gameState.unlockedTrophies.add('NO_HEARTS_15');
+        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth));
+    }
+}
+
+
 function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
     updateUI(gameState);
     uiElements.startWaveBtn.disabled = true;
+
+    checkTrophies();
+
     const nextWave = gameState.wave;
 
     let waveDef;
@@ -675,13 +687,6 @@ function onEndWave() {
     }
     const waveBonus = 20 + gameState.wave;
     gameState.gold += waveBonus;
-
-    // Check for trophies at the end of the wave
-    // Trophy: NO_HEARTS_15 (Beat wave 15)
-    if (gameState.wave === 16 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
-        gameState.unlockedTrophies.add('NO_HEARTS_15');
-        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth));
-    }
     updateUI(gameState);
     persistGameState(0);
 }
@@ -815,7 +820,7 @@ function checkForNinePinOnBoard() {
                     const centerY = (y + 1) * TILE_SIZE + TILE_SIZE / 2;
                     const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
                     ninePin.cost = totalCost;
-                    gameState.towers.push(ninePin);
+                    addTower(ninePin);
                     gameState.discoveredTowerTypes.add('NINE_PIN');
 
                     // Update placement grid for the new tower
@@ -1254,7 +1259,7 @@ canvas.addEventListener('drop', e => {
             if (transferData.source === 'cloud') {
                 sourceTower.x = snappedX;
                 sourceTower.y = snappedY;
-                gameState.towers.push(sourceTower);
+                addTower(sourceTower);
                 gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== sourceTower.id);
             } else if (transferData.source === 'canvas') {
                 const originalGridX = draggedCanvasTowerOriginalGridPos.x;
@@ -1869,3 +1874,4 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
+
