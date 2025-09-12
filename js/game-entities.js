@@ -1049,6 +1049,7 @@ export class Tower {
         if (this.type === 'FIREPLACE') {
             data.burnDps = this.burnDps;
             data.burnDuration = this.burnDuration;
+            data.level = this.level;
         }
         if (this.type === 'MIND' || this.type === 'CAT') {
             data.attackSpeedBoost = this.attackSpeedBoost;
@@ -1084,7 +1085,7 @@ export class Tower {
 
         if (data.type === 'ORBIT') {
             tower.orbiters = [];
-            const orbiterCount = 2 + (tower.upgradeCount || 0);
+            const orbiterCount = 2 + (data.upgradeCount || 0);
             const angleStep = (2 * Math.PI) / orbiterCount;
             for (let i = 0; i < orbiterCount; i++) {
                 tower.orbiters.push(new Projectile(tower, null, i * angleStep));

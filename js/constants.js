@@ -16,8 +16,8 @@ export const GRID_TOWER = 2; // A spot where a tower is already built.
 // All the stats for basic towers.
 
 export const TOWER_TYPES = {
-    PIN: { cost: 25, range: 150, damage: 1.2, fireRate: 22, color: '#ffffffff', projectileSpeed: 7, projectileSize: 3, projectileColor: '#ffffffff', splashRadius: 0, comment: "It's pointy." },
-    CASTLE: { cost: 75, range: 100, damage: 6, fireRate: 80, color: '#be724fff', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, comment: "It's like a house, but harder." },
+    PIN: { cost: 25, range: 150, damage: 2, fireRate: 22, color: '#ffffffff', projectileSpeed: 7, projectileSize: 3, projectileColor: '#ffffffff', splashRadius: 0, comment: "It's pointy." },
+    CASTLE: { cost: 75, range: 100, damage: 7, fireRate: 80, color: '#be724fff', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, comment: "It's like a house, but harder." },
     SUPPORT: { cost: 50, range: 100, damage: 0, fireRate: 0, color: '#f870ffff', attackSpeedBoost: 0.85, stealthDetectionRange: 2, special: 'Non-Stacking Speed Aura', comment: "Please stay off the line." },
 
     // All the stats for advanced towers.

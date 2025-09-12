@@ -182,7 +182,7 @@ export class MergeHandler {
                 if (tower.damageMultiplierFromMerge === undefined) tower.damageMultiplierFromMerge = 1;
                 tower.level++;
                 tower.damageLevel++;
-                tower.damageMultiplierFromMerge *= 1.25;
+                tower.damageMultiplierFromMerge *= 1.15;
                 tower.updateStats();
                 tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
             }
@@ -296,7 +296,7 @@ export class MergeHandler {
             upgrade: { text: '+ Burn', icon: 'local_fire_department', family: 'material-symbols-outlined' },
             canApply: (tower) => tower.level < 3,
             apply: (tower, { originalTowerColor, mergingTowerType }) => {
-                tower.burnDps += 0.5;
+                tower.burnDps += 1;
                 tower.level++;
                 tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
                 tower.updateStats();

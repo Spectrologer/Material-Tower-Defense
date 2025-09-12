@@ -83,8 +83,8 @@ export const waveDefinitions = [
     },
     // Wave 11: Introduce BITCOIN enemies as an economic challenge.
     {
-        composition: [comp(ENEMY_TYPES.BITCOIN, 20)],
-        healthMultiplier: 2, healthBonus: 10,
+        composition: [comp(ENEMY_TYPES.BITCOIN, 25)],
+        healthMultiplier: 2, healthBonus: 25,
     },
     // Wave 12: A difficult pincer attack with HEAVY and FAST enemies on separate paths.
     {
@@ -121,7 +121,7 @@ export function generateWave(waveNumber) {
     const wave = {
         composition: [],
         healthMultiplier: 1 + (waveNumber - 15) * 0.3, // Increase health by 30% per wave
-        healthBonus: (waveNumber - 15) * 10, // Add a larger flat health bonus
+        healthBonus: (waveNumber - 10) * 17, // Add a larger flat health bonus
         detourRatio: Math.min(1, (waveNumber - 15) * 0.1), // Increase detour ratio
     };
 

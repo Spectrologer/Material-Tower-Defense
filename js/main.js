@@ -232,7 +232,7 @@ function spawnWave() {
             nextSpawnDelay = 500; // Standard delay for other enemies
         }
 
-        setTimeout(spawnNextEnemy, nextSpawnDelay / gameSpeed);
+        setTimeout(spawnNextEnemy, nextSpawnDelay);
     };
 
     spawnNextEnemy(); // Start the spawning loop
@@ -1874,4 +1874,3 @@ document.fonts.ready.catch(err => {
 }).finally(() => {
     init();
 });
-
