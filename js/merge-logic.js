@@ -149,7 +149,7 @@ export class MergeHandler {
             resultType: 'FORT',
             apply: (tower) => {
                 tower.type = 'FORT';
-                tower.targetingMode = 'furthest';
+                tower.targetingMode = 'strongest';
                 tower.level = 1;
                 tower.damageLevel = 1;
                 tower.updateStats();

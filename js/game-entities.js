@@ -921,7 +921,7 @@ export class Tower {
         this.level = 1;
         this.damageLevel = 1;
         this.mode = 'boost';
-        this.targetingMode = (type === 'PIN' || type === 'PIN_HEART') ? 'weakest' : (type === 'FORT' ? 'furthest' : 'strongest');
+        this.targetingMode = (type === 'PIN' || type === 'PIN_HEART') ? 'weakest' : 'strongest';
         this.attackGroundTarget = null;
         this.damageMultiplier = 1;
         this.projectileCount = 1;
