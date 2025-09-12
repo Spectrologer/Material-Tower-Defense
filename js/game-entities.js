@@ -561,6 +561,8 @@ class TowerStats {
         tower.range = baseStats.range;
         if (tower.type === 'FIREPLACE' || tower.type === 'FIRE_TRUCK') {
             tower.damage = baseStats.damage;
+            tower.burnDps = baseStats.burnDps;
+            tower.burnDuration = baseStats.burnDuration;
         } else {
             tower.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (tower.damageMultiplierFromMerge || 1);
         }
@@ -1186,3 +1188,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
