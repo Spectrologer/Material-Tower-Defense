@@ -560,9 +560,10 @@ class TowerStats {
         tower.cost = baseStats.cost * this.levelForCalc;
         tower.range = baseStats.range;
         if (tower.type === 'FIREPLACE') {
-            tower.damage = baseStats.damage;
-            tower.burnDps = baseStats.burnDps;
+            tower.damage = baseStats.damage; // Keep base damage
+            // burnDps is now managed by merge-logic, so we don't reset it here
             tower.burnDuration = baseStats.burnDuration;
+            // splashRadius is also managed by merge-logic, so we don't reset it here
         } else {
             tower.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (tower.damageMultiplierFromMerge || 1);
         }
@@ -570,7 +571,9 @@ class TowerStats {
         if (tower.type === 'ANTI_AIR' && tower.natCastleBonus) {
             tower.splashRadius = 10 * tower.natCastleBonus;
         } else {
-            tower.splashRadius = baseStats.splashRadius || 0;
+            if (tower.type !== 'FIREPLACE') {
+                tower.splashRadius = baseStats.splashRadius || 0;
+            }
         }
 
         tower.permFireRate = baseStats.fireRate * Math.pow(0.9, this.levelForCalc - 1);

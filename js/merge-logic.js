@@ -296,7 +296,7 @@ export class MergeHandler {
             upgrade: { text: '+ Burn', icon: 'local_fire_department', family: 'material-symbols-outlined' },
             canApply: (tower) => tower.level < 3,
             apply: (tower, { originalTowerColor, mergingTowerType }) => {
-                tower.burnDps += 1;
+                tower.burnDps += 0.5;
                 tower.level++;
                 tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
                 tower.updateStats();

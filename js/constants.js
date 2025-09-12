@@ -24,7 +24,7 @@ export const TOWER_TYPES = {
 
     FORT: { cost: 100, range: 200, damage: 12, fireRate: 160, color: '#ac5e5eff', projectileSpeed: 4, projectileSize: 15, projectileColor: '#717171ff', splashRadius: 80, special: 'Mortar Strike', comment: "Holding it down." },
     PIN_HEART: { cost: 85, range: 220, damage: 1.5, fireRate: 15, color: '#ff69b4', projectileSpeed: 5, projectileSize: 3, projectileColor: '#ff69b4', splashRadius: 0, special: 'Loyal Projectiles', comment: "It's a little clingy." },
-    FIREPLACE: { cost: 135, range: 50, damage: 0.2, fireRate: 3, color: '#e11d48', projectileSpeed: 10, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 2, burnDuration: 20, special: 'Lingering Burn', maxLevel: 3, comment: "It's not fun when it's too hot!" },
+    FIREPLACE: { cost: 135, range: 50, damage: 0.2, fireRate: 3, color: '#e11d48', projectileSpeed: 10, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 1, burnDuration: 20, special: 'Lingering Burn', maxLevel: 3, comment: "It's not fun when it's too hot!" },
     NAT: { cost: 50, range: 300, damage: 12, fireRate: 120, color: '#DEB887', projectileSpeed: 12, projectileSize: 5, projectileColor: '#DEB887', splashRadius: 0, special: 'Sniper', comment: "Hiding its true IP: Intense Pain." },
     MIND: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, stealthDetectionRange: 3, special: 'Aura: Boost/Slow', comment: "A weapon to surpass metal gear." },
     ORBIT: { cost: 150, range: 9999, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters', comment: "Weeeeeeeee!" },
