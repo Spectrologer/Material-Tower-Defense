@@ -540,6 +540,8 @@ function gameLoop(currentTime) {
                 updateUI(gameState);
                 if (gameState.lives <= 0) {
                     gameState.gameOver = true;
+                    gameState.waveInProgress = false;
+                    persistGameState(0);
                     triggerGameOver(false, gameState.wave - 1);
                     setMusicTrack(SpecialTrack.gameOver, { bossMode: false });
                 }
@@ -1372,6 +1374,9 @@ function reset(hardReset = false) {
 
 function init() {
     loadGameStateFromStorage();
+    if (gameState.gameOver) {
+        reset();
+    }
     setMusicTrack(1, { bossMode: false });
 
     // Load saved settings
