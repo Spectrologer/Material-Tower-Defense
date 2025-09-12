@@ -45,7 +45,7 @@ let selectionStart = { x: 0, y: 0 };
 let selectionEnd = { x: 0, y: 0 };
 
 function attemptFireTruckCreation(mergingTower, targetEnemy, source, cost) {
-    if (!mergingTower || mergingTower.type !== 'FIREPLACE' || !targetEnemy || targetEnemy.type !== ENEMY_TYPES.NORMAL) {
+    if (!mergingTower || mergingTower.type !== 'FIREPLACE' || !targetEnemy || targetEnemy.typeName !== 'NORMAL') {
         return false;
     }
 
@@ -1055,25 +1055,38 @@ canvas.addEventListener('mousemove', e => {
     if (placingTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);
-        const hoveredTower = gameState.towers.find(t => {
-            const tGridX = Math.floor(t.x / TILE_SIZE);
-            const tGridY = Math.floor(t.y / TILE_SIZE);
-            return tGridX === gridX && tGridY === gridY;
-        });
-        if (hoveredTower) {
-            const mergeInfo = mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState);
-            if (mergeInfo) {
-                mergeTooltip.show = true;
-                mergeTooltip.info = mergeInfo;
-                mergeTooltip.x = mouse.x;
-                mergeTooltip.y = mouse.y;
+        const hoveredEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mouse.x - en.x, mouse.y - en.y) < en.size);
+
+        if (hoveredEnemy && placingTower === 'FIREPLACE' && hoveredEnemy.typeName === 'NORMAL') {
+            mergeTooltip.show = true;
+            mergeTooltip.info = {
+                resultType: 'FIRE_TRUCK',
+                text: 'FIRE_TRUCK',
+                isDiscovered: gameState.discoveredTowerTypes.has('FIRE_TRUCK')
+            };
+            mergeTooltip.x = mouse.x;
+            mergeTooltip.y = mouse.y;
+        } else {
+            const hoveredTower = gameState.towers.find(t => {
+                const tGridX = Math.floor(t.x / TILE_SIZE);
+                const tGridY = Math.floor(t.y / TILE_SIZE);
+                return tGridX === gridX && tGridY === gridY;
+            });
+            if (hoveredTower) {
+                const mergeInfo = mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState);
+                if (mergeInfo) {
+                    mergeTooltip.show = true;
+                    mergeTooltip.info = mergeInfo;
+                    mergeTooltip.x = mouse.x;
+                    mergeTooltip.y = mouse.y;
+                } else {
+                    mergeTooltip.show = false;
+                    mergeTooltip.info = null;
+                }
             } else {
                 mergeTooltip.show = false;
                 mergeTooltip.info = null;
             }
-        } else {
-            mergeTooltip.show = false;
-            mergeTooltip.info = null;
         }
     } else {
         mergeTooltip.show = false;
@@ -1296,17 +1309,19 @@ canvas.addEventListener('drop', e => {
                 gameState.towers.push(sourceTower);
                 gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== sourceTower.id);
             } else if (transferData.source === 'canvas') {
+                const originalGridX = Math.floor(sourceTower.x / TILE_SIZE);
+                const originalGridY = Math.floor(sourceTower.y / TILE_SIZE);
+
                 if (sourceTower.type === 'NINE_PIN') {
-                    const startX = draggedCanvasTowerOriginalGridPos.x - 1;
-                    const startY = draggedCanvasTowerOriginalGridPos.y - 1;
+                    const startX = originalGridX - 1;
+                    const startY = originalGridY - 1;
                     for (let j = 0; j < 3; j++) {
                         for (let i = 0; i < 3; i++) {
                             gameState.placementGrid[startY + j][startX + i] = GRID_EMPTY;
                         }
                     }
                 } else {
-                    // FIX: Clear the original grid position of the dragged tower.
-                    gameState.placementGrid[draggedCanvasTowerOriginalGridPos.y][draggedCanvasTowerOriginalGridPos.x] = GRID_EMPTY;
+                    gameState.placementGrid[originalGridY][originalGridX] = GRID_EMPTY;
                 }
                 sourceTower.x = snappedX;
                 sourceTower.y = snappedY;
