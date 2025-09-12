@@ -1171,7 +1171,7 @@ canvas.addEventListener('dragstart', (e) => {
         isSelecting = false;
 
         draggedCanvasTower = towerToDrag;
-        draggedCanvasTowerOriginalGridPos = { x: gridX, y: gridY };
+        draggedCanvasTowerOriginalGridPos = { x: Math.floor(draggedCanvasTower.x / TILE_SIZE), y: Math.floor(draggedCanvasTower.y / TILE_SIZE) };
         e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'canvas', towerId: towerToDrag.id }));
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = TILE_SIZE;
@@ -1309,8 +1309,8 @@ canvas.addEventListener('drop', e => {
                 gameState.towers.push(sourceTower);
                 gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== sourceTower.id);
             } else if (transferData.source === 'canvas') {
-                const originalGridX = Math.floor(sourceTower.x / TILE_SIZE);
-                const originalGridY = Math.floor(sourceTower.y / TILE_SIZE);
+                const originalGridX = draggedCanvasTowerOriginalGridPos.x;
+                const originalGridY = draggedCanvasTowerOriginalGridPos.y;
 
                 if (sourceTower.type === 'NINE_PIN') {
                     const startX = originalGridX - 1;
