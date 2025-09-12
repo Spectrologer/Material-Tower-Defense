@@ -3,11 +3,16 @@ import * as strudel from "https://unpkg.com/@strudel/web@1.2.0/dist/index.mjs";
 
 export const Track = Object.freeze({
     shrug: `"¯\\_(ツ)_/¯" by Hiddenist (v0.2)`,
+});
+
+// These tracks won't be in the regular rotation, but can be triggered for special events.
+export const SpecialTracks = Object.freeze({
     flutterDash: `"¯\\_(ツ)_/¯" by Hiddenist (vFlutterdash)`,
 });
 
+// When switching between tracks in a group, the new track will continue from the same position seamlessly.
 export const syncedTrackSets = [
-    [Track.shrug, Track.flutterDash],
+    [Track.shrug, SpecialTracks.flutterDash],
 ];
 
 /**
@@ -47,7 +52,7 @@ const tracks = Object.freeze({
             ).gain(0.25).decay(.04).sustain(0)
         );
     },
-    [Track.flutterDash]({
+    [SpecialTracks.flutterDash]({
         stack, sound, cat, rev,
     }, { bossMode = true, ...opts } = {}) {
         const baseTrack = tracks[Track.shrug](strudel, opts);
