@@ -658,18 +658,51 @@ function gameLoop(currentTime) {
         tempTower.draw(ctx);
         tempTower.drawRange(ctx);
         const isNinePin = tempTower.type === 'NINE_PIN';
-        if (!isValidPlacement(snappedX, snappedY, isNinePin)) {
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
-            ctx.beginPath();
-            if (isNinePin) {
-                const drawX = (gridX - 1) * TILE_SIZE;
-                const drawY = (gridY - 1) * TILE_SIZE;
-                ctx.fillRect(drawX, drawY, TILE_SIZE * 3, TILE_SIZE * 3);
-            } else {
-                ctx.arc(snappedX, snappedY, TILE_SIZE / 2, 0, Math.PI * 2);
+        let placementColor = 'rgba(0, 255, 0, 0.4)'; // Default to green for valid
+        let shakeOffsetX = 0;
+        let shakeOffsetY = 0;
+
+        const hoveredTower = gameState.towers.find(t => {
+            const tGridX = Math.floor(t.x / TILE_SIZE);
+            const tGridY = Math.floor(t.y / TILE_SIZE);
+            // For Nine Pin, check the whole 3x3 area for a click
+            if (t.type === 'NINE_PIN') {
+                const startX = tGridX - 1;
+                const startY = tGridY - 1;
+                return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
             }
-            ctx.fill();
+            return tGridX === gridX && tGridY === gridY;
+        });
+        const mergeInfo = hoveredTower ? mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState) : null;
+
+        if (!isValidPlacement(snappedX, snappedY, isNinePin)) {
+            if (mergeInfo) {
+                placementColor = 'rgba(0, 191, 255, 0.4)'; // Light blue for merge opportunity
+            } else {
+                placementColor = 'rgba(255, 0, 0, 0.4)'; // Red for truly invalid
+                // Simple shaking animation: oscillate offset based on time
+                const shakeMagnitude = 2; // Pixels
+                shakeOffsetX = Math.sin(currentTime * 0.05) * shakeMagnitude;
+                shakeOffsetY = Math.cos(currentTime * 0.05) * shakeMagnitude;
+            }
         }
+
+        // Draw the temporary tower with potential shake offset
+        tempTower.x = snappedX + shakeOffsetX;
+        tempTower.y = snappedY + shakeOffsetY;
+        tempTower.draw(ctx);
+        tempTower.drawRange(ctx);
+
+        ctx.fillStyle = placementColor;
+        ctx.beginPath();
+        if (isNinePin) {
+            const drawX = (gridX - 1) * TILE_SIZE;
+            const drawY = (gridY - 1) * TILE_SIZE;
+            ctx.fillRect(drawX, drawY, TILE_SIZE * 3, TILE_SIZE * 3);
+        } else {
+            ctx.arc(snappedX, snappedY, TILE_SIZE / 2, 0, Math.PI * 2);
+        }
+        ctx.fill();
     }
     drawMergeTooltip(ctx, mergeTooltip, canvasWidth);
     if (isSelecting) {
