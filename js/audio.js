@@ -1,4 +1,5 @@
-import { startMusic, stopMusic } from "./audio-music.js";
+import { startMusic, stopMusic, Track } from "./audio-music.js";
+export { Track } from "./audio-music.js";
 
 const audioContext = new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)();
 
@@ -6,10 +7,46 @@ let isSoundEnabled = true;
 let isMusicPlaying = false;
 let isAudioResumed = false;
 
+const trackNames = Object.values(Track);
+const currentTrack = {
+    track: trackNames[0],
+    options: { volume: 40, isMuted: true }
+};
+
+export function setMusicOptions(options) {
+    currentTrack.options = { ...currentTrack.options, ...options };
+    startMusic(currentTrack.track, currentTrack.options);
+}
+
+export function setMusicTrack(trackNameOrNumber, options) {
+    if (typeof trackNameOrNumber === 'number') {
+        currentTrack.track = trackNames[(trackNameOrNumber - 1) % trackNames.length];
+    } else if (trackNames.includes(trackNameOrNumber)) {
+        currentTrack.track = trackNameOrNumber;
+    } else {
+        throw new Error(`Invalid track: ${trackNameOrNumber}`);
+    }
+    setMusicOptions(options);
+}
+
+export function nextMusicTrack(n = 1) {
+    const currentIndex = trackNames.indexOf(currentTrack.track);
+    const nextIndex = (currentIndex + n) % trackNames.length;
+    currentTrack.track = trackNames[nextIndex];
+    setMusicOptions(currentTrack.options);
+    return currentTrack.track;
+}
+
+export function previousMusicTrack(n = 1) {
+    return nextMusicTrack(-n);
+}
+
 export function toggleMusic() {
-    isMusicPlaying = !isMusicPlaying;
-    if (isSoundEnabled && isMusicPlaying) startMusic();
-    else stopMusic();
+    isMusicPlaying = !isMusicPlaying;;
+
+    setMusicOptions({
+        isMuted: !isSoundEnabled || !isMusicPlaying
+    });
 
     return isMusicPlaying;
 }
