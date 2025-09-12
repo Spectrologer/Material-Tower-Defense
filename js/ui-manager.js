@@ -33,6 +33,7 @@ export const uiElements = {
     soundToggleBtn: getButton('sound-toggle-btn'),
     musicToggleBtn: getButton('music-toggle-btn'),
     towerButtons: document.getElementById('tower-buttons'),
+    towerButtonsGroup: document.getElementById('tower-buttons-group'),
     gameControls: document.getElementById('game-controls'),
     towersTitle: document.getElementById('towers-title'),
     cloudButton: getButton('cloud-button'),
@@ -141,10 +142,14 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
     if (uiElements.setGroundTargetBtn) uiElements.setGroundTargetBtn.classList.add('hidden');
 
     if (selectedTowers.length > 0) {
-        uiElements.towerButtons.classList.add('hidden');
+        if(uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.add('hidden');
         uiElements.gameControls.classList.add('hidden');
-        uiElements.towersTitle.classList.add('hidden');
-        uiElements.sellPanel.classList.remove('hidden');
+        
+        if (settingAttackGroundForTower) {
+            uiElements.sellPanel.classList.add('hidden');
+        } else {
+            uiElements.sellPanel.classList.remove('hidden');
+        }
 
         let totalSellValue = 0;
         selectedTowers.forEach(t => totalSellValue += Math.floor(t.cost * 0.5));
@@ -316,9 +321,12 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
             }
         }
     } else {
-        if (uiElements.towerButtons) uiElements.towerButtons.classList.remove('hidden');
+        if (settingAttackGroundForTower) {
+            if (uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.add('hidden');
+        } else {
+            if (uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.remove('hidden');
+        }
         if (uiElements.gameControls) uiElements.gameControls.classList.remove('hidden');
-        if (uiElements.towersTitle) uiElements.towersTitle.classList.remove('hidden');
         if (uiElements.sellPanel) uiElements.sellPanel.classList.add('hidden');
         if (uiElements.towerKillCount) uiElements.towerKillCount.classList.add('hidden');
         if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.textContent = '';
