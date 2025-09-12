@@ -23,7 +23,7 @@ let detourMazeColor = '#666666ff'; // Darker gray for the detour path
 const TROPHIES = {
     'NO_HEARTS_15': {
         name: "Heartless",
-        description: "Reach Flutterdash without building a PIN_HEART tower.",
+        description: "Beat wave 15 without building a PIN_HEART tower.",
         icon: 'heart_broken',
         color: '#ff69b4',
     }
@@ -233,7 +233,7 @@ function spawnWave() {
             nextSpawnDelay = 500; // Standard delay for other enemies
         }
 
-        setTimeout(spawnNextEnemy, nextSpawnDelay);
+        setTimeout(spawnNextEnemy, nextSpawnDelay / gameSpeed);
     };
 
     spawnNextEnemy(); // Start the spawning loop
@@ -1572,6 +1572,18 @@ uiElements.toggleModeBtn.addEventListener('click', () => {
                 selectedTower.mode = modes[(currentIndex + 1) % modes.length];
             } else if (selectedTower.type === 'ORBIT') {
                 selectedTower.orbitMode = selectedTower.orbitMode === 'far' ? 'near' : 'far';
+            }
+        });
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+    }
+});
+
+uiElements.toggleOrbitDirectionBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    if (selectedTowers.length > 0) {
+        selectedTowers.forEach(selectedTower => {
+            if (selectedTower.type === 'ORBIT') {
+                selectedTower.orbitDirection *= -1; // Flip direction
             }
         });
         updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);

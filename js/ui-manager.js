@@ -26,6 +26,7 @@ export const uiElements = {
     moveToCloudBtn: getButton('move-to-cloud-btn'),
     toggleModeBtn: getButton('toggle-mode'),
     toggleTargetingBtn: getButton('toggle-targeting'),
+    toggleOrbitDirectionBtn: getButton('toggle-orbit-direction-btn'),
     setGroundTargetBtn: getButton('set-ground-target-btn'),
     speedToggleBtn: getButton('speed-toggle'),
     selectedTowerInfoEl: document.getElementById('selected-tower-info'),
@@ -171,6 +172,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         }
 
         if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.add('hidden');
+        if (uiElements.toggleOrbitDirectionBtn) uiElements.toggleOrbitDirectionBtn.classList.add('hidden');
         if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.add('hidden');
 
         if (selectedTower) {
@@ -255,6 +257,10 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                     if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
                 } else if (selectedTower.type === 'ORBIT') {
                     if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
+                    if (uiElements.toggleOrbitDirectionBtn) {
+                        uiElements.toggleOrbitDirectionBtn.classList.remove('hidden');
+                        uiElements.toggleOrbitDirectionBtn.textContent = `DIR: ${selectedTower.orbitDirection === 1 ? 'CW' : 'CCW'}`;
+                    }
                 }
             }
 
@@ -290,6 +296,10 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                     if (uiElements.toggleModeBtn) uiElements.toggleModeBtn.classList.remove('hidden');
                     if (type === 'ORBIT') {
                         uiElements.toggleModeBtn.textContent = `ORBIT: ${selectedTowers[0].orbitMode.toUpperCase()}`;
+                        if (uiElements.toggleOrbitDirectionBtn) {
+                            uiElements.toggleOrbitDirectionBtn.classList.remove('hidden');
+                            uiElements.toggleOrbitDirectionBtn.textContent = `DIR: ${selectedTowers[0].orbitDirection === 1 ? 'CW' : 'CCW'}`;
+                        }
                     } else {
                         uiElements.toggleModeBtn.textContent = `MODE: ${selectedTowers[0].mode.toUpperCase()}`;
                     }

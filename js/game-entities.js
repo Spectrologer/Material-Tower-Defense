@@ -158,7 +158,7 @@ export class Projectile {
             return true;
         }
         if (this.owner.type === 'ORBIT') {
-            this.angle += (this.owner.projectileSpeed / 30) * dt_scaler;
+            this.angle += this.owner.orbitDirection * (this.owner.projectileSpeed / 30) * dt_scaler;
             this.orbitRadius = this.owner.orbitMode === 'far' ? 40 : 60;
             this.x = this.owner.x + Math.cos(this.angle) * this.orbitRadius;
             this.y = this.owner.y + Math.sin(this.angle) * this.orbitRadius;
@@ -985,6 +985,7 @@ export class Tower {
         if (type === 'ORBIT') {
             this.upgradeCount = 0;
             this.orbitMode = 'far';
+            this.orbitDirection = 1; // 1 for CW, -1 for CCW
             this.orbiters = [
                 new Projectile(this, null, 0),
                 new Projectile(this, null, Math.PI)
@@ -1045,6 +1046,7 @@ export class Tower {
         if (this.type === 'ORBIT') {
             data.orbitMode = this.orbitMode;
             data.upgradeCount = this.upgradeCount;
+            data.orbitDirection = this.orbitDirection;
         }
         if (this.type === 'FIREPLACE') {
             data.burnDps = this.burnDps;
@@ -1073,7 +1075,7 @@ export class Tower {
             "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color",
             "projectileSize", "burnDps", "burnDuration", "attackSpeedBoost", "damageBoost",
             "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount",
-            "isMobile", "speed", "pathIndex", "progress", "rotation"
+            "isMobile", "speed", "pathIndex", "progress", "rotation", "orbitDirection"
         ];
 
 
@@ -1084,8 +1086,9 @@ export class Tower {
         }
 
         if (data.type === 'ORBIT') {
+            tower.orbitDirection = data.orbitDirection || 1;
             tower.orbiters = [];
-            const orbiterCount = 2 + (data.upgradeCount || 0);
+            const orbiterCount = 2 + (tower.upgradeCount || 0);
             const angleStep = (2 * Math.PI) / orbiterCount;
             for (let i = 0; i < orbiterCount; i++) {
                 tower.orbiters.push(new Projectile(tower, null, i * angleStep));
@@ -1195,3 +1198,4 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
+
