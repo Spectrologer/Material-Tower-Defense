@@ -6,13 +6,13 @@ export const Track = Object.freeze({
 });
 
 // These tracks won't be in the regular rotation, but can be triggered for special events.
-export const SpecialTracks = Object.freeze({
+export const SpecialTrack = Object.freeze({
     flutterDash: `"¯\\_(ツ)_/¯" by Hiddenist (vFlutterdash)`,
 });
 
 // When switching between tracks in a group, the new track will continue from the same position seamlessly.
 export const syncedTrackSets = [
-    [Track.shrug, SpecialTracks.flutterDash],
+    [Track.shrug, SpecialTrack.flutterDash],
 ];
 
 /**
@@ -52,7 +52,7 @@ const tracks = Object.freeze({
             ).gain(0.25).decay(.04).sustain(0)
         );
     },
-    [SpecialTracks.flutterDash]({
+    [SpecialTrack.flutterDash]({
         stack, sound, cat, rev,
     }, { bossMode = true, ...opts } = {}) {
         const baseTrack = tracks[Track.shrug](strudel, opts);

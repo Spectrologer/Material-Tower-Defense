@@ -1,4 +1,4 @@
-import { startMusic, stopMusic, Track } from "./audio-music.js";
+import { startMusic, Track, SpecialTrack } from "./audio-music.js";
 export { Track } from "./audio-music.js";
 
 const audioContext = new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)();
@@ -7,7 +7,7 @@ let isSoundEnabled = true;
 let isMusicPlaying = false;
 let isAudioResumed = false;
 
-const trackNames = Object.values(Track);
+const trackNames = [...Object.values(Track), ...Object.values(SpecialTrack)];
 const currentTrack = {
     track: trackNames[0],
     options: { volume: 40, isMuted: true }
