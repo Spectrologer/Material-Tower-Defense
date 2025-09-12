@@ -325,6 +325,7 @@
                 </label>
             </div>
             <button id="library-btn" class="pixel-button text-sm py-2 text-center mt-2">LIBRARY</button>
+            <button id="trophies-btn" class="pixel-button text-sm py-2 text-center">TROPHIES</button>
             <button id="reset-game-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] text-sm py-2 text-center mt-2">RESET
                 GAME</button>
@@ -548,6 +549,18 @@
                 <button id="library-next-btn" class="pixel-button text-sm p-2">NEXT &gt;</button>
             </div>
             <button id="library-close-btn"
+                class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- Trophies Modal -->
+    <div id="trophies-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
+        <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
+            <h3 class="text-lg sm:text-xl text-green-400 mb-4 text-center">TROPHIES</h3>
+            <div id="trophies-list" class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto">
+                <!-- Trophy items will be generated here -->
+            </div>
+            <button id="trophies-close-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
         </div>
     </div>

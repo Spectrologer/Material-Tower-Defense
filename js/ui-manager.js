@@ -67,6 +67,10 @@ export const uiElements = {
     libraryNextBtn: getButton('library-next-btn'),
     libraryCounter: document.getElementById('library-counter'),
     libraryCloseBtn: getButton('library-close-btn'),
+    trophiesBtn: getButton('trophies-btn'),
+    trophiesModal: document.getElementById('trophies-modal'),
+    trophiesList: document.getElementById('trophies-list'),
+    trophiesCloseBtn: getButton('trophies-close-btn'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
@@ -701,5 +705,29 @@ function populateEnemyLibrary(gameState) {
 export function populateLibraries(gameState) {
     populateTowerLibrary(gameState);
     populateEnemyLibrary(gameState);
+}
+
+export function populateTrophies(gameState, trophiesData) {
+    if (!uiElements.trophiesList) return;
+    uiElements.trophiesList.innerHTML = '';
+
+    for (const [id, data] of Object.entries(trophiesData)) {
+        const isUnlocked = gameState.unlockedTrophies.has(id);
+        const trophyElement = document.createElement('div');
+        trophyElement.className = `p-4 border-b border-gray-700 flex items-center gap-4 ${isUnlocked ? 'text-white' : 'text-gray-500'}`;
+
+        const icon = isUnlocked ? data.icon : 'lock';
+        const name = isUnlocked ? data.name : '???';
+        const description = isUnlocked ? data.description : '????????????????????????';
+
+        trophyElement.innerHTML = `
+            <span class="material-symbols-outlined text-4xl ${isUnlocked ? 'text-yellow-400' : 'text-gray-600'}">${icon}</span>
+            <div>
+                <h4 class="text-lg font-bold">${name}</h4>
+                <p class="text-sm">${description}</p>
+            </div>
+        `;
+        uiElements.trophiesList.appendChild(trophyElement);
+    }
 }
 

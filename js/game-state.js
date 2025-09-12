@@ -29,6 +29,8 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} onboardingTipDismissed - Whether the onboarding tip has been dismissed.
  * @property {Set} discoveredMerges - Set of tower merge types the player has discovered.
  * @property {Set} discoveredTowerTypes - Set of tower types the player has discovered.
+ * @property {Set} unlockedTrophies - Set of unlocked trophy IDs.
+ * @property {boolean} usedPinHeartTower - Whether a PIN_HEART tower has been used in the current game.
  * @property {boolean} waveInProgress - Whether a wave is currently in progress.
  * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
  * @property {boolean} gameOver - Whether the game is over.
@@ -49,7 +51,7 @@ export let gameState;
 // Wipes the slate clean and starts a brand new game.
 // Can perform a "soft" reset (keeping library progress) or a "hard" reset (wiping everything).
 export function resetGameState(hardReset = false) {
-    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies;
+    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies;
 
     if (hardReset) {
         // For a hard reset, start with fresh, default persistent data.
@@ -57,6 +59,7 @@ export function resetGameState(hardReset = false) {
         onboardingTipDismissed = false;
         discoveredTowerTypes = new Set(['PIN', 'CASTLE', 'SUPPORT']);
         killedEnemies = new Set();
+        unlockedTrophies = new Set();
     } else {
         // For a soft reset, load the last state from storage to preserve persistent data.
         const lastState = getGameStateFromStorage();
@@ -64,6 +67,7 @@ export function resetGameState(hardReset = false) {
         onboardingTipDismissed = lastState.onboardingTipDismissed;
         discoveredTowerTypes = lastState.discoveredTowerTypes;
         killedEnemies = lastState.killedEnemies;
+        unlockedTrophies = lastState.unlockedTrophies;
     }
 
     // This just removes the 'gameState' item from local storage
@@ -77,6 +81,8 @@ export function resetGameState(hardReset = false) {
     newGameState.onboardingTipDismissed = onboardingTipDismissed;
     newGameState.discoveredTowerTypes = discoveredTowerTypes;
     newGameState.killedEnemies = killedEnemies;
+    newGameState.unlockedTrophies = unlockedTrophies;
+
 
     // Set the module's gameState to the newly prepared state
     gameState = newGameState;
@@ -137,6 +143,8 @@ function getInitialGameState() {
         onboardingTipDismissed: false,
         discoveredMerges: new Set(),
         discoveredTowerTypes: new Set(['PIN', 'CASTLE', 'SUPPORT']),
+        unlockedTrophies: new Set(),
+        usedPinHeartTower: false,
         waveInProgress: false,
         spawningEnemies: false,
         gameOver: false,
@@ -180,13 +188,15 @@ function getSerializedGameState() {
         killedEnemies: Array.from(gameState.killedEnemies),
         discoveredMerges: Array.from(gameState.discoveredMerges),
         discoveredTowerTypes: Array.from(gameState.discoveredTowerTypes),
+        unlockedTrophies: Array.from(gameState.unlockedTrophies),
+        usedPinHeartTower: gameState.usedPinHeartTower,
     });
 }
 
 // Takes a saved game string and turns it back into a usable game state object.
 function deserializeGameState(serializedGameState) {
     try {
-        const { towers, cloudInventory, introducedEnemies, killedEnemies, discoveredMerges, discoveredTowerTypes, ...basicData } = JSON.parse(serializedGameState);
+        const { towers, cloudInventory, introducedEnemies, killedEnemies, discoveredMerges, discoveredTowerTypes, unlockedTrophies, ...basicData } = JSON.parse(serializedGameState);
 
         const initialState = getInitialGameState();
         // If the save file doesn't have detour paths, the initial state will provide them.
@@ -201,9 +211,11 @@ function deserializeGameState(serializedGameState) {
             onboardingTipDismissed: basicData.onboardingTipDismissed || false,
             discoveredMerges: new Set(discoveredMerges || []),
             discoveredTowerTypes: new Set(discoveredTowerTypes || ['PIN', 'CASTLE', 'SUPPORT']),
+            unlockedTrophies: new Set(unlockedTrophies || []),
         };
     } catch (e) {
         console.error("Failed to load saved game state:", e);
         return getInitialGameState();
     }
 }
+

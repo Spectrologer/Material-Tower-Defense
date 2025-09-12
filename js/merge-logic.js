@@ -302,30 +302,6 @@ export class MergeHandler {
                 tower.updateStats();
             }
         });
-
-        this._addRecipe('FIRE_TRUCK', 'CASTLE', {
-            resultType: 'FIRE_TRUCK', text: 'Upgrade',
-            upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
-            canApply: (tower) => tower.level < 3,
-            apply: (tower, { originalTowerColor, mergingTowerType }) => {
-                tower.splashRadius += 10;
-                tower.level++;
-                tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
-                tower.updateStats();
-            }
-        });
-
-        this._addRecipe('FIRE_TRUCK', 'PIN', {
-            resultType: 'FIRE_TRUCK', text: 'Upgrade',
-            upgrade: { text: '+ Burn', icon: 'local_fire_department', family: 'material-symbols-outlined' },
-            canApply: (tower) => tower.level < 3,
-            apply: (tower, { originalTowerColor, mergingTowerType }) => {
-                tower.burnDps += 1.5;
-                tower.level++;
-                tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
-                tower.updateStats();
-            }
-        });
     }
 
     /**

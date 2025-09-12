@@ -343,14 +343,9 @@ export function getTowerIconInfo(type) {
             icon = 'open_jam';
             className = "material-symbols-outlined";
             break;
-        case 'FIRE_TRUCK':
-            icon = 'fire_truck';
-            className = "material-symbols-outlined";
-            break;
         default:
             icon = 'help';
             break;
     }
     return { icon, className };
 }
-

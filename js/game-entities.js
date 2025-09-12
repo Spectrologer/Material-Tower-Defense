@@ -559,7 +559,7 @@ class TowerStats {
 
         tower.cost = baseStats.cost * this.levelForCalc;
         tower.range = baseStats.range;
-        if (tower.type === 'FIREPLACE' || tower.type === 'FIRE_TRUCK') {
+        if (tower.type === 'FIREPLACE') {
             tower.damage = baseStats.damage;
             tower.burnDps = baseStats.burnDps;
             tower.burnDuration = baseStats.burnDuration;
@@ -604,7 +604,7 @@ class TowerController {
         if (tower.type === 'ANTI_AIR') {
             potentialTargets = potentialTargets.filter(enemy => enemy.type.isFlying);
         } else {
-            const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE', 'FIRE_TRUCK'];
+            const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
             if (groundOnlyTowers.includes(tower.type)) {
                 potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
             }
@@ -844,10 +844,6 @@ class TowerRenderer {
                 icon = 'open_jam';
                 iconFamily = "'Material Symbols Outlined'";
                 break;
-            case 'FIRE_TRUCK':
-                icon = 'fire_truck';
-                iconFamily = "'Material Symbols Outlined'";
-                break;
         }
         ctx.font = `${fontWeight} ${iconSize}px ${iconFamily}`;
         const angle = tower.target ? Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x) : 0;
@@ -1040,7 +1036,7 @@ export class Tower {
             data.orbitMode = this.orbitMode;
             data.upgradeCount = this.upgradeCount;
         }
-        if (this.type === 'FIREPLACE' || this.type === 'FIRE_TRUCK') {
+        if (this.type === 'FIREPLACE') {
             data.burnDps = this.burnDps;
             data.burnDuration = this.burnDuration;
         }
@@ -1188,4 +1184,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-

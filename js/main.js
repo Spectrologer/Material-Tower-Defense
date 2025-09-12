@@ -1,6 +1,6 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
@@ -19,6 +19,14 @@ let canvasWidth, canvasHeight;
 let isInfiniteGold = false;
 let mazeColor = '#818181ff';
 let detourMazeColor = '#666666ff'; // Darker gray for the detour path
+
+const TROPHIES = {
+    'NO_HEARTS_15': {
+        name: "Heartless",
+        description: "Beat wave 15 without building a PIN_HEART tower.",
+        icon: 'heart_broken',
+    }
+};
 
 // UI/Interaction State (not part of core game data)
 let placingTower = null;
@@ -43,48 +51,6 @@ let libraryActiveTab = 'towers';
 let isSelecting = false;
 let selectionStart = { x: 0, y: 0 };
 let selectionEnd = { x: 0, y: 0 };
-
-function attemptFireTruckCreation(mergingTower, targetEnemy, source, cost) {
-    if (!mergingTower || mergingTower.type !== 'FIREPLACE' || !targetEnemy || targetEnemy.typeName !== 'NORMAL') {
-        return false;
-    }
-
-    // 1. Remove enemy
-    gameState.enemies = gameState.enemies.filter(e => e.id !== targetEnemy.id);
-
-    // 2. Remove source tower/cost
-    if (source === 'cloud') {
-        gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
-        renderCloudInventory();
-    } else if (source === 'canvas') {
-        const gridX = Math.floor(mergingTower.x / TILE_SIZE);
-        const gridY = Math.floor(mergingTower.y / TILE_SIZE);
-        gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
-        gameState.towers = gameState.towers.filter(t => t.id !== mergingTower.id);
-    } else { // 'click'
-        gameState.gold -= cost;
-    }
-
-    // 3. Create FIRE_TRUCK
-    const newTower = new Tower(targetEnemy.x, targetEnemy.y, 'FIRE_TRUCK');
-    newTower.pathIndex = targetEnemy.pathIndex;
-    newTower.progress = targetEnemy.progress;
-    newTower.cost = TOWER_TYPES.FIREPLACE.cost;
-    gameState.towers.push(newTower);
-    gameState.discoveredTowerTypes.add('FIRE_TRUCK');
-    gameState.announcements.push(new TextAnnouncement("FIRE TRUCK!", canvasWidth / 2, 50, 3, '#d32f2f', canvasWidth));
-
-    // 4. Cleanup state
-    placingTower = null;
-    placingFromCloud = null;
-    draggedCloudTower = null;
-    draggedCanvasTower = null;
-    updateUI(gameState);
-    updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending);
-    persistGameState(0);
-    return true;
-}
-
 
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
@@ -442,7 +408,7 @@ function handleProjectileHit(projectile, hitEnemy) {
 
     if (!splashCenter) return; // Should not happen if not a mortar
 
-    if (projectile.owner.type === 'FIREPLACE' || projectile.owner.type === 'FIRE_TRUCK') {
+    if (projectile.owner.type === 'FIREPLACE') {
         gameState.effects.push(new Effect(splashCenter.x, splashCenter.y, 'local_fire_department', projectile.owner.splashRadius * 2, projectile.owner.projectileColor, 0.33));
         gameState.enemies.forEach(enemy => {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
@@ -696,6 +662,14 @@ function gameLoop(currentTime) {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
+function checkTrophies() {
+    // Trophy: NO_HEARTS_15
+    if (gameState.wave === 16 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
+        gameState.unlockedTrophies.add('NO_HEARTS_15');
+        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth));
+    }
+}
+
 function onEndWave() {
     gameState.wave++;
     uiElements.startWaveBtn.disabled = false;
@@ -710,6 +684,7 @@ function onEndWave() {
     const waveBonus = 20 + gameState.wave;
     gameState.gold += waveBonus;
 
+    checkTrophies();
     updateUI(gameState);
     persistGameState(0);
 }
@@ -909,10 +884,6 @@ function handleCanvasClick(e) {
 
         if (gameState.gold < costOfPlacingTower && !mergingFromCloud && !isInfiniteGold) return;
 
-        if (clickedOnEnemy && attemptFireTruckCreation(mergingTower, clickedOnEnemy, placingFromCloud ? 'cloud' : 'click', costOfPlacingTower)) {
-            return;
-        }
-
         const clickedOnTower = gameState.towers.find(t => {
             const tGridX = Math.floor(t.x / TILE_SIZE);
             const tGridY = Math.floor(t.y / TILE_SIZE);
@@ -1055,38 +1026,25 @@ canvas.addEventListener('mousemove', e => {
     if (placingTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);
-        const hoveredEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mouse.x - en.x, mouse.y - en.y) < en.size);
-
-        if (hoveredEnemy && placingTower === 'FIREPLACE' && hoveredEnemy.typeName === 'NORMAL') {
-            mergeTooltip.show = true;
-            mergeTooltip.info = {
-                resultType: 'FIRE_TRUCK',
-                text: 'FIRE_TRUCK',
-                isDiscovered: gameState.discoveredTowerTypes.has('FIRE_TRUCK')
-            };
-            mergeTooltip.x = mouse.x;
-            mergeTooltip.y = mouse.y;
-        } else {
-            const hoveredTower = gameState.towers.find(t => {
-                const tGridX = Math.floor(t.x / TILE_SIZE);
-                const tGridY = Math.floor(t.y / TILE_SIZE);
-                return tGridX === gridX && tGridY === gridY;
-            });
-            if (hoveredTower) {
-                const mergeInfo = mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState);
-                if (mergeInfo) {
-                    mergeTooltip.show = true;
-                    mergeTooltip.info = mergeInfo;
-                    mergeTooltip.x = mouse.x;
-                    mergeTooltip.y = mouse.y;
-                } else {
-                    mergeTooltip.show = false;
-                    mergeTooltip.info = null;
-                }
+        const hoveredTower = gameState.towers.find(t => {
+            const tGridX = Math.floor(t.x / TILE_SIZE);
+            const tGridY = Math.floor(t.y / TILE_SIZE);
+            return tGridX === gridX && tGridY === gridY;
+        });
+        if (hoveredTower) {
+            const mergeInfo = mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState);
+            if (mergeInfo) {
+                mergeTooltip.show = true;
+                mergeTooltip.info = mergeInfo;
+                mergeTooltip.x = mouse.x;
+                mergeTooltip.y = mouse.y;
             } else {
                 mergeTooltip.show = false;
                 mergeTooltip.info = null;
             }
+        } else {
+            mergeTooltip.show = false;
+            mergeTooltip.info = null;
         }
     } else {
         mergeTooltip.show = false;
@@ -1224,7 +1182,7 @@ uiElements.cloudInventoryPanel.addEventListener('drop', e => {
                             }
                         }
                     }
-                } else {
+                } else if (!towerToMove.isMobile) {
                     const gridX = Math.floor(towerToMove.x / TILE_SIZE);
                     const gridY = Math.floor(towerToMove.y / TILE_SIZE);
                     gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
@@ -1258,13 +1216,6 @@ canvas.addEventListener('drop', e => {
     const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
 
     const sourceTower = draggedCanvasTower || gameState.cloudInventory.find(t => t.id === transferData.towerId);
-    const droppedOnEnemy = gameState.enemies.find(en => en.isVisible && Math.hypot(mousePos.x - en.x, mousePos.y - en.y) < en.size);
-
-    if (attemptFireTruckCreation(sourceTower, droppedOnEnemy, transferData.source, 0)) {
-        placingTower = null;
-        return;
-    }
-
 
     const targetTower = gameState.towers.find(t => {
         const tGridX = Math.floor(t.x / TILE_SIZE);
@@ -1558,7 +1509,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
                             }
                         }
                     }
-                } else {
+                } else if (!selectedTower.isMobile) {
                     const gridX = Math.floor(selectedTower.x / TILE_SIZE);
                     const gridY = Math.floor(selectedTower.y / TILE_SIZE);
                     gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
@@ -1595,7 +1546,7 @@ uiElements.moveToCloudBtn.addEventListener('click', () => {
                     }
                 }
             }
-        } else {
+        } else if (!selectedTower.isMobile) {
             const gridX = Math.floor(selectedTower.x / TILE_SIZE);
             const gridY = Math.floor(selectedTower.y / TILE_SIZE);
             gameState.placementGrid[gridY][gridX] = GRID_EMPTY;
@@ -1742,6 +1693,9 @@ function performPendingMerge() {
     }
     const merged = mergeHandler.executeMerge(existingTower, mergingTower.type, cost, gameState);
     if (merged) {
+        if (existingTower.type === 'PIN_HEART') {
+            gameState.usedPinHeartTower = true;
+        }
         if (mergeState.placingFromCloud) {
             gameState.cloudInventory = gameState.cloudInventory.filter(t => t.id !== mergingTower.id);
         } else if (mergingFromCanvas) {
@@ -1887,6 +1841,18 @@ uiElements.libraryEnemiesTab.addEventListener('click', () => {
     libraryActiveTab = 'enemies';
     updateLibraryTabState();
 });
+
+uiElements.trophiesBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    uiElements.optionsMenu.classList.add('hidden');
+    populateTrophies(gameState, TROPHIES);
+    uiElements.trophiesModal.classList.remove('hidden');
+});
+
+uiElements.trophiesCloseBtn.addEventListener('click', () => {
+    uiElements.trophiesModal.classList.add('hidden');
+});
+
 
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('click', (event) => {

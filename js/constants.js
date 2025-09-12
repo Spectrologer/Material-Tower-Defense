@@ -34,7 +34,6 @@ export const TOWER_TYPES = {
     CAT: { cost: 180, range: 120, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1, stealthDetectionRange: 4, special: 'Aura + Greed', iconSize: 0.9, maxLevel: 1, comment: "Meow-ney talks." },
     NINE_PIN: { cost: 119, range: 249, damage: 9, fireRate: 69, color: '#FFFFFF', projectileSpeed: 6, projectileSize: 39, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true, maxLevel: 1, comment: "You probably did this by accident." },
     ANTI_AIR: { cost: 110, range: 350, damage: 50, fireRate: 180, color: '#a9a9a9', projectileSpeed: .1, projectileSize: 24, projectileColor: '#cccccc', special: 'Air units only', maxLevel: 1, comment: "One job." },
-    FIRE_TRUCK: { cost: 135, range: 60, damage: 0.5, fireRate: 2, color: '#d32f2f', projectileSpeed: 10, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 50, burnDps: 5, burnDuration: 20, special: 'Mobile Burn Unit', maxLevel: 1, comment: "Efficiency of language issue.", isMobile: true, speed: 1.0 },
 };
 
 // All the stats for each type of enemy that can spawn.
