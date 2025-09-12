@@ -314,10 +314,40 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                         uiElements.toggleModeBtn.textContent = `MODE: ${selectedTowers[0].mode.toUpperCase()}`;
                     }
                 }
-                if (type !== 'SUPPORT' && type !== 'MIND' && type !== 'CAT' && type !== 'ORBIT') {
-                    if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
-                    updateTargetingButton(selectedTowers[0].targetingMode, type);
+            }
+
+            // Logic for toggleTargetingBtn for multiple towers
+            // Get all possible targeting modes for each selected tower
+            const allAvailableModes = selectedTowers.map(tower => {
+                if (tower.type === 'FORT' || tower.type === 'NINE_PIN') {
+                    return ['furthest', 'strongest', 'weakest']; // Exclude 'ground' from cycling
+                } else if (tower.type !== 'PIN_HEART') {
+                    return ['strongest', 'weakest', 'furthest'];
                 }
+                return []; // PIN_HEART has no toggleable modes
+            });
+
+            // Find common modes among all selected towers
+            let commonModes = [];
+            if (allAvailableModes.length > 0) {
+                commonModes = allAvailableModes[0].filter(mode =>
+                    allAvailableModes.every(modes => modes.includes(mode))
+                );
+            }
+
+            if (commonModes.length > 0) {
+                if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
+
+                // Determine the current common mode (if all towers share one)
+                let currentCommonMode = null;
+                const firstTowerMode = selectedTowers[0].targetingMode;
+                if (commonModes.includes(firstTowerMode) && selectedTowers.every(t => t.targetingMode === firstTowerMode)) {
+                    currentCommonMode = firstTowerMode;
+                }
+
+                // Update button text to reflect the current common mode, or the first common mode if no single common current mode
+                const displayMode = currentCommonMode || commonModes[0];
+                updateTargetingButton(displayMode, selectedTowers[0].type); // Use the type of the first tower for styling
             }
         }
     } else {

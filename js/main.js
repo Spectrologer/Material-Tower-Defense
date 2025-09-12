@@ -1634,27 +1634,56 @@ uiElements.toggleTargetingBtn.addEventListener('click', () => {
     }
 
     if (selectedTowers.length > 0) {
-        const primaryTowerType = selectedTowers[0].type;
-        const allSameType = selectedTowers.every(t => t.type === primaryTowerType);
+        // Get all possible targeting modes for each selected tower
+        const allAvailableModes = selectedTowers.map(tower => {
+            if (tower.type === 'FORT' || tower.type === 'NINE_PIN') {
+                return ['furthest', 'strongest', 'weakest']; // Exclude 'ground' from cycling
+            } else if (tower.type !== 'PIN_HEART') {
+                return ['strongest', 'weakest', 'furthest'];
+            }
+            return []; // PIN_HEART has no toggleable modes
+        });
 
-        if (allSameType) {
-            const currentMode = selectedTowers[0].targetingMode;
-            let modes;
-            if (primaryTowerType === 'FORT' || primaryTowerType === 'NINE_PIN') {
-                modes = ['furthest', 'strongest', 'weakest'];
-            } else if (primaryTowerType !== 'PIN_HEART') {
-                modes = ['strongest', 'weakest', 'furthest'];
-            } else {
-                return; // PIN_HEART is locked
+        // Find common modes among all selected towers
+        let commonModes = [];
+        if (allAvailableModes.length > 0) {
+            commonModes = allAvailableModes[0].filter(mode =>
+                allAvailableModes.every(modes => modes.includes(mode))
+            );
+        }
+
+        if (commonModes.length > 0) {
+            // Determine the current common mode (if all towers share one)
+            let currentCommonMode = null;
+            const firstTowerMode = selectedTowers[0].targetingMode;
+            if (commonModes.includes(firstTowerMode) && selectedTowers.every(t => t.targetingMode === firstTowerMode)) {
+                currentCommonMode = firstTowerMode;
             }
 
-            let currentIndex = modes.indexOf(currentMode);
-            if (currentIndex === -1) currentIndex = -1; // handles 'ground' case for FORT
-            const nextMode = modes[(currentIndex + 1) % modes.length];
+            // Cycle to the next common mode
+            let nextMode;
+            if (currentCommonMode) {
+                const currentIndex = commonModes.indexOf(currentCommonMode);
+                nextMode = commonModes[(currentIndex + 1) % commonModes.length];
+            } else {
+                // If no common current mode, default to the first common mode
+                nextMode = commonModes[0];
+            }
 
+            // Apply to all selected towers
             selectedTowers.forEach(tower => {
-                tower.targetingMode = nextMode;
-                tower.attackGroundTarget = null; // Clear ground target when changing mode
+                // Check if the tower's available modes include the next common mode
+                const towerAvailableModes = [];
+                if (tower.type === 'FORT' || tower.type === 'NINE_PIN') {
+                    towerAvailableModes.push('furthest', 'strongest', 'weakest');
+                } else if (tower.type !== 'PIN_HEART') {
+                    towerAvailableModes.push('strongest', 'weakest', 'furthest');
+                }
+
+                if (towerAvailableModes.includes(nextMode)) {
+                    tower.targetingMode = nextMode;
+                    tower.attackGroundTarget = null; // Clear ground target when changing mode
+                }
             });
         }
         updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
