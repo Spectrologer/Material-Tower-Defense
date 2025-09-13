@@ -30,6 +30,14 @@ const TROPHIES = {
         description: "Beat wave 15 without building a PIN_HEART tower.",
         icon: 'heart_broken',
         color: '#ff69b4',
+    },
+    'PIN_15': {
+        name: "PIN 15",
+        description: "Reach wave 15 using only PIN towers.",
+        icon: 'location_pin',
+        color: '#FFFFFF',
+        filled: true,
+        iconClass: 'material-symbols-outlined',
     }
 };
 
@@ -129,6 +137,12 @@ function checkTrophies() {
     if (gameState.wave === 15 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
         gameState.unlockedTrophies.add('NO_HEARTS_15');
         gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth));
+    }
+
+    // Trophy: PIN_15 (Reach wave 15 using only PIN towers)
+    if (gameState.wave === 15 && gameState.onlyPinTowersUsed && !gameState.unlockedTrophies.has('PIN_15')) {
+        gameState.unlockedTrophies.add('PIN_15');
+        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nPIN 15", canvasWidth / 2, canvasHeight / 2, 5, '#4CAF50', canvasWidth));
     }
 }
 

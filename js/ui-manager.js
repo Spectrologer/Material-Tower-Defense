@@ -814,9 +814,11 @@ export function populateTrophies(gameState, trophiesData) {
         const name = isUnlocked ? data.name : '???';
         const color = isUnlocked && data.color ? data.color : (isUnlocked ? '#facc15' : '#6b7280');
         const description = isUnlocked ? data.description : '????????????????????????';
+        const iconClass = data.iconClass || 'material-symbols-outlined'; // Default to material-symbols-outlined
+        const fillStyle = data.filled ? `font-variation-settings: 'FILL' 1;` : '';
 
         trophyElement.innerHTML = `
-            <span class="material-symbols-outlined text-4xl" style="color: ${color};">${icon}</span>
+            <span class="${iconClass} text-4xl" style="color: ${color}; ${fillStyle}">${icon}</span>
             <div>
                 <h4 class="text-lg font-bold" style="color: ${color};">${name}</h4>
                 <p class="text-sm">${description}</p>

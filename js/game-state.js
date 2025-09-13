@@ -31,6 +31,7 @@ import { generatePath } from "./path-generator.js";
  * @property {Set} discoveredTowerTypes - Set of tower types the player has discovered.
  * @property {Set<string>} unlockedTrophies - Set of unlocked trophy IDs.
  * @property {boolean} usedPinHeartTower - Whether a PIN_HEART tower has been used in the current game.
+ * @property {boolean} onlyPinTowersUsed - Whether only PIN towers have been used in the current game.
  * @property {boolean} waveInProgress - Whether a wave is currently in progress.
  * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
  * @property {boolean} gameOver - Whether the game is over.
@@ -145,6 +146,7 @@ function getInitialGameState() {
         discoveredTowerTypes: new Set(['PIN', 'CASTLE', 'SUPPORT']),
         unlockedTrophies: new Set(),
         usedPinHeartTower: false,
+        onlyPinTowersUsed: true,
         waveInProgress: false,
         spawningEnemies: false,
         gameOver: false,
@@ -161,6 +163,9 @@ function getInitialGameState() {
 export function addTower(tower) {
     if (tower.type === 'PIN_HEART') {
         gameState.usedPinHeartTower = true;
+    }
+    if (tower.type !== 'PIN' && tower.type !== 'NINE_PIN') {
+        gameState.onlyPinTowersUsed = false;
     }
     gameState.towers.push(tower);
 }
@@ -197,6 +202,7 @@ function getSerializedGameState() {
         discoveredTowerTypes: Array.from(gameState.discoveredTowerTypes),
         unlockedTrophies: Array.from(gameState.unlockedTrophies),
         usedPinHeartTower: gameState.usedPinHeartTower,
+        onlyPinTowersUsed: gameState.onlyPinTowersUsed,
     });
 }
 
@@ -220,6 +226,7 @@ function deserializeGameState(serializedGameState) {
             discoveredTowerTypes: new Set(discoveredTowerTypes || ['PIN', 'CASTLE', 'SUPPORT']),
             unlockedTrophies: new Set(unlockedTrophies || []),
             usedPinHeartTower: basicData.usedPinHeartTower || false,
+            onlyPinTowersUsed: basicData.onlyPinTowersUsed === undefined ? true : basicData.onlyPinTowersUsed,
         };
     } catch (e) {
         console.error("Failed to load saved game state:", e);
