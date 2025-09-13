@@ -756,7 +756,7 @@ function gameLoop(currentTime) {
 }
 
 function onEndWave() {
-    if (gameState.wave === 25) {
+    if (gameState.wave === 25 && !gameState.waveInProgress) {
         showEndlessChoice();
         persistGameState(0);
         return;
@@ -1702,6 +1702,15 @@ consoleCommands.startWave = (waveNumber) => {
     }
 };
 
+consoleCommands.showEndless = () => {
+    if (gameState) {
+        showEndlessChoice();
+        console.log("Showing endless choice window.");
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
 consoleCommands.debug = () => {
     if (gameState) {
         isInfiniteGold = true;
@@ -2015,9 +2024,7 @@ function performPendingMerge() {
                 gameState.gold -= cost;
             }
         }
-        if (!e.shiftKey) {
-            selectedTowers = [existingTower];
-        }
+        selectedTowers = [existingTower];
     }
     uiElements.mergeConfirmModal.classList.add('hidden');
     draggedCanvasTower = null;
