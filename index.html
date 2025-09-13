@@ -37,22 +37,16 @@
         body,
         html {
             font-family: 'Montserrat', sans-serif;
-            /* Sets the modern font */
-            background-color: #1a1a1a;
-            /* Dark background */
-            color: #e0e0e0;
-            /* Light text color */
+            font-weight: 600;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%);
+            color: #f5f5f5;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
             overflow: hidden;
-            /* Prevents scrollbars */
             height: 100%;
-            /* This is the new rule to prevent text highlighting */
             user-select: none;
             -webkit-user-select: none;
-            /* For WebKit browsers */
             -moz-user-select: none;
-            /* For Mozilla browsers */
             -ms-user-select: none;
-            /* For Internet Explorer/Edge */
         }
 
         /* New rule to change cursor when dragging */
@@ -62,70 +56,139 @@
 
         /* Style for the game's drawing area (the canvas) */
         canvas {
-            background-color: rgba(44, 44, 44, 0.8); /* Slightly transparent dark gray */
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); /* Softer, less glowing shadow */
-            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle white border */
-            border-radius: 5px; /* Slightly rounded corners */
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                0 4px 16px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
             position: absolute;
             cursor: grab;
-            /* Default cursor for grabbing on the canvas */
         }
 
         /* Style for all the UI panels (stats, towers, game over screen) */
         .game-ui-panel,
         .game-over-modal,
         .game-stats-panel {
-            background-color: rgba(255, 255, 255, 0.15); /* Lighter, more translucent background */
-            backdrop-filter: blur(10px); /* Stronger blur effect */
-            border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle white border for glass effect */
-            border-radius: 10px; /* Softer corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            background: linear-gradient(135deg,
+                    rgba(20, 20, 20, 0.85) 0%,
+                    rgba(40, 40, 40, 0.75) 25%,
+                    rgba(25, 25, 25, 0.8) 75%,
+                    rgba(15, 15, 15, 0.9) 100%);
+            backdrop-filter: blur(20px) saturate(1.2);
+            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+                0 16px 48px rgba(0, 0, 0, 0.5),
+                0 8px 24px rgba(0, 0, 0, 0.3),
+                0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         /* Style for the clickable buttons */
         .pixel-button {
-            background-color: rgba(255, 255, 255, 0.1); /* Lighter, more translucent background */
-            color: #00ff88;
-            border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle white border */
+            background: linear-gradient(135deg,
+                    rgba(50, 50, 50, 0.9) 0%,
+                    rgba(35, 35, 35, 0.85) 50%,
+                    rgba(25, 25, 25, 0.9) 100%);
+            color: #f5f5f5;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
             padding: 10px 15px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 6px 0 rgba(0, 0, 0, 0.4),
+                0 8px 16px rgba(0, 0, 0, 0.3),
+                0 4px 8px rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            border-radius: 5px; /* Slightly rounded corners */
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pixel-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.1),
+                    transparent);
+            transition: left 0.5s ease;
         }
 
         /* What buttons look like when you hover over them */
         .pixel-button:hover:not(:disabled) {
-            background-color: rgba(255, 255, 255, 0.2); /* Slightly more opaque on hover */
-            transform: translateY(-1px); /* Subtle lift */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg,
+                    rgba(70, 70, 70, 0.95) 0%,
+                    rgba(55, 55, 55, 0.9) 50%,
+                    rgba(45, 45, 45, 0.95) 100%);
+            transform: translateY(-3px);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                0 8px 0 rgba(0, 0, 0, 0.4),
+                0 12px 24px rgba(0, 0, 0, 0.4),
+                0 6px 12px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .pixel-button:hover:not(:disabled)::before {
+            left: 100%;
         }
 
         /* What buttons look like when you're clicking them */
         .pixel-button:active:not(:disabled) {
-            transform: translateY(1px); /* Subtle press down */
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transform: translateY(3px);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 3px 0 rgba(0, 0, 0, 0.4),
+                0 4px 8px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg,
+                    rgba(40, 40, 40, 0.95) 0%,
+                    rgba(25, 25, 25, 0.9) 50%,
+                    rgba(15, 15, 15, 0.95) 100%);
         }
 
         /* Style for buttons you can't afford or use yet */
         .pixel-button:disabled {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #555;
-            border-color: rgba(255, 255, 255, 0.1);
-            box-shadow: none;
+            background: linear-gradient(135deg,
+                    rgba(20, 20, 20, 0.6) 0%,
+                    rgba(15, 15, 15, 0.5) 50%,
+                    rgba(10, 10, 10, 0.6) 100%);
+            color: #888;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.03),
+                0 4px 0 rgba(0, 0, 0, 0.2),
+                0 4px 8px rgba(0, 0, 0, 0.2);
             cursor: not-allowed;
+            opacity: 0.7;
         }
 
         /* Highlights the tower button you've selected to place */
         .tower-button.selected,
         #cloud-inventory-slots .pixel-button.selected {
-            background-color: #00ff88; /* Keep original highlight color */
-            color: #1a1a1a;
-            box-shadow: 0 0 8px #00ff88; /* Green glow */
-            transform: translateY(-1px);
+            background-color: #ffffff;
+            color: #111;
+            border-color: #ffffff;
+            box-shadow: 0 4px 0px 0px #00a359, 0 0 12px #00ff88;
+            /* Added glow */
+            transform: translateY(0);
         }
+
 
         #set-ground-target-btn.active {
             background-color: #f59e0b;
@@ -151,14 +214,17 @@
 
         /* Custom styles for the new debug button */
         #infinite-gold {
-            background-color: rgba(220, 38, 38, 0.7); /* Red with transparency */
-            border-color: rgba(220, 38, 38, 0.9); /* Red with transparency */
+            background-color: rgba(220, 38, 38, 0.7);
+            /* Red with transparency */
+            border-color: rgba(220, 38, 38, 0.9);
+            /* Red with transparency */
             color: #fde047;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         #infinite-gold:hover:not(:disabled) {
-            background-color: rgba(239, 68, 68, 0.8); /* Lighter red on hover */
+            background-color: rgba(239, 68, 68, 0.8);
+            /* Lighter red on hover */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
         }
 
@@ -170,12 +236,14 @@
         /* Custom tooltip styling */
         .tooltip {
             position: absolute;
-            background-color: rgba(0, 0, 0, 0.7); /* Slightly more transparent tooltip */
-            color: #00ff88;
-            border: 1px solid rgba(0, 255, 136, 0.5); /* Softer green border */
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Slightly more transparent tooltip */
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            /* Softer green border */
             padding: 8px;
             font-size: 14px;
-            font-family: 'Press Start 2P', cursive;
+            font-family: 'Roboto', Open Sans;
             text-align: center;
             white-space: nowrap;
             z-index: 10;
@@ -185,15 +253,20 @@
         }
 
         .bottom-controls {
-            background-color: rgba(255, 255, 255, 0.15); /* Lighter, more translucent background */
-            backdrop-filter: blur(10px); /* Stronger blur effect */
-            border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle white border for glass effect */
+            background-color: rgba(255, 255, 255, 0.15);
+            /* Lighter, more translucent background */
+            backdrop-filter: blur(10px);
+            /* Stronger blur effect */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            /* Subtle white border for glass effect */
             padding: 1rem;
             display: flex;
             gap: 0.5rem;
             justify-content: space-between;
-            border-radius: 10px; /* Softer corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            border-radius: 10px;
+            /* Softer corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            /* Subtle shadow for depth */
         }
 
         .options-menu {
@@ -330,7 +403,8 @@
                 GAME</button>
             <div class="flex gap-2 mt-auto pt-2">
                 <div class="relative w-1/2">
-                    <button id="changelog-btn" class="pixel-button text-sm py-2 text-center w-full flex items-center justify-center">
+                    <button id="changelog-btn"
+                        class="pixel-button text-sm py-2 text-center w-full flex items-center justify-center">
                         <span class="material-symbols-outlined align-middle !text-lg">history</span>
                     </button>
                     <span id="changelog-indicator"

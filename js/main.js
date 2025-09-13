@@ -22,7 +22,6 @@ let canvasWidth, canvasHeight;
 let isInfiniteGold = false;
 let mazeColor = '#818181ff';
 let detourMazeColor = 'rgba(102, 102, 102, 0.2)'; // Slightly visible when inactive
-let detourUpcomingColor = 'rgba(150, 150, 150, 0.8)'; // More visible when upcoming
 
 const TROPHIES = {
     'NO_HEARTS_15': {
