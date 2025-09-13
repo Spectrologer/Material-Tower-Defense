@@ -1,10 +1,9 @@
 export const changelog = [
     {
         version: '0.1.0',
-        date: '2024-05-21',
+        date: '2025-09-13',
         changes: [
-            'Iconic Defense!',
-            9 / 12 / 2025
+            'The Glass Update: UI overhaul.',
         ]
     },
     // Add new changelog entries here, at the top of the array.
