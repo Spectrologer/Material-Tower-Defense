@@ -1,6 +1,6 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, addTower, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
@@ -756,6 +756,12 @@ function gameLoop(currentTime) {
 }
 
 function onEndWave() {
+    if (gameState.wave === 25) {
+        showEndlessChoice();
+        persistGameState(0);
+        return;
+    }
+
     gameState.wave++;
     uiElements.startWaveBtn.disabled = false;
     setMusicTrack(1, { bossMode: false });
@@ -1704,6 +1710,17 @@ uiElements.startWaveBtn.addEventListener('click', () => {
     spawnWave();
 });
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
+
+uiElements.startEndlessBtn.addEventListener('click', () => {
+    uiElements.endlessChoiceModal.classList.add('hidden');
+    onEndWave(); // This will increment the wave to 26 and prepare for the next wave
+});
+
+uiElements.restartEndlessBtn.addEventListener('click', () => {
+    uiElements.endlessChoiceModal.classList.add('hidden');
+    reset(false);
+});
+
 uiElements.buyCastleBtn.addEventListener('click', () => selectTowerToPlace('CASTLE'));
 uiElements.buySupportBtn.addEventListener('click', () => selectTowerToPlace('SUPPORT'));
 uiElements.restartGameBtn.addEventListener('click', () => reset(false));

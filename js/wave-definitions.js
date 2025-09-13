@@ -115,30 +115,107 @@ export const waveDefinitions = [
         isBoss: true,
         composition: [comp(ENEMY_TYPES.BOSS, 1)],
     },
+    // Wave 16: A dense wave of normal enemies to test sustained damage.
+    {
+        composition: [comp(ENEMY_TYPES.NORMAL, 40)],
+        healthMultiplier: 2.5, healthBonus: 50,
+        detourRatio: 0.2,
+    },
+    // Wave 17: Fast and stealthy enemies attacking from both paths.
+    {
+        composition: [comp(ENEMY_TYPES.FAST, 15), comp(ENEMY_TYPES.STEALTH, 10)],
+        healthMultiplier: 2.8, healthBonus: 60,
+        detourRatio: 0.6,
+    },
+    // Wave 18: A heavy ground assault with flying support.
+    { // Boss Decay: The boss returns, but not as a final boss.
+        composition: [comp(ENEMY_TYPES.BOSS, 1), comp(ENEMY_TYPES.HEAVY, 8)],
+        healthMultiplier: 3.2, healthBonus: 75, // Health multiplier does not affect boss
+    },
+    // Wave 19: A massive swarm wave to push splash damage towers to their limit.
+    {
+        isSwarm: true,
+        composition: [comp(ENEMY_TYPES.SWARM, 50)],
+        healthMultiplier: 3.0, healthBonus: 40,
+        detourRatio: 1.0,
+    },
+    // Wave 20: Economic challenge with a large group of Bitcoin enemies.
+    {
+        composition: [comp(ENEMY_TYPES.BITCOIN, 40)],
+        healthMultiplier: 4.0, healthBonus: 100,
+    },
+    // Wave 21: A tricky combination of fast detour enemies and heavy main path enemies.
+    {
+        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.FAST, 20)],
+        healthMultiplier: 4.5, healthBonus: 120,
+        detourRatio: 1.0,
+    },
+    // Wave 22: A test of detection and mixed damage with stealth and heavy units.
+    { // Boss Decay: The boss appears alongside stealth units, a tricky combination.
+        composition: [comp(ENEMY_TYPES.BOSS, 1), comp(ENEMY_TYPES.STEALTH, 12)],
+        healthMultiplier: 5.0, healthBonus: 150, // Health multiplier does not affect boss
+        detourRatio: 0.5,
+    },
+    // Wave 23: A mixed wave of all ground types to test overall defense.
+    {
+        composition: [
+            comp(ENEMY_TYPES.NORMAL, 15),
+            comp(ENEMY_TYPES.FAST, 10),
+            comp(ENEMY_TYPES.HEAVY, 5),
+            comp(ENEMY_TYPES.SWARM, 20)
+        ],
+        healthMultiplier: 5.5, healthBonus: 180,
+        detourRatio: 0.3,
+    },
+    // Wave 24: A challenging air and ground pincer attack.
+    {
+        composition: [comp(ENEMY_TYPES.FLYING, 15), comp(ENEMY_TYPES.HEAVY, 10)],
+        healthMultiplier: 6.0, healthBonus: 220,
+    },
+    // Wave 25: A pre-infinite wave with a bit of everything, including stealth.
+    {
+        composition: [
+            comp(ENEMY_TYPES.BOSS, 2), // Two bosses at once!
+            comp(ENEMY_TYPES.FLYING, 8),
+            comp(ENEMY_TYPES.FAST, 10)
+        ],
+        healthMultiplier: 6.5, healthBonus: 250,
+        detourRatio: 0.5,
+        endOfWaveAnnouncement: { text: "Warning:\nInfinite waves incoming!", color: '#ff4d4d' }
+    },
 ];
 
 export function generateWave(waveNumber) {
+    // The wave number to start procedural generation from.
+    const proceduralStartWave = 26;
+
+    // Calculate the wave's difficulty based on how far past the start it is.
+    const difficultyScale = waveNumber - proceduralStartWave;
+
     const wave = {
         composition: [],
-        healthMultiplier: 1 + (waveNumber - 15) * 0.3, // Increase health by 30% per wave
-        healthBonus: (waveNumber - 10) * 17, // Add a larger flat health bonus
-        detourRatio: Math.min(1, (waveNumber - 15) * 0.1), // Increase detour ratio
+        healthMultiplier: 6.5 + difficultyScale * 0.5,
+        healthBonus: 250 + difficultyScale * 25,
+        detourRatio: Math.min(1, 0.5 + difficultyScale * 0.05),
     };
 
-    // Add a mix of enemies, increasing the count and difficulty
-    wave.composition.push(comp(ENEMY_TYPES.NORMAL, 5 + (waveNumber - 15) * 3));
-    wave.composition.push(comp(ENEMY_TYPES.FAST, 3 + (waveNumber - 15) * 3));
-    wave.composition.push(comp(ENEMY_TYPES.HEAVY, 2 + Math.floor((waveNumber - 15) * 1.5)));
+    // Base counts for different enemy types.
+    const baseNormal = 15;
+    const baseFast = 10;
+    const baseHeavy = 5;
+    const baseFlying = 4;
+    const baseStealth = 3;
 
-    // Introduce flying and stealth enemies in later waves, and in greater numbers
-    if (waveNumber > 18) {
-        wave.composition.push(comp(ENEMY_TYPES.FLYING, 1 + Math.floor((waveNumber - 18) * 0.5)));
-    }
-    if (waveNumber > 22) {
-        wave.composition.push(comp(ENEMY_TYPES.STEALTH, 1 + Math.floor((waveNumber - 22) * 0.4)));
-    }
+    // Add a mix of enemies, increasing their count and difficulty based on the wave number.
+    wave.composition.push(comp(ENEMY_TYPES.NORMAL, baseNormal + difficultyScale * 4));
+    wave.composition.push(comp(ENEMY_TYPES.FAST, baseFast + difficultyScale * 3));
+    wave.composition.push(comp(ENEMY_TYPES.HEAVY, baseHeavy + Math.floor(difficultyScale * 2)));
+
+    // Introduce and scale flying enemies.
+    wave.composition.push(comp(ENEMY_TYPES.FLYING, baseFlying + Math.floor(difficultyScale * 1.5)));
+
+    // Introduce and scale stealth enemies.
+    wave.composition.push(comp(ENEMY_TYPES.STEALTH, baseStealth + Math.floor(difficultyScale * 1.2)));
 
     return wave;
 }
-
-

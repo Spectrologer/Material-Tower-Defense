@@ -21,6 +21,9 @@ export const uiElements = {
     gameOverTitle: document.getElementById('game-over-title'),
     gameOverMessage: document.getElementById('game-over-message'),
     restartGameBtn: getButton('restart-game'),
+    endlessChoiceModal: document.getElementById('endless-choice-modal'),
+    startEndlessBtn: getButton('start-endless-btn'),
+    restartEndlessBtn: getButton('restart-endless-btn'),
     sellPanel: document.getElementById('sell-panel'),
     sellTowerBtn: getButton('sell-tower-btn'),
     moveToCloudBtn: getButton('move-to-cloud-btn'),
@@ -877,4 +880,8 @@ export function populateChangelog(changelogData) {
         `;
         uiElements.changelogList.appendChild(entryElement);
     }
+}
+
+export function showEndlessChoice() {
+    if (uiElements.endlessChoiceModal) uiElements.endlessChoiceModal.classList.remove('hidden');
 }
