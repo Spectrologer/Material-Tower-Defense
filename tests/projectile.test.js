@@ -51,3 +51,34 @@ test('ANTI_AIR rocket should accelerate', () => {
     projectile.update(() => { }, [], [], DELTA_TIME);
     assert(projectile.currentSpeed > speedAfterFirstUpdate, 'Rocket speed should continue to increase on subsequent updates');
 });
+
+test('NINE_PIN projectile should pierce multiple enemies', () => {
+    const owner = new Tower(0, 0, 'NINE_PIN');
+    const target = new Enemy(ENEMY_TYPES.NORMAL, [{ x: 200, y: 0 }], 'NORMAL');
+    target.x = 200;
+    target.y = 0;
+
+    const enemy1 = new Enemy(ENEMY_TYPES.NORMAL, [], 'NORMAL');
+    enemy1.x = 50;
+    enemy1.y = 0;
+
+    const enemy2 = new Enemy(ENEMY_TYPES.NORMAL, [], 'NORMAL');
+    enemy2.x = 100;
+    enemy2.y = 0;
+
+    const enemies = [target, enemy1, enemy2];
+    const projectile = new Projectile(owner, target);
+
+    let hitCount = 0;
+    const onHit = (proj, hitEnemy) => {
+        hitCount++;
+    };
+
+    // Move the projectile past the first two enemies but not to the final target
+    for (let i = 0; i < 15; i++) {
+        projectile.update(onHit, enemies, [], DELTA_TIME);
+    }
+
+    assert.strictEqual(hitCount, 2, 'NINE_PIN projectile should have hit two enemies');
+    assert.strictEqual(projectile.hitEnemies.size, 2, 'Two enemies should be in the hitEnemies set');
+});

@@ -921,6 +921,7 @@ function checkForNinePinOnBoard() {
 }
 
 function handleCanvasClick(e) {
+    const isShiftPressed = e.shiftKey;
     if (isDoubleClick) {
         // If a double-click just occurred, ignore this single click event
         return;
@@ -970,6 +971,20 @@ function handleCanvasClick(e) {
             mergingTower = { type: towerToPlaceType, cost: costOfPlacingTower, id: crypto.randomUUID() };
         }
 
+        // If the user can't afford the tower, cancel the placement action.
+        if (gameState.gold < costOfPlacingTower && !mergingFromCloud && !isInfiniteGold) {
+            placingTower = null;
+            placingFromCloud = null;
+            draggedCloudTower = null;
+            selectedTowers = [];
+            actionTaken = true;
+            uiElements.buyPinBtn.classList.remove('selected');
+            uiElements.buyCastleBtn.classList.remove('selected');
+            uiElements.buySupportBtn.classList.remove('selected');
+            return; // Exit the function early
+        }
+
+
         if (gameState.gold < costOfPlacingTower && !mergingFromCloud && !isInfiniteGold) return;
 
         const clickedOnTower = gameState.towers.find(t => {
@@ -1001,11 +1016,13 @@ function handleCanvasClick(e) {
             else {
                 performPendingMerge();
             }
-            placingTower = null;
-            placingFromCloud = null;
-            draggedCloudTower = null;
-            selectedTowers = []; // Deselect after a merge is initiated
-            actionTaken = true;
+            if (!isShiftPressed) {
+                placingTower = null;
+                placingFromCloud = null;
+                draggedCloudTower = null;
+                selectedTowers = []; // Deselect after a merge is initiated
+                actionTaken = true;
+            }
         } else if (isValidPlacement(snappedX, snappedY, isNinePin)) {
             let newTower;
             if (mergingFromCloud) {
@@ -1039,19 +1056,23 @@ function handleCanvasClick(e) {
             if (newTower.type === 'PIN') {
                 checkForNinePinOnBoard();
             }
-            placingTower = null;
-            placingFromCloud = null;
+            if (!isShiftPressed) {
+                placingTower = null;
+                placingFromCloud = null;
+                uiElements.buyPinBtn.classList.remove('selected');
+                uiElements.buyCastleBtn.classList.remove('selected');
+                uiElements.buySupportBtn.classList.remove('selected');
+            }
             actionTaken = true;
-            uiElements.buyPinBtn.classList.remove('selected');
-            uiElements.buyCastleBtn.classList.remove('selected');
-            uiElements.buySupportBtn.classList.remove('selected');
         } else {
-            placingTower = null;
-            placingFromCloud = null;
-            actionTaken = true;
-            uiElements.buyPinBtn.classList.remove('selected');
-            uiElements.buyCastleBtn.classList.remove('selected');
-            uiElements.buySupportBtn.classList.remove('selected');
+            if (!isShiftPressed) {
+                placingTower = null;
+                placingFromCloud = null;
+                actionTaken = true;
+                uiElements.buyPinBtn.classList.remove('selected');
+                uiElements.buyCastleBtn.classList.remove('selected');
+                uiElements.buySupportBtn.classList.remove('selected');
+            }
         }
     } else {
         const clickedTower = gameState.towers.find(t => {
