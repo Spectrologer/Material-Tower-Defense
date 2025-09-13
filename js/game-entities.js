@@ -63,65 +63,83 @@ export class Projectile {
             ctx.fill();
             return;
         }
-        let iconFamily = 'Material Icons';
-        let icon;
-        let rotation = 0;
-        if (this.target) {
-            const dx = this.target.x - this.x;
-            const dy = this.target.y - this.y;
-            const angle = Math.atan2(dy, dx);
-            rotation = angle;
-        }
-        if (this.owner.type === 'PIN' || this.owner.type === 'NINE_PIN') {
-            icon = 'arrow_upward';
-            iconFamily = "'Material Symbols Outlined'";
-            rotation += Math.PI / 2;
-        } else if (this.owner.type === 'PIN_HEART') {
-            icon = 'favorite';
-            rotation -= Math.PI / 2;
-        }
-        else if (this.owner.type === 'NAT') {
-            icon = 'arrow_forward';
-            iconFamily = "'Material Symbols Outlined'";
-        } else if (this.owner.type === 'ANTI_AIR') {
-            icon = 'rocket';
-            iconFamily = "'Material Symbols Outlined'";
-            rotation += Math.PI / 2;
-        } else if (this.owner.type === 'ORBIT') {
-            icon = 'circle';
-            iconFamily = "'Material Symbols Outlined'";
-        }
-        if (icon) {
-            let fontSize = 24;
-            if (this.owner.type === 'ORBIT') {
-                fontSize = this.owner.projectileSize * 3;
-            } else if (this.owner.type === 'NINE_PIN') {
-                fontSize = 40;
-            } else if (this.owner.type === 'PIN_HEART') {
-                fontSize = 16;
-            } else if (this.owner.type === 'ANTI_AIR') {
-                const baseFontSize = 32;
-                if (this.isEmerging) {
-                    const emergeProgress = Math.max(0, 1 - (this.emergeTimer / this.emergeDuration));
-                    fontSize = baseFontSize * emergeProgress;
-                } else {
-                    fontSize = baseFontSize;
+
+        switch (this.owner.type) {
+            case 'ORBIT':
+                ctx.fillStyle = this.owner.projectileColor;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.owner.projectileSize, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+            case 'PIN':
+            case 'NINE_PIN':
+            case 'PIN_HEART':
+            case 'NAT':
+            case 'ANTI_AIR':
+                let icon;
+                let iconFamily;
+                let rotation = 0;
+
+                if (this.target) {
+                    const dx = this.target.x - this.x;
+                    const dy = this.target.y - this.y;
+                    rotation = Math.atan2(dy, dx);
                 }
-            }
-            ctx.font = `${fontSize}px ${iconFamily}`;
-            ctx.fillStyle = this.owner.projectileColor;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(rotation);
-            ctx.fillText(icon, 0, 0);
-            ctx.restore();
-        } else {
-            ctx.fillStyle = this.owner.projectileColor;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.owner.projectileSize, 0, Math.PI * 2);
-            ctx.fill();
+
+                switch (this.owner.type) {
+                    case 'PIN':
+                    case 'NINE_PIN':
+                        icon = 'arrow_upward';
+                        iconFamily = "'Material Symbols Outlined'";
+                        rotation += Math.PI / 2;
+                        break;
+                    case 'PIN_HEART':
+                        icon = 'favorite';
+                        iconFamily = 'Material Icons';
+                        rotation -= Math.PI / 2;
+                        break;
+                    case 'NAT':
+                        icon = 'arrow_forward';
+                        iconFamily = "'Material Symbols Outlined'";
+                        break;
+                    case 'ANTI_AIR':
+                        icon = 'rocket';
+                        iconFamily = "'Material Symbols Outlined'";
+                        rotation += Math.PI / 2;
+                        break;
+                }
+
+                let fontSize = 24;
+                if (this.owner.type === 'NINE_PIN') {
+                    fontSize = 40;
+                } else if (this.owner.type === 'PIN_HEART') {
+                    fontSize = 16;
+                } else if (this.owner.type === 'ANTI_AIR') {
+                    const baseFontSize = 32;
+                    if (this.isEmerging) {
+                        const emergeProgress = Math.max(0, 1 - (this.emergeTimer / this.emergeDuration));
+                        fontSize = baseFontSize * emergeProgress;
+                    } else {
+                        fontSize = baseFontSize;
+                    }
+                }
+
+                ctx.font = `${fontSize}px ${iconFamily}`;
+                ctx.fillStyle = this.owner.projectileColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(rotation);
+                ctx.fillText(icon, 0, 0);
+                ctx.restore();
+                break;
+            default:
+                ctx.fillStyle = this.owner.projectileColor;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.owner.projectileSize, 0, Math.PI * 2);
+                ctx.fill();
+                break;
         }
     }
     update(onHit, enemies, effects, deltaTime) {
@@ -869,6 +887,8 @@ class TowerRenderer {
 
         ctx.fillText(icon, 0, 0);
         ctx.restore();
+
+        // The orbiters draw themselves in a separate block to avoid inheritance of transforms
         if (tower.type === 'ORBIT') {
             tower.orbiters.forEach(orbiter => orbiter.draw(ctx));
         }
@@ -1198,4 +1218,3 @@ export class TextAnnouncement {
         ctx.restore();
     }
 }
-
