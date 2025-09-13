@@ -71,20 +71,20 @@
         .game-ui-panel,
         .game-over-modal,
         .game-stats-panel {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px) saturate(1.8);
             -webkit-backdrop-filter: blur(20px) saturate(1.8);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
                 0 8px 32px rgba(0, 0, 0, 0.4),
                 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
         /* Style for the clickable buttons */
         .pixel-button {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.3);
             color: #f5f5f5;
             font-weight: 700;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
@@ -164,8 +164,8 @@
             background-color: #ffffff;
             color: #111;
             border-color: #ffffff;
-            box-shadow: 0 4px 0px 0px #00a359, 0 0 12px #00ff88;
-            /* Added glow */
+            box-shadow: 0 4px 0px 0px #8b5cf6, 0 0 12px #c084fc;
+            /* Changed glow to purple */
             transform: translateY(0);
         }
 
@@ -309,8 +309,8 @@
         }
 
         input:checked+.slider {
-            background-color: #00ff88;
-            border-color: #00ff88;
+            background-color: #c084fc;
+            border-color: #a855f7;
         }
 
         input:checked+.slider:before {
@@ -342,7 +342,7 @@
                 <span class="material-symbols-outlined !text-lg">settings</span>
             </button>
 
-            <h1 class="text-sm text-center text-green-400">ICONIC TD</h1>
+            <h1 class="text-xl sm:text-2xl text-fuchsia-400 text-center">ICONIC TD</h1>
             <div class="flex justify-between items-center text-xs md:text-sm">
                 <div class="flex flex-1 justify-center items-center gap-x-4 md:gap-x-6">
                     <p class="flex items-center gap-1"><span
@@ -367,7 +367,7 @@
         <!-- Options Menu -->
         <div id="options-menu-overlay" class="hidden fixed inset-0 z-25 bg-black/50"></div> <!-- New overlay -->
         <div id="options-menu" class="options-menu game-ui-panel hidden">
-            <h3 class="text-lg text-green-400 mb-2">OPTIONS</h3>
+            <h3 class="text-lg text-fuchsia-400 mb-2">OPTIONS</h3>
             <!-- New controls for the options menu -->
             <div id="merge-confirm-toggle-container" class="flex items-center justify-between text-xs py-2">
                 <label for="toggle-merge-confirm-checkbox" class="text-white cursor-pointer">Confirm Merges</label>
@@ -407,7 +407,7 @@
             <!-- Cloud Inventory Panel, this is a drop target for towers from the canvas -->
             <div id="cloud-inventory-panel"
                 class="hidden game-ui-panel w-[72px] flex-shrink-0 flex flex-col items-center p-1 gap-2 overflow-y-auto">
-                <h3 class="text-xs text-green-400 -mb-1">CLOUD</h3>
+                <h3 class="text-xs text-fuchsia-400 -mb-1">CLOUD</h3>
                 <div id="cloud-inventory-slots" class="flex flex-col gap-2 w-full items-center">
                     <!-- Inventoried towers will be added here -->
                 </div>
@@ -426,7 +426,7 @@
             </div>
 
             <div id="tower-buttons-group">
-                <h2 id="towers-title" class="text-base sm:text-xl text-green-400">TOWERS</h2>
+                <h2 id="towers-title" class="text-base sm:text-xl text-fuchsia-400">TOWERS</h2>
                 <!-- Buttons to buy the different towers -->
                 <div id="tower-buttons" class="grid grid-cols-3 gap-2 mt-2">
                     <button id="buy-pin"
@@ -452,7 +452,7 @@
                         </button>
                     </div>
                     <div class="text-center">
-                        <h3 class="text-base sm:text-lg text-green-400">SELECTED</h3>
+                        <h3 class="text-base sm:text-lg text-fuchsia-400">SELECTED</h3>
                     </div>
                     <div class="flex justify-end">
                         <div id="tower-kill-count" class="flex items-center gap-1 text-sm text-gray-400 hidden">
@@ -556,7 +556,7 @@
     <div id="merge-confirm-modal"
         class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-30">
         <div class="game-ui-panel text-center p-6 w-11/12 max-w-sm">
-            <h3 class="text-lg sm:text-xl text-green-400 mb-4">CONFIRM MERGE</h3>
+            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4">CONFIRM MERGE</h3>
             <div class="flex items-center justify-center gap-4 text-white text-sm sm:text-base">
                 <div class="flex flex-col items-center">
                     <div id="merge-from-tower-icon-container"
@@ -569,7 +569,7 @@
                     </div>
                     <span id="merge-to-tower-name" class="mt-1"></span>
                 </div>
-                <span class="material-symbols-outlined text-2xl text-green-400">arrow_right_alt</span>
+                <span class="material-symbols-outlined text-2xl text-fuchsia-400">arrow_right_alt</span>
                 <div class="flex flex-col items-center">
                     <div id="merge-result-tower-icon-container"
                         class="w-12 h-12 flex items-center justify-center text-3xl"></div>
@@ -580,7 +580,7 @@
             <div id="merge-cost-info" class="text-center text-yellow-400 text-sm my-4"></div>
             <div class="grid grid-cols-2 gap-4 mt-6">
                 <button id="confirm-merge-btn"
-                    class="pixel-button bg-green-700 text-white border-green-500 shadow-[0_4px_0_#15803d]">CONFIRM</button>
+                    class="pixel-button bg-purple-700 text-white border-purple-500 shadow-[0_4px_0_#6b21a8]">CONFIRM</button>
                 <button id="cancel-merge-btn"
                     class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c]">CANCEL</button>
             </div>
@@ -590,7 +590,7 @@
     <!-- Library Modal -->
     <div id="library-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
-            <h3 class="text-lg sm:text-xl text-green-400 mb-2 text-center">LIBRARY</h3>
+            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-2 text-center">LIBRARY</h3>
             <!-- Tabs -->
             <div class="flex border-b-2 border-gray-600 mb-2">
                 <button id="library-towers-tab"
@@ -622,7 +622,7 @@
     <!-- Trophies Modal -->
     <div id="trophies-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
-            <h3 class="text-lg sm:text-xl text-green-400 mb-4 text-center">TROPHIES</h3>
+            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">TROPHIES</h3>
             <div id="trophies-list" class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto">
                 <!-- Trophy items will be generated here -->
             </div>
@@ -634,7 +634,7 @@
     <!-- Changelog Modal -->
     <div id="changelog-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
-            <h3 class="text-lg sm:text-xl text-green-400 mb-4 text-center">CHANGELOG</h3>
+            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">CHANGELOG</h3>
             <div id="changelog-list"
                 class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto flex flex-col gap-4">
                 <!-- Changelog items will be generated here -->
