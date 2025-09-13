@@ -603,7 +603,7 @@ export function triggerGameOver(isWin, wave) {
  */
 const statDisplayConfig = {
     damage: { label: 'Dmg', icon: 'bolt', family: 'material-icons', color: '#ef4444', condition: (s) => s.damage > 0 },
-    range: { label: 'Rng', icon: 'radar', family: 'material-icons', color: '#60a5fa', condition: (s) => s.range > 0 },
+    range: { label: 'Rng', icon: 'radar', family: 'material-icons', color: '#60a5fa', condition: (s) => s.range > 0 && !['ORBIT', 'SUPPORT', 'CAT', 'MIND'].includes(s.type) },
     fireRate: { label: 'Spd', icon: 'speed', family: 'material-icons', color: '#4ade80', condition: (s) => s.fireRate > 0, formatter: (val) => (60 / val).toFixed(2) },
     splashRadius: { label: 'Spl', icon: 'bubble_chart', family: 'material-icons', color: '#c084fc', condition: (s) => s.splashRadius > 0 },
     attackSpeedBoost: { label: 'Spd Aura', icon: 'electric_bolt', family: 'material-icons', color: '#f59e0b', condition: (s) => s.attackSpeedBoost, formatter: (val) => `+${((1 - val) * 100).toFixed(0)}%` },

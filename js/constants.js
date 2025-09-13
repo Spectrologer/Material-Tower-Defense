@@ -18,7 +18,7 @@ export const GRID_TOWER = 2; // A spot where a tower is already built.
 export const TOWER_TYPES = {
     PIN: { cost: 25, range: 150, damage: 2, fireRate: 22, color: '#ffffffff', projectileSpeed: 7, projectileSize: 3, projectileColor: '#ffffffff', splashRadius: 0, comment: "You are here." },
     CASTLE: { cost: 75, range: 100, damage: 7, fireRate: 80, color: '#be724fff', projectileSpeed: 5, projectileSize: 6, projectileColor: '#ff9900', splashRadius: 50, comment: "It's like a house, but harder." },
-    SUPPORT: { cost: 50, range: 100, damage: 0, fireRate: 0, color: '#f870ffff', attackSpeedBoost: 0.85, stealthDetectionRange: 2, special: 'Non-Stacking Speed Aura', comment: "Please stay off the line." },
+    SUPPORT: { cost: 50, range: 0, damage: 0, fireRate: 0, color: '#f870ffff', attackSpeedBoost: 0.85, stealthDetectionRange: 2, special: 'Non-Stacking Speed Aura', comment: "Please stay off the line." },
 
     // All the stats for advanced towers.
 
@@ -26,12 +26,12 @@ export const TOWER_TYPES = {
     PIN_HEART: { cost: 85, range: 220, damage: 1.5, fireRate: 15, color: '#ff69b4', projectileSpeed: 5, projectileSize: 3, projectileColor: '#ff69b4', splashRadius: 0, special: 'Loyal Projectiles', comment: "It's a little clingy." },
     FIREPLACE: { cost: 135, range: 50, damage: 0.2, fireRate: 3, color: '#e11d48', projectileSpeed: 10, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 1, burnDuration: 20, special: 'Lingering Burn', maxLevel: 3, comment: "It's not fun when it's too hot!" },
     NAT: { cost: 50, range: 300, damage: 12, fireRate: 120, color: '#DEB887', projectileSpeed: 12, projectileSize: 5, projectileColor: '#DEB887', splashRadius: 0, special: 'Sniper', comment: "Hiding its true IP: Intense Pain." },
-    MIND: { cost: 120, range: 120, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, stealthDetectionRange: 3, special: 'Aura: Boost/Slow', comment: "A weapon to surpass metal gear." },
-    ORBIT: { cost: 150, range: 9999, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters', comment: "Weeeeeeeee!" },
+    MIND: { cost: 120, range: 0, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, stealthDetectionRange: 3, special: 'Aura: Boost/Slow', comment: "A weapon to surpass metal gear." },
+    ORBIT: { cost: 150, range: 0, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters', comment: "Weeeeeeeee!" },
 
     // All the stats for hybrid towers.
 
-    CAT: { cost: 180, range: 120, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1, stealthDetectionRange: 4, special: 'Aura + Greed', iconSize: 0.9, maxLevel: 1, comment: "Meow-ney talks." },
+    CAT: { cost: 180, range: 0, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1, stealthDetectionRange: 4, special: 'Aura + Greed', iconSize: 0.9, maxLevel: 1, comment: "Meow-ney talks." },
     NINE_PIN: { cost: 119, range: 249, damage: 9, fireRate: 69, color: '#FFFFFF', projectileSpeed: 6, projectileSize: 39, projectileColor: '#ffffffff', splashRadius: 0, special: 'Piercing Shot', unmergeable: true, maxLevel: 1, comment: "You probably did this by accident." },
     ANTI_AIR: { cost: 110, range: 350, damage: 50, fireRate: 180, color: '#a9a9a9', projectileSpeed: .1, projectileSize: 24, projectileColor: '#cccccc', special: 'Air units only', maxLevel: 1, comment: "One job." },
 };

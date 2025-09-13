@@ -608,7 +608,9 @@ function gameLoop(currentTime) {
     gameState.towers.forEach(tower => tower.draw(ctx));
     if (selectedTowers.length > 0) {
         selectedTowers.forEach(t => {
-            t.drawRange(ctx);
+            if (!['ORBIT', 'SUPPORT', 'CAT', 'MIND'].includes(t.type)) {
+                t.drawRange(ctx);
+            }
             if (['SUPPORT', 'MIND', 'CAT'].includes(t.type)) t.drawBuffEffect(ctx);
         });
     }
@@ -656,7 +658,10 @@ function gameLoop(currentTime) {
             tempTower.y = snappedY;
         }
         tempTower.draw(ctx);
-        tempTower.drawRange(ctx);
+        // Only draw range if the tower type is NOT in the excluded list
+        if (!['ORBIT', 'SUPPORT', 'CAT', 'MIND'].includes(tempTower.type)) {
+            tempTower.drawRange(ctx);
+        }
         const isNinePin = tempTower.type === 'NINE_PIN';
         let placementColor = 'rgba(0, 255, 0, 0.4)'; // Default to green for valid
         let shakeOffsetX = 0;
@@ -691,7 +696,10 @@ function gameLoop(currentTime) {
         tempTower.x = snappedX + shakeOffsetX;
         tempTower.y = snappedY + shakeOffsetY;
         tempTower.draw(ctx);
-        tempTower.drawRange(ctx);
+        // Only draw range if the tower type is NOT in the excluded list
+        if (!['ORBIT', 'SUPPORT', 'CAT', 'MIND'].includes(tempTower.type)) {
+            tempTower.drawRange(ctx);
+        }
 
         ctx.fillStyle = placementColor;
         ctx.beginPath();
