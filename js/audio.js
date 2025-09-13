@@ -193,6 +193,44 @@ export function playWiggleSound() {
     osc.stop(now + duration);
 }
 
+export function playBzztSound() {
+    if (!isSoundEnabled) return;
+    const now = audioContext.currentTime;
+    const duration = 0.2; // Even longer for more character
+
+    // The core "buzz" sound
+    const osc = audioContext.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(120, now);
+    osc.frequency.linearRampToValueAtTime(80, now + duration);
+
+    // Add distortion for a more electric, crackly feel
+    const distortion = audioContext.createWaveShaper();
+    const k = 20; // Amount of distortion
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    for (let i = 0; i < n_samples; ++i) {
+        const x = i * 2 / n_samples - 1;
+        curve[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x));
+    }
+    distortion.curve = curve;
+    distortion.oversample = '4x';
+
+    // Volume envelope
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.15, now + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    // Connect the nodes: Oscillator -> Distortion -> Gain -> Output
+    osc.connect(distortion);
+    distortion.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
+}
+
 export function playCrackSound() {
     if (!isSoundEnabled) return;
     const now = audioContext.currentTime;

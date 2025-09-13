@@ -698,7 +698,7 @@ class TowerController {
         }
     }
 
-    chainLightning(effects, enemies, onEnemyDeath) {
+    chainLightning(effects, enemies, onEnemyDeath, playBzztSound) {
         const tower = this.tower;
         if (!tower.target) return;
 
@@ -710,6 +710,7 @@ class TowerController {
             if (!currentTarget) break;
 
             const finalDamage = tower.damage * tower.damageMultiplier;
+            if (playBzztSound) playBzztSound();
             if (currentTarget.takeDamage(finalDamage)) {
                 tower.killCount++;
                 onEnemyDeath(currentTarget);
@@ -727,7 +728,7 @@ class TowerController {
         effects.push(new Effect(0, 0, 'chain', 0, tower.projectileColor, 0.3, { chain: chainPositions }));
     }
 
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects) {
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound) {
         const tower = this.tower;
 
         if (tower.isMobile && path && path.length > tower.pathIndex + 1) {
@@ -790,7 +791,7 @@ class TowerController {
         } else {
             this.findTarget(enemies, frameTargetedEnemies);
             if (tower.type === 'STUN_BOT' && tower.target && tower.cooldown <= 0) {
-                this.chainLightning(effects, enemies, onEnemyDeath);
+                this.chainLightning(effects, enemies, onEnemyDeath, playBzztSound);
                 tower.cooldown = tower.fireRate / 60;
                 return;
             }
@@ -1075,8 +1076,8 @@ export class Tower {
     draw(ctx) { this.renderer.draw(ctx); }
     drawRange(ctx) { this.renderer.drawRange(ctx); }
     drawBuffEffect(ctx) { this.renderer.drawBuffEffect(ctx); }
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects) {
-        this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects);
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound) {
+        this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound);
     }
 
 

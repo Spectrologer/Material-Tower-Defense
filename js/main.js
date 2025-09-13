@@ -1,4 +1,3 @@
-
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog } from './ui-manager.js';
@@ -9,7 +8,7 @@ import { waveDefinitions, generateWave } from './wave-definitions.js';
 import { changelog } from './changelog.js';
 import {
     playHitSound, playMoneySound, playExplosionSound, playLifeLostSound,
-    playWiggleSound, playCrackSound, resumeAudioContext, toggleSoundEnabled,
+    playWiggleSound, playCrackSound, playBzztSound, resumeAudioContext, toggleSoundEnabled,
     toggleMusic, setMusicOptions, setMusicTrack, nextMusicTrack, previousMusicTrack,
     SpecialTrack
 } from './audio.js';
@@ -536,7 +535,7 @@ function gameLoop(currentTime) {
 
     const newlySpawnedEnemies = [];
 
-    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies, gameState.path, gameState.effects));
+    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies, gameState.path, gameState.effects, playBzztSound));
     gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects, effectiveDeltaTime));
     gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
         (e) => { // onFinish
