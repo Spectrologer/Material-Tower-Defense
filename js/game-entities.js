@@ -686,11 +686,11 @@ class TowerController {
 
     shoot(projectiles) {
         const tower = this.tower;
-        if (!tower.target && !(tower.type === 'FORT' && tower.attackGroundTarget)) return;
+        if (!tower.target && !((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.attackGroundTarget)) return;
 
         const projectileCount = tower.projectileCount || 1;
         for (let i = 0; i < projectileCount; i++) {
-            if (tower.type === 'FORT' && tower.attackGroundTarget) {
+            if ((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.attackGroundTarget) {
                 projectiles.push(new Projectile(tower, tower.attackGroundTarget));
             } else {
                 projectiles.push(new Projectile(tower, tower.target));
