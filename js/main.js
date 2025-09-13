@@ -235,15 +235,17 @@ function spawnWave() {
             gameState.announcements.push(new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 3, undefined, canvasWidth));
         }
 
-        let finalHealth;
+        let finalHealth, finalArmor;
         if (waveDef.isBoss) {
             finalHealth = enemyType.health;
+            finalArmor = enemyType.armor;
             setMusicTrack(enemyType.musicTrack, { bossMode: true });
         } else {
             finalHealth = (enemyType.health * waveDef.healthMultiplier) + (waveDef.healthBonus || 0);
+            finalArmor = (enemyType.armor * waveDef.healthMultiplier) + (waveDef.healthBonus || 0);
         }
 
-        const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), gold: enemyType.gold };
+        const finalEnemyType = { ...enemyType, health: Math.ceil(finalHealth), armor: Math.ceil(finalArmor), gold: enemyType.gold };
 
         let useDetour = false;
         if (gameState.isDetourOpen && enemyType.prefersDetour) {
@@ -464,6 +466,7 @@ function handleProjectileHit(projectile, hitEnemy) {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
                 if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
+                    projectile.isTrueDamage = (enemy === targetEnemy); // Set flag for main target
                     if (enemy.takeDamage(finalDamage, projectile)) {
                         projectile.owner.killCount++;
                         awardGold(enemy);
@@ -480,6 +483,7 @@ function handleProjectileHit(projectile, hitEnemy) {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
                 if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
+                    projectile.isTrueDamage = (enemy === targetEnemy); // Set flag for main target
                     if (enemy.takeDamage(finalDamage, projectile)) {
                         projectile.owner.killCount++;
                         awardGold(enemy);
@@ -490,6 +494,7 @@ function handleProjectileHit(projectile, hitEnemy) {
         });
     } else {
         if (targetEnemy && typeof targetEnemy.takeDamage === 'function') {
+            projectile.isTrueDamage = true; // Direct hits are always true damage
             if (targetEnemy.takeDamage(finalDamage, projectile)) {
                 projectile.owner.killCount++;
                 awardGold(targetEnemy);

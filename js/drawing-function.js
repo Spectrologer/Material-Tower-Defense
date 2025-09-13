@@ -217,11 +217,13 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     const enemyType = enemy.type;
     const name = enemy.typeName ? enemy.typeName.replace(/_/g, ' ').toUpperCase() : 'UNKNOWN';
 
-    const stats = [
+    let stats = [
         { icon: 'favorite', text: `${enemy.health.toFixed(0)}/${enemy.maxHealth}`, color: '#ef4444' },
         { icon: 'speed', text: `${enemyType.speed}`, color: '#4ade80' },
-        { icon: 'paid', text: `${enemyType.gold}`, color: '#facc15' }
+        { icon: 'paid', text: `${enemyType.gold}`, color: '#facc15' },
     ];
+
+    if (enemyType.armor > 0) stats.push({ icon: 'security', text: `${enemyType.armor}`, color: '#9e9e9e' });
 
     const padding = 8;
     const lineHeight = 18;

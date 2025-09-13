@@ -549,8 +549,22 @@ export class Enemy {
 
         return true; // Keep this enemy
     }
-    takeDamage(amount) {
-        this.health -= amount;
+    takeDamage(damage, projectile = null) {
+        let armor = this.type.armor || 0;
+        let finalDamage = damage;
+
+        const isTrueDamage = projectile && projectile.isTrueDamage;
+
+        if (!isTrueDamage && armor > 0 && projectile && projectile.owner) {
+            const penetration = projectile.owner.armorPenetration || 0;
+            const effectiveArmor = armor * (1 - penetration);
+
+            // Damage reduction formula: damage * (100 / (100 + armor))
+            // This means 100 armor = 50% reduction, 200 armor = 66% reduction.
+            const damageMultiplier = 100 / (100 + effectiveArmor);
+            finalDamage *= damageMultiplier;
+        }
+        this.health -= finalDamage;
         this.hitTimer = 0.08; // seconds
         this.jostleTimer = 0.1;
         return this.health <= 0;

@@ -111,6 +111,8 @@ export const uiElements = {
     statJumps: document.getElementById('stat-jumps'),
     statStunP: document.getElementById('stat-stun-p'),
     statStun: document.getElementById('stat-stun'),
+    statArmorPenP: document.getElementById('stat-armor-pen-p'),
+    statArmorPen: document.getElementById('stat-armor-pen'),
     towerKillCount: document.getElementById('tower-kill-count'),
     killCountValue: document.getElementById('kill-count-value'),
 };
@@ -178,7 +180,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
             uiElements.statBoostP, uiElements.statSlowP, uiElements.statGoldP,
-            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP, uiElements.statRangeP,
+            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP, uiElements.statRangeP, uiElements.statArmorPenP,
             uiElements.statFragsP, uiElements.statPinsP, uiElements.statJumpsP, uiElements.statStunP
         ].forEach(p => {
             if (p) p.classList.add('hidden');
@@ -559,6 +561,15 @@ function updateStatsDisplay(selectedTower) {
                 if (uiElements.statStun) uiElements.statStun.textContent = selectedTower.stunDuration;
             }
         }
+
+        if (baseStats.armorPenetration > 0) {
+            if (uiElements.statArmorPenP) {
+                uiElements.statArmorPenP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statArmorPenP.querySelector('span'));
+                if (icon) icon.style.color = '#9e9e9e';
+            }
+            if (uiElements.statArmorPen) uiElements.statArmorPen.textContent = `${(baseStats.armorPenetration * 100).toFixed(0)}%`;
+        }
     }
 }
 
@@ -647,6 +658,7 @@ const statDisplayConfig = {
     damageBoost: { label: 'Dmg Aura', icon: 'electric_bolt', family: 'material-icons', color: '#f59e0b', condition: (s) => s.damageBoost, formatter: (val) => `+${((val - 1) * 100).toFixed(0)}%` },
     enemySlow: { label: 'Slow Aura', icon: 'hourglass_empty', family: 'material-symbols-outlined', color: '#38bdf8', condition: (s) => s.enemySlow, formatter: (val) => `${((1 - val) * 100).toFixed(0)}%` },
     goldBonus: { label: 'Gold Aura', icon: 'savings', family: 'material-icons', color: '#facc15', condition: (s) => s.goldBonus, formatter: (val) => `+${val}G` },
+    armorPenetration: { label: 'AP', icon: 'shield_moon', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armorPenetration > 0, formatter: (val) => `${(val * 100).toFixed(0)}%` },
     burnDps: { label: 'Burn', icon: 'local_fire_department', family: 'material-symbols-outlined', color: '#f97316', condition: (s) => s.burnDps, formatter: (val, stats) => `${val}/s for ${stats.burnDuration}s` },
 };
 
@@ -654,6 +666,7 @@ const enemyStatDisplayConfig = {
     health: { label: 'Health', icon: 'favorite', family: 'material-symbols-outlined', color: '#ef4444', condition: (s) => s.health > 0 },
     speed: { label: 'Speed', icon: 'speed', family: 'material-symbols-outlined', color: '#4ade80', condition: (s) => s.speed > 0 },
     gold: { label: 'Gold', icon: 'paid', family: 'material-symbols-outlined', color: '#facc15', condition: (s) => s.gold >= 0 },
+    armor: { label: 'Armor', icon: 'security', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armor > 0 },
 };
 
 
@@ -763,10 +776,6 @@ function createEnemyCardHTML(type, isDiscovered) {
     if (stats.isStationary) specialAbilities.push('Stationary');
     if (stats.hatchTime) specialAbilities.push(`Hatches into ${stats.hatchesTo}`);
 
-    const specialHTML = specialAbilities.length > 0
-        ? `<p class="text-sm text-yellow-400 mt-2 whitespace-normal">Special: ${specialAbilities.join(', ')}</p>`
-        : '';
-
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(enemyStatDisplayConfig)
         .map(([key, config]) => {
@@ -791,7 +800,6 @@ function createEnemyCardHTML(type, isDiscovered) {
                 <div class="text-left text-base w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
                     ${statsGridHTML}
                 </div>
-                ${specialHTML}
             </div>
             <div class="flex-shrink-0">
                 ${commentHTML}

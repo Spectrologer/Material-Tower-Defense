@@ -195,6 +195,7 @@ export function generateWave(waveNumber) {
     const wave = {
         composition: [],
         healthMultiplier: 6.5 + difficultyScale * 0.5,
+        armorMultiplier: 6.5 + difficultyScale * 0.5, // Use the same scaling for armor
         healthBonus: 250 + difficultyScale * 25,
         detourRatio: Math.min(1, 0.5 + difficultyScale * 0.05),
     };
