@@ -38,6 +38,14 @@ const TROPHIES = {
         color: '#FFFFFF',
         filled: true,
         iconClass: 'material-symbols-outlined',
+    },
+    'LIQUIDATION': {
+        name: "Liquidation",
+        description: "Sold more than 4 towers before reaching wave 15.",
+        icon: 'attach_money',
+        color: '#facc15',
+        filled: true,
+        iconClass: 'material-symbols-outlined',
     }
 };
 
@@ -143,6 +151,12 @@ function checkTrophies() {
     if (gameState.wave === 15 && gameState.onlyPinTowersUsed && !gameState.unlockedTrophies.has('PIN_15')) {
         gameState.unlockedTrophies.add('PIN_15');
         gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nPIN 15", canvasWidth / 2, canvasHeight / 2, 5, '#4CAF50', canvasWidth));
+    }
+
+    // Trophy: LIQUIDATION (Sold more than 4 towers and reached wave 15)
+    if (gameState.towersSoldThisGame > 4 && gameState.wave === 15 && !gameState.unlockedTrophies.has('LIQUIDATION')) {
+        gameState.unlockedTrophies.add('LIQUIDATION');
+        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nLiquidation", canvasWidth / 2, canvasHeight / 2, 5, '#facc15', canvasWidth));
     }
 }
 
@@ -1719,6 +1733,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
             gameState.gold += totalSellValue;
             const selectedIds = new Set(selectedTowers.map(t => t.id));
             gameState.towers = gameState.towers.filter(t => !selectedIds.has(t.id));
+            gameState.towersSoldThisGame += selectedTowers.length;
 
             selectedTowers = [];
             isSellConfirmPending = false;

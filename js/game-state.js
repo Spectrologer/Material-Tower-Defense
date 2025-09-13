@@ -227,6 +227,7 @@ function deserializeGameState(serializedGameState) {
             unlockedTrophies: new Set(unlockedTrophies || []),
             usedPinHeartTower: basicData.usedPinHeartTower || false,
             onlyPinTowersUsed: basicData.onlyPinTowersUsed === undefined ? true : basicData.onlyPinTowersUsed,
+            towersSoldThisGame: basicData.towersSoldThisGame || 0,
         };
     } catch (e) {
         console.error("Failed to load saved game state:", e);
