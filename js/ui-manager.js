@@ -57,6 +57,7 @@ export const uiElements = {
     // New options menu elements
     optionsBtn: getButton('options-btn'),
     optionsMenu: document.getElementById('options-menu'),
+    optionsMenuOverlay: document.getElementById('options-menu-overlay'),
     toggleMergeConfirm: /** @type {HTMLInputElement} */ (document.getElementById('toggle-merge-confirm-checkbox')),
     resetGameBtn: getButton('reset-game-btn'),
     libraryBtn: getButton('library-btn'),

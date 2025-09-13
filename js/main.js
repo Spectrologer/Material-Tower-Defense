@@ -1668,7 +1668,7 @@ uiElements.onboardingDismissBtn.addEventListener('click', () => {
 
 uiElements.resetGameBtn.addEventListener('click', () => {
     reset(false);
-    uiElements.optionsMenu.classList.add('hidden');
+    closeOptionsMenu();
 });
 
 uiElements.sellTowerBtn.addEventListener('click', () => {
@@ -1972,10 +1972,39 @@ uiElements.confirmMergeBtn.addEventListener('click', () => {
     performPendingMerge();
 });
 
+// Function to close the options menu
+function closeOptionsMenu() {
+    uiElements.optionsMenu.classList.add('hidden');
+    // The overlay is no longer explicitly hidden here as it's not used for closing
+}
+
 // Options menu event listener
-uiElements.optionsBtn.addEventListener('click', () => {
+uiElements.optionsBtn.addEventListener('click', (event) => {
     resumeAudioContext();
-    uiElements.optionsMenu.classList.remove('hidden');
+    event.stopPropagation(); // Prevent this click from immediately closing the menu via the document listener
+    uiElements.optionsMenu.classList.toggle('hidden'); // Toggle visibility
+});
+
+// Global click listener to close options menu if click is outside
+window.addEventListener('click', (event) => {
+    const target = /** @type {HTMLElement} */ (event.target);
+    // Check if the options menu is visible AND the click is outside the options menu and the options button
+    if (!uiElements.optionsMenu.classList.contains('hidden') &&
+        !uiElements.optionsMenu.contains(target) &&
+        !uiElements.optionsBtn.contains(target)) {
+        closeOptionsMenu();
+    }
+});
+
+// Global touchend listener for mobile to close options menu if touch is outside
+window.addEventListener('touchend', (event) => {
+    const target = /** @type {HTMLElement} */ (event.target);
+    // Check if the options menu is visible AND the touch is outside the options menu and the options button
+    if (!uiElements.optionsMenu.classList.contains('hidden') &&
+        !uiElements.optionsMenu.contains(target) &&
+        !uiElements.optionsBtn.contains(target)) {
+        closeOptionsMenu();
+    }
 });
 
 if (uiElements.toggleMergeConfirm) {
@@ -2023,7 +2052,7 @@ uiElements.libraryBtn.addEventListener('click', () => {
     libraryActiveTab = 'towers';
     updateLibraryTabState();
     uiElements.libraryModal.classList.remove('hidden');
-    uiElements.optionsMenu.classList.add('hidden');
+    closeOptionsMenu();
 });
 
 uiElements.libraryCloseBtn.addEventListener('click', () => {
@@ -2072,7 +2101,7 @@ uiElements.libraryEnemiesTab.addEventListener('click', () => {
 
 uiElements.trophiesBtn.addEventListener('click', () => {
     resumeAudioContext();
-    uiElements.optionsMenu.classList.add('hidden');
+    closeOptionsMenu();
     populateTrophies(gameState, TROPHIES);
     uiElements.trophiesModal.classList.remove('hidden');
 });
@@ -2083,7 +2112,7 @@ uiElements.trophiesCloseBtn.addEventListener('click', () => {
 
 uiElements.changelogBtn.addEventListener('click', () => {
     resumeAudioContext();
-    uiElements.optionsMenu.classList.add('hidden');
+    closeOptionsMenu();
     populateChangelog(changelog);
     uiElements.changelogModal.classList.remove('hidden');
     // The checkChangelog function is defined in index.html, so it's not directly accessible here.
@@ -2101,15 +2130,6 @@ window.addEventListener('resize', resizeCanvas);
 
 // Handles clicks for closing the options menu
 window.addEventListener('click', (event) => {
-    // Check if the options menu is visible
-    if (!uiElements.optionsMenu.classList.contains('hidden')) {
-        const target = /** @type {Node} */ (event.target);
-        const isClickInsideMenu = uiElements.optionsMenu.contains(target) || uiElements.optionsBtn.contains(target);
-        if (!isClickInsideMenu) {
-            uiElements.optionsMenu.classList.add('hidden');
-        }
-    }
-
     // New deselection logic
     const target = /** @type {HTMLElement} */ (event.target);
     const isClickOnCanvas = canvas.contains(target);
