@@ -663,7 +663,7 @@ function createTowerCardHTML(type, isDiscovered) {
                 const statValue = stats[key];
                 const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
                 const iconFamily = config.family || 'material-icons';
-                return `<p class="flex items-center gap-2"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
             }
             return '';
         })
@@ -674,7 +674,7 @@ function createTowerCardHTML(type, isDiscovered) {
         <div class="tower-card absolute inset-0 p-2 flex flex-col items-center text-center">
             <div class="flex-shrink-0">
                 ${iconHTML}
-                <h4 class="text-3xl mt-2 whitespace-normal text-center" style="color: ${stats.color};">${name}</h4>
+                <h4 class="text-3xl mt-2 whitespace-normal" style="color: ${stats.color};">${name}</h4>
                 <p class="text-sm text-gray-400">(${type})</p>
             </div>
             <div class="flex-grow overflow-y-auto w-full my-2">
@@ -741,7 +741,7 @@ function createEnemyCardHTML(type, isDiscovered) {
                 const statValue = stats[key];
                 const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
                 const iconFamily = config.family || 'material-symbols-outlined';
-                return `<p class="inline-flex items-center gap-2"><span class="${iconFamily} text-2xl align-middle" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
             }
             return '';
         })
@@ -751,7 +751,7 @@ function createEnemyCardHTML(type, isDiscovered) {
         <div class="enemy-card absolute inset-0 p-2 flex flex-col items-center text-center">
             <div class="flex-shrink-0">
                 ${iconHTML}
-                <h4 class="text-3xl mt-2 whitespace-normal text-center" style="color: ${stats.color};">${name}</h4>
+                <h4 class="text-3xl mt-2 whitespace-normal" style="color: ${stats.color};">${name}</h4>
                 <p class="text-sm text-gray-400">(${type})</p>
             </div>
             <div class="flex-grow overflow-y-auto w-full my-2">
@@ -814,11 +814,9 @@ export function populateTrophies(gameState, trophiesData) {
         const name = isUnlocked ? data.name : '???';
         const color = isUnlocked && data.color ? data.color : (isUnlocked ? '#facc15' : '#6b7280');
         const description = isUnlocked ? data.description : '????????????????????????';
-        const iconClass = data.iconClass || 'material-symbols-outlined'; // Default to material-symbols-outlined
-        const fillStyle = data.filled ? `font-variation-settings: 'FILL' 1;` : '';
 
         trophyElement.innerHTML = `
-            <span class="${iconClass} text-4xl" style="color: ${color}; ${fillStyle}">${icon}</span>
+            <span class="material-symbols-outlined text-4xl" style="color: ${color};">${icon}</span>
             <div>
                 <h4 class="text-lg font-bold" style="color: ${color};">${name}</h4>
                 <p class="text-sm">${description}</p>
