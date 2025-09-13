@@ -1395,6 +1395,90 @@ canvas.addEventListener('dblclick', e => {
     }
 });
 
+// Touch event listeners for mobile drag selection
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault(); // Prevent scrolling and zooming
+    resumeAudioContext();
+    if (placingTower) return;
+    isSelecting = true;
+    selectionStart = getMousePos(canvas, e.touches[0]);
+    selectionEnd = selectionStart;
+});
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault(); // Prevent scrolling and zooming
+    const mousePos = getMousePos(canvas, e.touches[0]);
+    mouse.x = mousePos.x;
+    mouse.y = mousePos.y;
+
+    if (isSelecting) {
+        selectionEnd = mousePos;
+    }
+
+    if (placingTower) {
+        const gridX = Math.floor(mouse.x / TILE_SIZE);
+        const gridY = Math.floor(mouse.y / TILE_SIZE);
+        const hoveredTower = gameState.towers.find(t => {
+            const tGridX = Math.floor(t.x / TILE_SIZE);
+            const tGridY = Math.floor(t.y / TILE_SIZE);
+            return tGridX === gridX && tGridY === gridY;
+        });
+        if (hoveredTower) {
+            const mergeInfo = mergeHandler.getMergeInfo(hoveredTower, placingTower, gameState);
+            if (mergeInfo) {
+                mergeTooltip.show = true;
+                mergeTooltip.info = mergeInfo;
+                mergeTooltip.x = mouse.x;
+                mergeTooltip.y = mouse.y;
+            } else {
+                mergeTooltip.show = false;
+                mergeTooltip.info = null;
+            }
+        } else {
+            mergeTooltip.show = false;
+            mergeTooltip.info = null;
+        }
+    } else {
+        mergeTooltip.show = false;
+        mergeTooltip.info = null;
+    }
+});
+
+canvas.addEventListener('touchend', e => {
+    e.preventDefault(); // Prevent default touch behavior
+    if (placingTower) {
+        handleCanvasClick(e.changedTouches[0]);
+        return;
+    }
+    if (isSelecting) {
+        isSelecting = false;
+        const start = selectionStart;
+        const end = selectionEnd;
+
+        // If it was a tap (not a drag), handle it as a single selection
+        if (Math.hypot(end.x - start.x, end.y - start.y) < 10) {
+            handleCanvasClick(e.changedTouches[0]);
+            return;
+        }
+
+        const rect = {
+            x: Math.min(start.x, end.x),
+            y: Math.min(start.y, end.y),
+            width: Math.abs(start.x - end.x),
+            height: Math.abs(start.y - end.y)
+        };
+
+        selectedTowers = gameState.towers.filter(tower =>
+            tower.x >= rect.x &&
+            tower.x <= rect.x + rect.width &&
+            tower.y >= rect.y &&
+            tower.y <= rect.y + rect.height
+        );
+        isSellConfirmPending = false;
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending);
+    }
+});
+
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
     const clientX = evt.clientX || evt.touches[0].clientX;
