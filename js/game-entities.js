@@ -1252,22 +1252,21 @@ export class TextAnnouncement {
     }
     update(deltaTime) {
         this.life -= deltaTime;
-        this.y -= (deltaTime * 5); // Drift upwards slowly
         return this.life > 0;
     }
     draw(ctx) {
-        const fadeStartTime = this.maxLife * 0.75;
+        const fadeStartTime = this.maxLife * 0.25; // Start fading in the last 25% of its life
         let opacity = 1.0;
         if (this.life < fadeStartTime) {
             opacity = this.life / fadeStartTime;
         }
         ctx.save();
         ctx.globalAlpha = opacity;
-        let fontSize = 16;
-        ctx.font = `${fontSize}px 'Press Start 2P'`;
+        let fontSize = 24;
+        ctx.font = `bold ${fontSize}px 'Press Start 2P'`; // Make font bold
         const lines = this.text.split('\n');
         let maxLineWidth = 0;
-        for (const line of lines) {
+        for (const line of lines) { // Calculate the widest line
             const currentLineWidth = ctx.measureText(line).width;
             if (currentLineWidth > maxLineWidth) {
                 maxLineWidth = currentLineWidth;
@@ -1275,22 +1274,22 @@ export class TextAnnouncement {
         }
         const safeMaxWidth = this.maxWidth * 0.9;
         if (maxLineWidth > safeMaxWidth) {
-            const ratio = safeMaxWidth / maxLineWidth;
+            const ratio = safeMaxWidth / maxLineWidth; // Scale down if too wide
             fontSize *= ratio;
-            ctx.font = `${fontSize}px 'Press Start 2P'`;
+            ctx.font = `bold ${fontSize}px 'Press Start 2P'`;
         }
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const lineHeight = fontSize * 1.25;
         const startY = this.y - ((lines.length - 1) * lineHeight) / 2;
 
-        // --- Drop Shadow ---
-        const shadowOffsetX = 2;
-        const shadowOffsetY = 2;
-        ctx.fillStyle = 'black';
+        // --- Outline ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 4; // Adjust outline thickness
+        ctx.lineJoin = 'round'; // Makes corners look smoother
         lines.forEach((line, index) => {
             const yPos = startY + (index * lineHeight);
-            ctx.fillText(line, this.x + shadowOffsetX, yPos + shadowOffsetY);
+            ctx.strokeText(line, this.x, yPos);
         });
 
         // --- Main Text ---
