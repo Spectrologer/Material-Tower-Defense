@@ -1022,13 +1022,15 @@ function handleCanvasClick(e) {
             else {
                 performPendingMerge();
             }
+            // Only cancel placement mode if shift is NOT pressed
             if (!isShiftPressed) {
                 placingTower = null;
                 placingFromCloud = null;
                 draggedCloudTower = null;
                 selectedTowers = []; // Deselect after a merge is initiated
-                actionTaken = true;
             }
+            // This is always an action, regardless of shift key
+            actionTaken = true;
         } else if (isValidPlacement(snappedX, snappedY, isNinePin)) {
             let newTower;
             if (mergingFromCloud) {
@@ -1700,6 +1702,16 @@ consoleCommands.startWave = (waveNumber) => {
     }
 };
 
+consoleCommands.debug = () => {
+    if (gameState) {
+        isInfiniteGold = true;
+        gameState.lives = Infinity;
+        console.log("Debug mode enabled: Infinite gold and lives.");
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
 /** @type {typeof window & { consoleCommands: typeof consoleCommands }} */(
     window
 ).consoleCommands = consoleCommands;
@@ -2003,7 +2015,9 @@ function performPendingMerge() {
                 gameState.gold -= cost;
             }
         }
-        selectedTowers = [existingTower];
+        if (!e.shiftKey) {
+            selectedTowers = [existingTower];
+        }
     }
     uiElements.mergeConfirmModal.classList.add('hidden');
     draggedCanvasTower = null;

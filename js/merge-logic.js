@@ -1,5 +1,4 @@
 import { TOWER_TYPES } from './constants.js';
-import { Projectile } from './game-entities.js';
 
 /**
  * Blends two hexadecimal colors.
@@ -107,10 +106,7 @@ export class MergeHandler {
                 tower.updateStats();
                 tower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
                 tower.color = TOWER_TYPES.ORBIT.color;
-                tower.orbiters = [
-                    new Projectile(tower, null, 0),
-                    new Projectile(tower, null, Math.PI)
-                ];
+                tower.recreateOrbiters();
             }
         });
 
@@ -311,13 +307,8 @@ export class MergeHandler {
             canApply: (tower) => tower.upgradeCount < ORBIT_MAX_UPGRADES,
             apply: (tower) => {
                 tower.level++;
-                tower.upgradeCount++;
-                const newOrbiterCount = tower.orbiters.length + 1;
-                const angleStep = (2 * Math.PI) / newOrbiterCount;
-                for (let i = 0; i < tower.orbiters.length; i++) {
-                    tower.orbiters[i].angle = i * angleStep;
-                }
-                tower.orbiters.push(new Projectile(tower, null, (newOrbiterCount - 1) * angleStep));
+                tower.upgradeCount = (tower.upgradeCount || 0) + 1;
+                tower.recreateOrbiters();
                 tower.updateStats();
                 tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
             }

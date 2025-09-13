@@ -63,6 +63,15 @@ test('Tower should preserve visual properties', () => {
     assert.equal(restored.projectileSize, 10);
 });
 
+test('ORBIT tower should be created with projectiles (orbiters)', () => {
+    const tower = new Tower(100, 100, 'ORBIT');
+
+    assert.ok(tower.orbiters, 'ORBIT tower should have an "orbiters" property.');
+    assert.ok(Array.isArray(tower.orbiters), '"orbiters" should be an array.');
+    assert.strictEqual(tower.orbiters.length, 2, 'ORBIT tower should be created with 2 orbiters by default.');
+    assert.ok(tower.orbiters[0] instanceof Projectile, 'Orbiter should be an instance of Projectile.');
+});
+
 test('ORBIT tower should recreate orbiters on deserialization', () => {
     const tower = new Tower(100, 100, 'ORBIT');
     tower.orbitMode = 'near';
@@ -96,14 +105,14 @@ test('MIND tower should preserve aura properties', () => {
     const json = tower.toJSON();
     const restored = Tower.fromJSON(json);
 
-    const towerProps = Object.keys(tower).filter(prop => 
+    const towerProps = Object.keys(tower).filter(prop =>
         prop !== 'stats' && prop !== 'controller' && prop !== 'renderer'
     );
 
     for (const prop of towerProps) {
         assert.deepEqual(restored[prop], tower[prop], `Property ${prop} does not match on restored tower`);
     }
-    
+
     // Test that aura properties are preserved
     assert.strictEqual(restored.attackSpeedBoost, tower.attackSpeedBoost);
     assert.strictEqual(restored.damageBoost, tower.damageBoost);

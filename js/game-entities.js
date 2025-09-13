@@ -821,8 +821,7 @@ class TowerRenderer {
             ctx.textBaseline = 'middle';
             ctx.font = `900 90px 'Material Symbols Outlined'`;
             ctx.fillText('move_item', 0, 0);
-            ctx.restore();
-            ctx.restore();
+            ctx.restore(); // Restore from the initial save() in this method
             return;
         }
         const visualLevel = tower.stats.levelForCalc;
@@ -916,7 +915,8 @@ class TowerRenderer {
         if (tower.type === 'ORBIT') {
             tower.orbiters.forEach(orbiter => orbiter.draw(ctx));
         }
-        ctx.restore();
+
+        ctx.restore(); // Restore from the initial save() in this method
     }
 
     drawRange(ctx) {
@@ -1045,17 +1045,6 @@ export class Tower {
         this.renderer = new TowerRenderer(this);
 
         this.updateStats();
-        this.cooldown = 0;
-        this.target = null;
-        if (type === 'ORBIT') {
-            this.upgradeCount = 0;
-            this.orbitMode = 'far';
-            this.orbitDirection = 1; // 1 for CW, -1 for CCW
-            this.orbiters = [
-                new Projectile(this, null, 0),
-                new Projectile(this, null, Math.PI)
-            ];
-        }
         if (this.type === 'NINE_PIN') {
             this.level = 'MAX LEVEL';
             this.damageLevel = 'MAX LEVEL';
@@ -1064,12 +1053,32 @@ export class Tower {
     }
 
     // --- DELEGATED METHODS ---
-    updateStats() { this.stats.update(); }
+    updateStats() {
+        this.stats.update();
+        // Post-stats initialization
+        this.cooldown = 0;
+        this.target = null;
+        if (this.type === 'ORBIT' && !this.orbiters) {
+            this.upgradeCount = this.upgradeCount || 0;
+            this.orbitMode = this.orbitMode || 'far';
+            this.orbitDirection = this.orbitDirection || 1; // 1 for CW, -1 for CCW
+            this.recreateOrbiters();
+        }
+    }
     draw(ctx) { this.renderer.draw(ctx); }
     drawRange(ctx) { this.renderer.drawRange(ctx); }
     drawBuffEffect(ctx) { this.renderer.drawBuffEffect(ctx); }
     update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound) {
         this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound);
+    }
+    recreateOrbiters() {
+        if (this.type !== 'ORBIT') return;
+        this.orbiters = [];
+        const orbiterCount = 2 + (this.upgradeCount || 0);
+        const angleStep = (2 * Math.PI) / orbiterCount;
+        for (let i = 0; i < orbiterCount; i++) {
+            this.orbiters.push(new Projectile(this, null, i * angleStep));
+        }
     }
 
 
@@ -1157,13 +1166,7 @@ export class Tower {
         }
 
         if (data.type === 'ORBIT') {
-            tower.orbitDirection = data.orbitDirection || 1;
-            tower.orbiters = [];
-            const orbiterCount = 2 + (tower.upgradeCount || 0);
-            const angleStep = (2 * Math.PI) / orbiterCount;
-            for (let i = 0; i < orbiterCount; i++) {
-                tower.orbiters.push(new Projectile(tower, null, i * angleStep));
-            }
+            tower.orbitDirection = data.orbitDirection || 1; // Ensure direction is set before updateStats
         }
 
         tower.updateStats();
