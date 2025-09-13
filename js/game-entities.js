@@ -66,9 +66,17 @@ export class Projectile {
 
         switch (this.owner.type) {
             case 'ORBIT':
-                ctx.fillStyle = this.owner.projectileColor;
+                const gradient = ctx.createRadialGradient(
+                    this.x - 2, this.y - 2, 0, // Inner circle (offset slightly)
+                    this.x, this.y, 8 // Outer circle
+                );
+                gradient.addColorStop(0, 'white'); // Center color
+                gradient.addColorStop(0.5, this.owner.projectileColor); // Mid color
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)'); // Outer color (fading to transparent)
+
+                ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.owner.projectileSize, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
                 ctx.fill();
                 break;
             case 'PIN':

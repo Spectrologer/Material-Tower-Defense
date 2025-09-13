@@ -180,8 +180,9 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         if (uiElements.sellTowerBtn) {
             if (!isSellConfirmPending) {
                 uiElements.sellTowerBtn.textContent = `SELL FOR ${totalSellValue}G`;
+                uiElements.sellTowerBtn.style.textShadow = 'none'; // Remove text shadow
                 uiElements.sellTowerBtn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-600', 'shadow-[0_4px_0_#ca8a04]');
-                uiElements.sellTowerBtn.classList.add('bg-red-700', 'text-yellow-300', 'border-yellow-400', 'shadow-[0_4px_0_#9a3412]');
+                uiElements.sellTowerBtn.classList.add('bg-red-700', 'text-yellow-300', 'border-yellow-400'); // Removed shadow class
             }
         }
 
@@ -377,6 +378,11 @@ function updateTargetingButton(targetingMode, towerType) {
     }
     uiElements.toggleTargetingBtn.innerHTML = `TARGET: ${targetingText} ${lockIcon}`;
     uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'bg-yellow-400', 'bg-blue-800', 'border-red-400', 'border-yellow-300', 'border-blue-400', 'text-black', 'text-yellow-300', 'text-cyan-300');
+    // Set font size directly for higher specificity
+    uiElements.toggleTargetingBtn.style.fontSize = '1.2rem';
+    // Remove text shadow for better readability
+    uiElements.toggleTargetingBtn.style.textShadow = 'none';
+
     if (towerType === 'PIN_HEART') {
         uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
     } else {
@@ -388,7 +394,7 @@ function updateTargetingButton(targetingMode, towerType) {
                 uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
                 break;
             case 'furthest':
-                uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-cyan-300');
+                uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-white'); // Changed text color for better contrast
                 break;
         }
     }
