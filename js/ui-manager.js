@@ -377,24 +377,29 @@ function updateTargetingButton(targetingMode, towerType) {
         lockIcon = '<span class="material-symbols-outlined !text-base !leading-none">lock</span>';
     }
     uiElements.toggleTargetingBtn.innerHTML = `TARGET: ${targetingText} ${lockIcon}`;
-    uiElements.toggleTargetingBtn.classList.remove('bg-red-800', 'bg-yellow-400', 'bg-blue-800', 'border-red-400', 'border-yellow-300', 'border-blue-400', 'text-black', 'text-yellow-300', 'text-cyan-300');
-    // Set font size directly for higher specificity
-    uiElements.toggleTargetingBtn.style.fontSize = '1.2rem';
-    // Remove text shadow for better readability
-    uiElements.toggleTargetingBtn.style.textShadow = 'none';
+
+    // Reset all possible color/style classes before applying new ones
+    uiElements.toggleTargetingBtn.classList.remove(
+        'bg-red-800', 'border-red-400', 'shadow-[0_4px_0_#991b1b]',
+        'bg-yellow-400', 'border-yellow-300', 'shadow-[0_4px_0_#ca8a04]', 'text-black',
+        'bg-blue-800', 'border-blue-400', 'shadow-[0_4px_0_#1e40af]', 'text-white'
+    );
 
     if (towerType === 'PIN_HEART') {
-        uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+        // PIN_HEART targeting is locked, so we can disable the button.
+        uiElements.toggleTargetingBtn.disabled = true;
     } else {
+        uiElements.toggleTargetingBtn.disabled = false;
+        // Apply specific styles based on the targeting mode
         switch (targetingMode) {
             case 'strongest':
-                uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'text-yellow-300');
+                uiElements.toggleTargetingBtn.classList.add('bg-red-800', 'border-red-400', 'shadow-[0_4px_0_#991b1b]');
                 break;
             case 'weakest':
-                uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'text-black');
+                uiElements.toggleTargetingBtn.classList.add('bg-yellow-400', 'border-yellow-300', 'shadow-[0_4px_0_#ca8a04]', 'text-black');
                 break;
             case 'furthest':
-                uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'text-white'); // Changed text color for better contrast
+                uiElements.toggleTargetingBtn.classList.add('bg-blue-800', 'border-blue-400', 'shadow-[0_4px_0_#1e40af]', 'text-white');
                 break;
         }
     }

@@ -84,11 +84,14 @@
         .pixel-button {
             background: rgba(0, 0, 0, 0.3);
             color: #f5f5f5;
-            font-weight: 700;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            font-weight: 900;
+            /* Bolder text */
+            text-shadow: none;
             border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 14px 15px;
-            text-transform: uppercase;
+            font-size: 1.2rem;
+            /* Even larger font size */
+            /* Larger font size */
             letter-spacing: 1px;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow:
@@ -161,7 +164,7 @@
         .pixel-button:disabled {
             background: rgba(255, 255, 255, 0.05);
             color: #888;
-            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+            text-shadow: none;
             border-color: rgba(255, 255, 255, 0.08);
             box-shadow:
                 inset 0 1px 0 rgba(255, 255, 255, 0.03),
@@ -563,24 +566,22 @@
                 </div>
                 <div class="flex flex-col gap-2 mt-2">
                     <button id="toggle-mode"
-                        class="pixel-button bg-purple-800 text-yellow-300 border-yellow-300 hidden text-xs sm:text-sm">MODE:
+                        class="pixel-button bg-purple-800 text-yellow-300 border-yellow-300 hidden">MODE:
                     </button>
                     <button id="toggle-orbit-direction-btn"
-                        class="pixel-button bg-green-800 text-lime-300 border-lime-300 hidden text-xs sm:text-sm">DIR:
+                        class="pixel-button bg-green-800 text-lime-300 border-lime-300 hidden">DIR:
                         CW</button>
-                    <button id="toggle-targeting"
-                        class="pixel-button bg-blue-800 text-cyan-300 border-cyan-300 hidden text-xs sm:text-sm">TARGET:
-                    </button>
+                    <button id="toggle-targeting" class="pixel-button hidden">TARGET:</button>
                 </div>
                 <div id="selected-tower-actions" class="grid grid-cols-2 gap-2 mt-2">
                     <!-- Button to sell the selected tower -->
                     <button id="sell-tower-btn"
-                        class="pixel-button bg-red-700 text-yellow-300 border-yellow-400 shadow-[0_4px_0_#9a3412] text-xs sm:text-sm py-2">SELL</button>
+                        class="pixel-button bg-red-700 text-yellow-300 border-yellow-400 shadow-[0_4px_0_#9a3412] py-2">SELL</button>
                     <!-- Button to move the selected tower to the cloud -->
                     <button id="move-to-cloud-btn"
-                        class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] text-xs sm:text-sm py-2 hidden items-center justify-center gap-1 sm:flex">
+                        class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] py-2 hidden items-center justify-center gap-1 sm:flex">
                         <span class="material-symbols-outlined !text-base">cloud_upload</span>
-                        <span class="hidden sm:inline">MOVE</span>
+                        <span class="hidden sm:inline ">MOVE</span>
                     </button>
                 </div>
             </div>
