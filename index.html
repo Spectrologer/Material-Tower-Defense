@@ -506,12 +506,13 @@
                 <hr class="border-gray-600" />
                 <div class="grid grid-cols-3 items-center">
                     <div class="flex justify-start">
-                        <button id="set-ground-target-btn" class="pixel-button p-2 hidden">
+                        <button id="set-ground-target-btn"
+                            class="pixel-button !p-0 w-12 h-12 flex items-center justify-center hidden">
                             <span class="material-symbols-outlined">gps_fixed</span>
                         </button>
                     </div>
                     <div class="text-center">
-                        <h3 class="text-base sm:text-lg text-fuchsia-400">SELECTED</h3>
+                        <h3 class="text-xl sm:text-2xl text-fuchsia-400">SELECTED</h3>
                     </div>
                     <div class="flex justify-end">
                         <div id="tower-kill-count" class="flex items-center gap-1 text-sm text-gray-400 hidden">
@@ -520,48 +521,48 @@
                         </div>
                     </div>
                 </div>
-                <h4 id="selected-tower-info" class="text-center text-yellow-400 text-xs sm:text-sm min-h-[1rem]"></h4>
+                <h4 id="selected-tower-info" class="text-center text-yellow-400 text-lg sm:text-xl min-h-[1rem]"></h4>
                 <!-- Shows the stats of the selected tower -->
                 <div id="tower-stats-panel"
-                    class="flex flex-wrap justify-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] sm:text-sm mb-2">
+                    class="flex flex-wrap justify-center gap-x-4 sm:gap-x-5 gap-y-2 text-sm sm:text-lg mb-2">
                     <p id="stat-damage-p" class="flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Damage">bolt</span> Dmg: <span
+                            class="material-icons text-xl align-bottom" title="Damage">bolt</span> Dmg: <span
                             id="stat-damage">0</span></p>
                     <p id="stat-range-p" class="flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Range">radar</span> Rng: <span
+                            class="material-icons text-xl align-bottom" title="Range">radar</span> Rng: <span
                             id="stat-range">0</span></p>
                     <p id="stat-speed-p" class="flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Attack Speed">speed</span> Spd: <span
+                            class="material-icons text-xl align-bottom" title="Attack Speed">speed</span> Spd: <span
                             id="stat-speed">0</span>/s</p>
                     <p id="stat-splash-p" class="flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Splash Radius">bubble_chart</span> Spl:
+                            class="material-icons text-xl align-bottom" title="Splash Radius">bubble_chart</span> Spl:
                         <span id="stat-splash">0</span>
                     </p>
                     <p id="stat-projectiles-p" class="flex items-center gap-1"><span
-                            class="material-symbols-outlined text-base align-bottom"
+                            class="material-symbols-outlined text-xl align-bottom"
                             title="Projectiles">multiple_stop</span> Proj: <span id="stat-projectiles">0</span></p>
                     <p id="stat-boost-p" class="flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Boost">electric_bolt</span> Bst: <span
+                            class="material-icons text-xl align-bottom" title="Boost">electric_bolt</span> Bst: <span
                             id="stat-boost">0</span>%</p>
                     <p id="stat-slow-p" class="flex items-center gap-1"><span
-                            class="material-symbols-outlined text-base align-bottom" title="Slow">hourglass_empty</span>
+                            class="material-symbols-outlined text-xl align-bottom" title="Slow">hourglass_empty</span>
                         Slw: <span id="stat-slow">0</span>%</p>
                     <p id="stat-gold-p" class="hidden flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Gold Bonus">savings</span> Gld: +<span
+                            class="material-icons text-xl align-bottom" title="Gold Bonus">savings</span> Gld: +<span
                             id="stat-gold">0</span>%</p>
                     <p id="stat-burn-p" class="flex items-center gap-1"><span
-                            class="material-symbols-outlined text-base align-bottom"
+                            class="material-symbols-outlined text-xl align-bottom"
                             title="Burn Damage">local_fire_department</span> Brn: <span id="stat-burn">0/s</span></p>
                     <p id="stat-frags-p" class="hidden flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Fragments">call_split</span> Frags:
+                            class="material-icons text-xl align-bottom" title="Fragments">call_split</span> Frags:
                         <span id="stat-frags">0</span>
                     </p>
                     <p id="stat-pins-p" class="hidden flex items-center gap-1"><span
-                            class="material-icons text-base align-bottom" title="Radial Pins">push_pin</span> Pins:
+                            class="material-icons text-xl align-bottom" title="Radial Pins">push_pin</span> Pins:
                         <span id="stat-pins">0</span>
                     </p>
                     <p id="stat-special-p" class="flex items-center gap-1 col-span-full justify-center"><span
-                            class="material-symbols-outlined text-base align-bottom"
+                            class="material-symbols-outlined text-xl align-bottom"
                             title="Special Ability">star</span><span id="stat-special">None</span></p>
                 </div>
                 <div class="flex flex-col gap-2 mt-2">
