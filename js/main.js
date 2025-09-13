@@ -1,3 +1,4 @@
+
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog } from './ui-manager.js';
@@ -135,7 +136,7 @@ function checkTrophies() {
 function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
-    updateUI(gameState);
+    updateUI(gameState, gameSpeed);
     uiElements.startWaveBtn.disabled = true;
 
     checkTrophies();
@@ -423,7 +424,7 @@ function handleProjectileHit(projectile, hitEnemy) {
                 gameState.projectiles.push(newProjectile);
             }
         }
-        updateUI(gameState);
+        updateUI(gameState, gameSpeed);
         return; // End execution here for this projectile type
     }
 
@@ -469,7 +470,7 @@ function handleProjectileHit(projectile, hitEnemy) {
             playHitSound();
         }
     }
-    updateUI(gameState);
+    updateUI(gameState, gameSpeed);
 }
 
 function gameLoop(currentTime) {
@@ -513,19 +514,19 @@ function gameLoop(currentTime) {
         (e) => { // onFinish
             if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
                 gameState.gold = Math.max(0, gameState.gold - 1);
-                updateUI(gameState);
+                updateUI(gameState, gameSpeed);
                 const goldCounterRect = uiElements.goldEl.getBoundingClientRect();
                 const goldX = goldCounterRect.left + (goldCounterRect.width / 3);
                 const goldY = goldCounterRect.top + (goldCounterRect.height / 3);
                 const canvasGoldX = (goldX / window.innerWidth) * canvasWidth;
                 const canvasGoldY = (goldY / window.innerHeight) * canvasHeight;
-                gameState.announcements.push(new TextAnnouncement("-$", canvasGoldX, canvasGoldY, 1, '#ff4d4d', canvasWidth));
+                gameState.announcements.push(new TextAnnouncement("-$ ", canvasGoldX, canvasGoldY, 1, '#ff4d4d', canvasWidth));
             }
 
             if (e.type.damagesLives) {
                 gameState.lives--;
                 playLifeLostSound();
-                updateUI(gameState);
+                updateUI(gameState, gameSpeed);
                 if (gameState.lives <= 0) {
                     gameState.gameOver = true;
                     gameState.waveInProgress = false;
@@ -740,7 +741,7 @@ function onEndWave() {
     }
     const waveBonus = 20 + gameState.wave;
     gameState.gold += waveBonus;
-    updateUI(gameState);
+    updateUI(gameState, gameSpeed);
     persistGameState(0);
 }
 
@@ -1064,7 +1065,7 @@ function handleCanvasClick(e) {
     }
 
     if (actionTaken) {
-        updateUI(gameState);
+        updateUI(gameState, gameSpeed);
         updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     }
 
@@ -1396,7 +1397,7 @@ canvas.addEventListener('dblclick', e => {
         selectedTowers = gameState.towers.filter(t => t.type === clickedTower.type);
         selectedEnemy = null;
         isSellConfirmPending = false;
-        updateUI(gameState);
+        updateUI(gameState, gameSpeed);
         updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
         persistGameState(0);
     }
@@ -1545,7 +1546,7 @@ function init(fromReset = false) {
     uiElements.gameOverModal.classList.add('hidden');
     uiElements.cloudInventoryPanel.classList.add('hidden');
     renderCloudInventory();
-    updateUI(gameState);
+    updateUI(gameState, gameSpeed);
     updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending);
     canvas.width = GRID_COLS * TILE_SIZE;
     canvas.height = GRID_ROWS * TILE_SIZE;
@@ -1589,7 +1590,7 @@ consoleCommands.spawnHelicopter = () => {
 consoleCommands.addGold = (value) => {
     if (gameState) {
         gameState.gold += value;
-        updateUI(gameState);
+        updateUI(gameState, gameSpeed);
         console.log(`Added ${value} gold. Current gold: ${gameState.gold}`);
     } else {
         console.error("Game not initialized.");
@@ -1607,7 +1608,7 @@ consoleCommands.setWave = (waveNumber) => {
         gameState.waveInProgress = false;
         uiElements.startWaveBtn.disabled = false;
         console.log(`Wave set to ${waveNumber}. Press 'Start Wave' to begin.`);
-        updateUI(gameState);
+        updateUI(gameState, gameSpeed);
     } else {
         console.error("Game not initialized.");
     }
@@ -1636,7 +1637,7 @@ consoleCommands.startWave = (waveNumber) => {
         console.log(`Starting wave ${num}...`);
 
         // Update the UI to reflect the new wave number
-        updateUI(gameState);
+        updateUI(gameState, gameSpeed);
 
         // Immediately start the spawning process for the new wave
         spawnWave();
@@ -1661,7 +1662,7 @@ uiElements.restartGameBtn.addEventListener('click', () => reset(false));
 
 uiElements.onboardingDismissBtn.addEventListener('click', () => {
     gameState.onboardingTipDismissed = true;
-    updateUI(gameState);
+    updateUI(gameState, gameSpeed);
     persistGameState(0); // Save immediately
 });
 
@@ -1707,7 +1708,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
 
             selectedTowers = [];
             isSellConfirmPending = false;
-            updateUI(gameState);
+            updateUI(gameState, gameSpeed);
             updateSellPanel([], gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
         }
     }
@@ -1865,6 +1866,7 @@ uiElements.speedToggleBtn.addEventListener('click', () => {
         gameSpeed = 1;
         uiElements.speedToggleBtn.textContent = 'x1';
     }
+    updateUI(gameState, gameSpeed);
 });
 
 uiElements.soundToggleBtn.addEventListener('click', () => {
@@ -1890,7 +1892,7 @@ uiElements.cloudButton.addEventListener('click', () => {
             }
             gameState.isCloudUnlocked = true;
             uiElements.cloudInventoryPanel.classList.remove('hidden');
-            updateUI(gameState);
+            updateUI(gameState, gameSpeed);
             gameState.announcements.push(new TextAnnouncement("Cloud Storage Unlocked!", canvasWidth / 2, 50, 3, undefined, canvasWidth));
         }
     } else {
@@ -1950,7 +1952,7 @@ function performPendingMerge() {
     uiElements.buyCastleBtn.classList.remove('selected');
     uiElements.buySupportBtn.classList.remove('selected');
 
-    updateUI(gameState);
+    updateUI(gameState, gameSpeed);
     updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
     renderCloudInventory();
 }
@@ -1998,7 +2000,6 @@ window.addEventListener('click', (event) => {
 // Global touchend listener for mobile to close options menu if touch is outside
 window.addEventListener('touchend', (event) => {
     const target = /** @type {HTMLElement} */ (event.target);
-    // Check if the options menu is visible AND the touch is outside the options menu and the options button
     if (!uiElements.optionsMenu.classList.contains('hidden') &&
         !uiElements.optionsMenu.contains(target) &&
         !uiElements.optionsBtn.contains(target)) {
@@ -2006,103 +2007,85 @@ window.addEventListener('touchend', (event) => {
     }
 });
 
-if (uiElements.toggleMergeConfirm) {
-    uiElements.toggleMergeConfirm.addEventListener('change', (e) => {
-        isMergeConfirmationEnabled = /** @type {HTMLInputElement} */ (e.target).checked;
-        localStorage.setItem('mergeConfirmation', JSON.stringify(isMergeConfirmationEnabled));
-    });
-}
+uiElements.toggleMergeConfirm.addEventListener('change', () => {
+    isMergeConfirmationEnabled = uiElements.toggleMergeConfirm.checked;
+    localStorage.setItem('mergeConfirmation', JSON.stringify(isMergeConfirmationEnabled));
+});
+
+uiElements.libraryBtn.addEventListener('click', () => {
+    populateLibraries(gameState);
+    uiElements.libraryModal.classList.remove('hidden');
+    closeOptionsMenu();
+    updateLibraryView();
+});
+
+uiElements.libraryTowersTab.addEventListener('click', () => {
+    libraryActiveTab = 'towers';
+    uiElements.libraryTowersTab.classList.add('bg-gray-600');
+    uiElements.libraryEnemiesTab.classList.remove('bg-gray-600');
+    uiElements.towerLibraryRolodex.classList.remove('hidden');
+    uiElements.enemyLibraryRolodex.classList.add('hidden');
+    updateLibraryView();
+});
+
+uiElements.libraryEnemiesTab.addEventListener('click', () => {
+    libraryActiveTab = 'enemies';
+    uiElements.libraryEnemiesTab.classList.add('bg-gray-600');
+    uiElements.libraryTowersTab.classList.remove('bg-gray-600');
+    uiElements.enemyLibraryRolodex.classList.remove('hidden');
+    uiElements.towerLibraryRolodex.classList.add('hidden');
+    updateLibraryView();
+});
+
 
 function updateLibraryView() {
     if (libraryActiveTab === 'towers') {
+        const towerTypes = Object.keys(TOWER_TYPES);
         const cards = uiElements.towerLibraryRolodex.querySelectorAll('.tower-card-container');
-        if (cards.length === 0) return;
         cards.forEach((card, index) => {
             card.classList.toggle('hidden', index !== libraryCurrentIndex);
         });
-        uiElements.libraryCounter.textContent = `${libraryCurrentIndex + 1} / ${cards.length}`;
-    } else { // enemies
+        uiElements.libraryCounter.textContent = `${libraryCurrentIndex + 1} / ${towerTypes.length}`;
+    } else {
+        const enemyTypes = Object.keys(ENEMY_TYPES);
         const cards = uiElements.enemyLibraryRolodex.querySelectorAll('.enemy-card-container');
-        if (cards.length === 0) return;
         cards.forEach((card, index) => {
             card.classList.toggle('hidden', index !== libraryEnemyCurrentIndex);
         });
-        uiElements.libraryCounter.textContent = `${libraryEnemyCurrentIndex + 1} / ${cards.length}`;
+        uiElements.libraryCounter.textContent = `${libraryEnemyCurrentIndex + 1} / ${enemyTypes.length}`;
     }
 }
 
-function updateLibraryTabState() {
-    const isTowers = libraryActiveTab === 'towers';
-    uiElements.towerLibraryRolodex.classList.toggle('hidden', !isTowers);
-    uiElements.enemyLibraryRolodex.classList.toggle('hidden', isTowers);
-    uiElements.libraryTowersTab.classList.toggle('bg-gray-600', isTowers);
-    uiElements.libraryTowersTab.classList.toggle('bg-gray-800', !isTowers);
-    uiElements.libraryEnemiesTab.classList.toggle('bg-gray-600', !isTowers);
-    uiElements.libraryEnemiesTab.classList.toggle('bg-gray-800', isTowers);
+uiElements.libraryPrevBtn.addEventListener('click', () => {
+    if (libraryActiveTab === 'towers') {
+        const towerTypes = Object.keys(TOWER_TYPES);
+        libraryCurrentIndex = (libraryCurrentIndex - 1 + towerTypes.length) % towerTypes.length;
+    } else {
+        const enemyTypes = Object.keys(ENEMY_TYPES);
+        libraryEnemyCurrentIndex = (libraryEnemyCurrentIndex - 1 + enemyTypes.length) % enemyTypes.length;
+    }
     updateLibraryView();
-}
+});
 
-
-uiElements.libraryBtn.addEventListener('click', () => {
-    resumeAudioContext();
-    populateLibraries(gameState);
-    libraryCurrentIndex = 0;
-    libraryEnemyCurrentIndex = 0;
-    libraryActiveTab = 'towers';
-    updateLibraryTabState();
-    uiElements.libraryModal.classList.remove('hidden');
-    closeOptionsMenu();
+uiElements.libraryNextBtn.addEventListener('click', () => {
+    if (libraryActiveTab === 'towers') {
+        const towerTypes = Object.keys(TOWER_TYPES);
+        libraryCurrentIndex = (libraryCurrentIndex + 1) % towerTypes.length;
+    } else {
+        const enemyTypes = Object.keys(ENEMY_TYPES);
+        libraryEnemyCurrentIndex = (libraryEnemyCurrentIndex + 1) % enemyTypes.length;
+    }
+    updateLibraryView();
 });
 
 uiElements.libraryCloseBtn.addEventListener('click', () => {
     uiElements.libraryModal.classList.add('hidden');
 });
 
-uiElements.libraryNextBtn.addEventListener('click', () => {
-    if (libraryActiveTab === 'towers') {
-        const cards = uiElements.towerLibraryRolodex.querySelectorAll('.tower-card-container');
-        if (cards.length > 0) {
-            libraryCurrentIndex = (libraryCurrentIndex + 1) % cards.length;
-        }
-    } else {
-        const cards = uiElements.enemyLibraryRolodex.querySelectorAll('.enemy-card-container');
-        if (cards.length > 0) {
-            libraryEnemyCurrentIndex = (libraryEnemyCurrentIndex + 1) % cards.length;
-        }
-    }
-    updateLibraryView();
-});
-
-uiElements.libraryPrevBtn.addEventListener('click', () => {
-    if (libraryActiveTab === 'towers') {
-        const cards = uiElements.towerLibraryRolodex.querySelectorAll('.tower-card-container');
-        if (cards.length > 0) {
-            libraryCurrentIndex = (libraryCurrentIndex - 1 + cards.length) % cards.length;
-        }
-    } else {
-        const cards = uiElements.enemyLibraryRolodex.querySelectorAll('.enemy-card-container');
-        if (cards.length > 0) {
-            libraryEnemyCurrentIndex = (libraryEnemyCurrentIndex - 1 + cards.length) % cards.length;
-        }
-    }
-    updateLibraryView();
-});
-
-uiElements.libraryTowersTab.addEventListener('click', () => {
-    libraryActiveTab = 'towers';
-    updateLibraryTabState();
-});
-
-uiElements.libraryEnemiesTab.addEventListener('click', () => {
-    libraryActiveTab = 'enemies';
-    updateLibraryTabState();
-});
-
 uiElements.trophiesBtn.addEventListener('click', () => {
-    resumeAudioContext();
-    closeOptionsMenu();
     populateTrophies(gameState, TROPHIES);
     uiElements.trophiesModal.classList.remove('hidden');
+    closeOptionsMenu();
 });
 
 uiElements.trophiesCloseBtn.addEventListener('click', () => {
@@ -2110,14 +2093,12 @@ uiElements.trophiesCloseBtn.addEventListener('click', () => {
 });
 
 uiElements.changelogBtn.addEventListener('click', () => {
-    resumeAudioContext();
-    closeOptionsMenu();
     populateChangelog(changelog);
     uiElements.changelogModal.classList.remove('hidden');
-    // The checkChangelog function is defined in index.html, so it's not directly accessible here.
-    // The indicator will be hidden when the modal is opened, and the version is saved.
-    // The actual check for new changelog is done on page load in index.html.
-    localStorage.setItem('lastSeenChangelogVersion', CHANGELOG_VERSION);
+    closeOptionsMenu();
+    // Hide the indicator once the changelog is viewed
+    localStorage.setItem('lastSeenVersion', CHANGELOG_VERSION);
+    uiElements.changelogIndicator.classList.add('hidden');
 });
 
 uiElements.changelogCloseBtn.addEventListener('click', () => {
@@ -2127,37 +2108,10 @@ uiElements.changelogCloseBtn.addEventListener('click', () => {
 
 window.addEventListener('resize', resizeCanvas);
 
-// Handles clicks for closing the options menu
-window.addEventListener('click', (event) => {
-    // New deselection logic
-    const target = /** @type {HTMLElement} */ (event.target);
-    const isClickOnCanvas = canvas.contains(target);
-    const isClickOnSellButton = uiElements.sellTowerBtn.contains(target);
-    const isClickOnTargetingButton = uiElements.toggleTargetingBtn.contains(target);
-    const isClickOnSetGroundTargetButton = uiElements.setGroundTargetBtn && uiElements.setGroundTargetBtn.contains(target);
-    const isClickOnToggleModeButton = uiElements.toggleModeBtn.contains(target);
-    const isClickOnToggleOrbitDirectionButton = uiElements.toggleOrbitDirectionBtn.contains(target);
+// Check if a new version has been released
+const lastSeenVersion = localStorage.getItem('lastSeenVersion');
+if (lastSeenVersion !== CHANGELOG_VERSION) {
+    uiElements.changelogIndicator.classList.remove('hidden');
+}
 
-
-    if (!isClickOnCanvas && !isClickOnSellButton && !isClickOnTargetingButton && !isClickOnSetGroundTargetButton && !isClickOnToggleModeButton && !isClickOnToggleOrbitDirectionButton) {
-        if (selectedTowers.length > 0 || selectedEnemy !== null) {
-            selectedTowers = [];
-            selectedEnemy = null;
-            isSellConfirmPending = false;
-            settingAttackGroundForTower = null; // Also clear this if active
-            updateUI(gameState);
-            updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
-        }
-    }
-});
-
-// Initialize the game when the DOM is fully loaded
-window.addEventListener('DOMContentLoaded', () => {
-    document.fonts.ready.catch(err => {
-        console.error("Font loading failed, starting game anyway.", err);
-    }).finally(() => {
-        // If checkChangelog is defined, call it; otherwise, skip.
-        // This function is defined in index.html, so it's not directly accessible here.
-        init();
-    });
-});
+init();

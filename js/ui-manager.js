@@ -108,7 +108,7 @@ export const uiElements = {
     killCountValue: document.getElementById('kill-count-value'),
 };
 
-export function updateUI(state) {
+export function updateUI(state, gameSpeed) {
     uiElements.livesEl.textContent = state.lives;
     uiElements.goldEl.textContent = state.gold;
     uiElements.waveEl.textContent = state.wave;
@@ -129,6 +129,9 @@ export function updateUI(state) {
         uiElements.cloudIcon.textContent = 'cloud_download';
         uiElements.cloudText.classList.remove('hidden');
     }
+
+    uiElements.startWaveBtn.classList.toggle('depressed', state.waveInProgress);
+    uiElements.speedToggleBtn.classList.toggle('depressed', gameSpeed > 1);
 }
 
 export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
@@ -623,10 +626,10 @@ function createTowerCardHTML(type, isDiscovered) {
 
     if (!isDiscovered) {
         return `
-            <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-center text-center">
-                <span class="material-symbols-outlined" style="font-size: 64px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
-                <h4 class="text-xl mt-2 text-white">???</h4>
-                <p class="text-xs text-yellow-400 mt-2 italic">"?????????????"</p>
+            <div class="tower-card absolute inset-0 p-2 flex flex-col items-center justify-center text-center">
+                <span class="material-symbols-outlined" style="font-size: 100px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
+                <h4 class="text-4xl mt-2 text-white">???</h4>
+                <p class="text-sm text-yellow-400 mt-2 italic">"?????????????"</p>
             </div>
         `;
     }
@@ -634,7 +637,7 @@ function createTowerCardHTML(type, isDiscovered) {
     const name = iconInfo.icon.replace(/_/g, ' ').toUpperCase();
 
     let iconHTML;
-    const iconStyle = `font-size: 64px; color: ${stats.color};`;
+    const iconStyle = `font-size: 100px; color: ${stats.color};`;
     if (iconInfo.className.startsWith('fa-')) {
         iconHTML = `<i class="${iconInfo.className} fa-${iconInfo.icon}" style="${iconStyle}"></i>`;
     } else {
@@ -645,7 +648,7 @@ function createTowerCardHTML(type, isDiscovered) {
         iconHTML = `<span class="${iconInfo.className}" style="${style}">${iconInfo.icon}</span>`;
     }
 
-    const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
+    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic">"${stats.comment || ''}"</p>`;
 
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(statDisplayConfig)
@@ -654,7 +657,7 @@ function createTowerCardHTML(type, isDiscovered) {
                 const statValue = stats[key];
                 const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
                 const iconFamily = config.family || 'material-icons';
-                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-base align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
             }
             return '';
         })
@@ -662,13 +665,13 @@ function createTowerCardHTML(type, isDiscovered) {
 
 
     return `
-        <div class="tower-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
+        <div class="tower-card absolute inset-0 p-2 flex flex-col items-center justify-between text-center">
             <div>
                 ${iconHTML}
-                <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
-                <p class="text-xs text-gray-400">(${type})</p>
+                <h4 class="text-4xl mt-2" style="color: ${stats.color};">${name}</h4>
+                <p class="text-sm text-gray-400">(${type})</p>
             </div>
-            <div class="text-left text-xs w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
+            <div class="text-left text-lg w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
                 ${statsGridHTML}
             </div>
              ${commentHTML}
@@ -680,14 +683,14 @@ function createEnemyCardHTML(type, isDiscovered) {
     const stats = ENEMY_TYPES[type];
     if (!stats) return '';
 
-    const iconHTML = `<span style="font-family: ${stats.iconFamily}; font-size: 64px; color: ${stats.color};">${stats.icon}</span>`;
+    const iconHTML = `<span style="font-family: ${stats.iconFamily}; font-size: 100px; color: ${stats.color};">${stats.icon}</span>`;
 
     if (!isDiscovered) {
         return `
-            <div class="enemy-card absolute inset-0 p-4 flex flex-col items-center justify-center text-center">
-                <span class="material-symbols-outlined" style="font-size: 64px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
-                <h4 class="text-xl mt-2 text-white">???</h4>
-                <p class="text-xs text-yellow-400 mt-2 italic">"?????????????"</p>
+            <div class="enemy-card absolute inset-0 p-2 flex flex-col items-center justify-center text-center">
+                <span class="material-symbols-outlined" style="font-size: 100px; color: #FFFFFF; font-variation-settings: 'FILL' 1;">question_mark</span>
+                <h4 class="text-4xl mt-2 text-white">???</h4>
+                <p class="text-sm text-yellow-400 mt-2 italic">"?????????????"</p>
             </div>
         `;
     }
@@ -701,23 +704,23 @@ function createEnemyCardHTML(type, isDiscovered) {
     if (specialText) specialText = specialText.slice(0, -2);
     else specialText = 'No special abilities';
 
-    const specialHTML = `<p class="text-xs text-yellow-400 mt-2">${specialText}</p>`;
-    const commentHTML = `<p class="text-xs text-yellow-400 mt-2 italic">"${stats.comment || ''}"</p>`;
+    const specialHTML = `<p class="text-sm text-yellow-400 mt-2">${specialText}</p>`;
+    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic">"${stats.comment || ''}"</p>`;
 
     let statsGridHTML = '';
-    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#ef4444;">favorite</span>Health: ${stats.health}</p>`;
-    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#4ade80;">speed</span>Speed: ${stats.speed}</p>`;
-    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-base align-bottom" style="color:#facc15;">paid</span>Gold: ${stats.gold}</p>`;
+    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-2xl align-bottom" style="color:#ef4444;">favorite</span>Health: ${stats.health}</p>`;
+    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-2xl align-bottom" style="color:#4ade80;">speed</span>Speed: ${stats.speed}</p>`;
+    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-2xl align-bottom" style="color:#facc15;">paid</span>Gold: ${stats.gold}</p>`;
 
 
     return `
-        <div class="enemy-card absolute inset-0 p-4 flex flex-col items-center justify-around text-center">
+        <div class="enemy-card absolute inset-0 p-2 flex flex-col items-center justify-between text-center">
             <div>
                 ${iconHTML}
-                <h4 class="text-xl mt-2" style="color: ${stats.color};">${name}</h4>
-                <p class="text-xs text-gray-400">(${type})</p>
+                <h4 class="text-4xl mt-2" style="color: ${stats.color};">${name}</h4>
+                <p class="text-sm text-gray-400">(${type})</p>
             </div>
-            <div class="text-left text-xs w-full grid grid-cols-1 gap-y-1 px-4">
+            <div class="text-left text-lg w-full grid grid-cols-1 gap-y-1 px-4">
                 ${statsGridHTML}
             </div>
             <div>
@@ -799,7 +802,7 @@ export function populateChangelog(changelogData) {
         entryElement.innerHTML = `
             <div class="flex justify-between items-baseline">
                 <h4 class="text-lg font-bold text-yellow-400">v${entry.version}</h4>
-                <p class="text-xs text-gray-400">${entry.date}</p>
+                <p class="text-sm text-gray-400">${entry.date}</p>
             </div>
             <ul class="mt-2 text-sm">
                 ${changesList}
