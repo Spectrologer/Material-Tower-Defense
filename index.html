@@ -47,338 +47,339 @@
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
+        }
 
-            /* New rule to change cursor when dragging */
-            body.is-dragging {
-                cursor: grabbing !important;
-            }
+        /* New rule to change cursor when dragging */
+        body.is-dragging {
+            cursor: grabbing !important;
+        }
 
-            /* Style for the game's drawing area (the canvas) */
-            canvas {
-                background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
-                box-shadow:
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                    0 8px 32px rgba(0, 0, 0, 0.6),
-                    0 4px 16px rgba(0, 0, 0, 0.4);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                position: absolute;
-                cursor: grab;
-            }
+        /* Style for the game's drawing area (the canvas) */
+        canvas {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                0 4px 16px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            position: absolute;
+            cursor: grab;
+        }
 
-            /* Style for all the UI panels (stats, towers, game over screen) */
-            .game-ui-panel,
-            .game-over-modal,
-            .game-stats-panel {
-                background: rgba(0, 0, 0, 0.4);
-                backdrop-filter: blur(20px) saturate(1.8);
-                -webkit-backdrop-filter: blur(20px) saturate(1.8);
-                border-radius: 16px;
-                box-shadow:
-                    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-                    0 8px 32px rgba(0, 0, 0, 0.4),
-                    0 4px 16px rgba(0, 0, 0, 0.2);
-            }
+        /* Style for all the UI panels (stats, towers, game over screen) */
+        .game-ui-panel,
+        .game-over-modal,
+        .game-stats-panel {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px) saturate(1.8);
+            -webkit-backdrop-filter: blur(20px) saturate(1.8);
+            border-radius: 16px;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 4px 16px rgba(0, 0, 0, 0.2);
+        }
 
-            /* Style for the clickable buttons */
-            .pixel-button {
-                background: rgba(0, 0, 0, 0.3);
-                color: #f5f5f5;
-                font-weight: 700;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                padding: 14px 15px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                box-shadow:
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                    0 4px 0 rgba(0, 0, 0, 0.4),
-                    0 6px 12px rgba(0, 0, 0, 0.3);
-                cursor: pointer;
-                border-radius: 10px;
-                position: relative;
-                overflow: hidden;
-                backdrop-filter: blur(5px);
-                -webkit-backdrop-filter: blur(5px);
-            }
+        /* Style for the clickable buttons */
+        .pixel-button {
+            background: rgba(0, 0, 0, 0.3);
+            color: #f5f5f5;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 14px 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 4px 0 rgba(0, 0, 0, 0.4),
+                0 6px 12px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
 
-            .pixel-button::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg,
-                        transparent,
-                        rgba(255, 255, 255, 0.1),
-                        transparent);
-                transition: left 0.5s ease;
-            }
+        .pixel-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.1),
+                    transparent);
+            transition: left 0.5s ease;
+        }
 
-            /* What buttons look like when you hover over them */
-            .pixel-button:hover:not(:disabled) {
-                background: rgba(255, 255, 255, 0.15);
-                transform: translateY(-2px);
-                box-shadow:
-                    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                    0 6px 0 rgba(0, 0, 0, 0.4),
-                    0 8px 16px rgba(0, 0, 0, 0.4);
-                border-color: rgba(255, 255, 255, 0.3);
-            }
+        /* What buttons look like when you hover over them */
+        .pixel-button:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                0 6px 0 rgba(0, 0, 0, 0.4),
+                0 8px 16px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
 
-            .pixel-button:hover:not(:disabled)::before {
-                left: 100%;
-            }
+        .pixel-button:hover:not(:disabled)::before {
+            left: 100%;
+        }
 
-            /* What buttons look like when you're clicking them */
-            .pixel-button:active:not(:disabled) {
-                transform: translateY(2px);
-                /* Move down a bit more */
-                box-shadow:
-                    inset 0 1px 0 rgba(0, 0, 0, 0.2),
-                    /* Darker inset shadow */
-                    0 1px 0 rgba(0, 0, 0, 0.4),
-                    /* Much smaller bottom shadow */
-                    0 2px 4px rgba(0, 0, 0, 0.3);
-                /* Smaller overall shadow */
-                background: rgba(0, 0, 0, 0.1);
-                /* Slightly darker background */
-            }
+        /* What buttons look like when you're clicking them */
+        .pixel-button:active:not(:disabled) {
+            transform: translateY(2px);
+            /* Move down a bit more */
+            box-shadow:
+                inset 0 1px 0 rgba(0, 0, 0, 0.2),
+                /* Darker inset shadow */
+                0 1px 0 rgba(0, 0, 0, 0.4),
+                /* Much smaller bottom shadow */
+                0 2px 4px rgba(0, 0, 0, 0.3);
+            /* Smaller overall shadow */
+            background: rgba(0, 0, 0, 0.1);
+            /* Slightly darker background */
+        }
 
-            /* Style for programmatically depressed buttons */
-            .pixel-button.depressed {
-                transform: translateY(2px);
-                box-shadow:
-                    inset 0 1px 0 rgba(0, 0, 0, 0.2),
-                    0 1px 0 rgba(0, 0, 0, 0.4),
-                    0 2px 4px rgba(0, 0, 0, 0.3);
-                background: rgba(0, 0, 0, 0.1);
-            }
+        /* Style for programmatically depressed buttons */
+        .pixel-button.depressed {
+            transform: translateY(2px);
+            box-shadow:
+                inset 0 1px 0 rgba(0, 0, 0, 0.2),
+                0 1px 0 rgba(0, 0, 0, 0.4),
+                0 2px 4px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.1);
+        }
 
-            /* Style for buttons you can't afford or use yet */
-            .pixel-button:disabled {
-                background: rgba(255, 255, 255, 0.05);
-                color: #888;
-                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-                border-color: rgba(255, 255, 255, 0.08);
-                box-shadow:
-                    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-                    0 2px 0 rgba(0, 0, 0, 0.2),
-                    0 3px 6px rgba(0, 0, 0, 0.2);
-                cursor: not-allowed;
-                opacity: 0.7;
-            }
+        /* Style for buttons you can't afford or use yet */
+        .pixel-button:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.03),
+                0 2px 0 rgba(0, 0, 0, 0.2),
+                0 3px 6px rgba(0, 0, 0, 0.2);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
 
-            /* Highlights the tower button you've selected to place */
-            .tower-button.selected,
-            #cloud-inventory-slots .pixel-button.selected {
-                background-color: #ffffff;
-                color: #111;
-                border-color: #ffffff;
-                box-shadow: 0 4px 0px 0px #8b5cf6, 0 0 12px #c084fc;
-                /* Changed glow to purple */
-                transform: translateY(0);
-            }
+        /* Highlights the tower button you've selected to place */
+        .tower-button.selected,
+        #cloud-inventory-slots .pixel-button.selected {
+            background-color: #ffffff;
+            color: #111;
+            border-color: #ffffff;
+            box-shadow: 0 4px 0px 0px #8b5cf6, 0 0 12px #c084fc;
+            /* Changed glow to purple */
+            transform: translateY(0);
+        }
 
-            /* Specific styles for the tower buttons to give them color-coded tints */
-            #buy-pin {
-                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                    0 6px 0 #b3b3b3, 0 8px 16px rgba(0, 0, 0, 0.3);
-                border-color: rgba(255, 255, 255, 0.3);
-                background: rgba(255, 255, 255, 0.05);
-            }
+        /* Specific styles for the tower buttons to give them color-coded tints */
+        #buy-pin {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 6px 0 #b3b3b3, 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
 
-            #buy-castle {
-                box-shadow: inset 0 1px 0 rgba(255, 153, 0, 0.1),
-                    0 6px 0 #9a6800, 0 8px 16px rgba(0, 0, 0, 0.3);
-                border-color: rgba(255, 153, 0, 0.3);
-                background: rgba(255, 153, 0, 0.05);
-            }
+        #buy-castle {
+            box-shadow: inset 0 1px 0 rgba(255, 153, 0, 0.1),
+                0 6px 0 #9a6800, 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 153, 0, 0.3);
+            background: rgba(255, 153, 0, 0.05);
+        }
 
-            #buy-support {
-                box-shadow: inset 0 1px 0 rgba(248, 112, 255, 0.1),
-                    0 6px 0 #b91c1c, 0 8px 16px rgba(0, 0, 0, 0.3);
-                border-color: rgba(248, 112, 255, 0.3);
-                background: rgba(248, 112, 255, 0.05);
-            }
+        #buy-support {
+            box-shadow: inset 0 1px 0 rgba(248, 112, 255, 0.1),
+                0 6px 0 #b91c1c, 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-color: rgba(248, 112, 255, 0.3);
+            background: rgba(248, 112, 255, 0.05);
+        }
 
-            #start-wave {
-                box-shadow: inset 0 1px 0 rgba(74, 222, 128, 0.1), 0 6px 0 #16a34a, 0 8px 16px rgba(0, 0, 0, 0.3);
-                border-color: rgba(74, 222, 128, 0.3);
-                background: rgba(74, 222, 128, 0.05);
-            }
+        #start-wave {
+            box-shadow: inset 0 1px 0 rgba(74, 222, 128, 0.1), 0 6px 0 #16a34a, 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-color: rgba(74, 222, 128, 0.3);
+            background: rgba(74, 222, 128, 0.05);
+        }
 
-            #speed-toggle {
-                box-shadow: inset 0 1px 0 rgba(96, 165, 250, 0.1), 0 6px 0 #2563eb, 0 8px 16px rgba(0, 0, 0, 0.3);
-                border-color: rgba(96, 165, 250, 0.3);
-                background: rgba(96, 165, 250, 0.05);
-            }
+        #speed-toggle {
+            box-shadow: inset 0 1px 0 rgba(96, 165, 250, 0.1), 0 6px 0 #2563eb, 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-color: rgba(96, 165, 250, 0.3);
+            background: rgba(96, 165, 250, 0.05);
+        }
 
-            #cloud-button {
-                box-shadow: inset 0 1px 0 rgba(209, 213, 219, 0.1), 0 6px 0 #9ca3af, 0 8px 16px rgba(0, 0, 0, 0.3);
-                border-color: rgba(209, 213, 219, 0.3);
-                background: rgba(209, 213, 219, 0.05);
-            }
+        #cloud-button {
+            box-shadow: inset 0 1px 0 rgba(209, 213, 219, 0.1), 0 6px 0 #9ca3af, 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-color: rgba(209, 213, 219, 0.3);
+            background: rgba(209, 213, 219, 0.05);
+        }
 
 
-            #set-ground-target-btn.active {
-                background-color: #f59e0b;
-                border-color: #fde047;
-                color: #1a1a1a;
-                box-shadow: 0 4px 0 #b45309;
-            }
+        #set-ground-target-btn.active {
+            background-color: #f59e0b;
+            border-color: #fde047;
+            color: #1a1a1a;
+            box-shadow: 0 4px 0 #b45309;
+        }
 
-            /* FIX: Explicitly set font-family for icon classes to override global font and fix tooltips. */
-            .material-icons {
-                font-family: 'Material Icons';
-            }
+        /* FIX: Explicitly set font-family for icon classes to override global font and fix tooltips. */
+        .material-icons {
+            font-family: 'Material Icons';
+        }
 
-            .material-symbols-outlined {
-                font-family: 'Material Symbols Outlined';
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
-            }
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
 
-            .fa-solid {
-                font-family: "Font Awesome 6 Free";
-                font-weight: 900;
-            }
+        .fa-solid {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
 
-            /* Custom styles for the new debug button */
-            #infinite-gold {
-                background-color: rgba(220, 38, 38, 0.7);
-                /* Red with transparency */
-                border-color: rgba(220, 38, 38, 0.9);
-                /* Red with transparency */
-                color: #fde047;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
+        /* Custom styles for the new debug button */
+        #infinite-gold {
+            background-color: rgba(220, 38, 38, 0.7);
+            /* Red with transparency */
+            border-color: rgba(220, 38, 38, 0.9);
+            /* Red with transparency */
+            color: #fde047;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
-            #infinite-gold:hover:not(:disabled) {
-                background-color: rgba(239, 68, 68, 0.8);
-                /* Lighter red on hover */
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-            }
+        #infinite-gold:hover:not(:disabled) {
+            background-color: rgba(239, 68, 68, 0.8);
+            /* Lighter red on hover */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
 
-            #infinite-gold:active:not(:disabled) {
-                transform: translateY(1px);
-                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            }
+        #infinite-gold:active:not(:disabled) {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
 
-            /* Custom tooltip styling */
-            .tooltip {
-                position: absolute;
-                background-color: rgba(0, 0, 0, 0.7);
-                /* Slightly more transparent tooltip */
-                color: #ffffff;
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                /* Softer green border */
-                padding: 8px 8px 16px;
-                font-size: 14px;
-                font-family: 'Roboto', Open Sans';
- text-align: center;
-                white-space: nowrap;
-                z-index: 10;
-                pointer-events: none;
-                /* Prevents the tooltip from blocking mouse events */
-                border-radius: 5px;
-            }
+        /* Custom tooltip styling */
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Slightly more transparent tooltip */
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            /* Softer green border */
+            padding: 8px 8px 16px;
+            font-size: 14px;
+            font-family: 'Roboto', 'Open Sans';
+            text-align: center;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+            /* Prevents the tooltip from blocking mouse events */
+            border-radius: 5px;
+        }
 
-            .bottom-controls {
-                background-color: rgba(255, 255, 255, 0.15);
-                /* Lighter, more translucent background */
-                backdrop-filter: blur(10px);
-                /* Stronger blur effect */
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                /* Subtle white border for glass effect */
-                padding: 1rem;
-                display: flex;
-                gap: 0.5rem;
-                justify-content: space-between;
-                border-radius: 10px;
-                /* Softer corners */
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                /* Subtle shadow for depth */
-            }
+        .bottom-controls {
+            background-color: rgba(255, 255, 255, 0.15);
+            /* Lighter, more translucent background */
+            backdrop-filter: blur(10px);
+            /* Stronger blur effect */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            /* Subtle white border for glass effect */
+            padding: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: space-between;
+            border-radius: 10px;
+            /* Softer corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            /* Subtle shadow for depth */
+        }
 
-            .options-menu {
-                position: absolute;
-                top: 1rem;
-                left: 1rem;
-                z-index: 29;
-                width: 200px;
-                padding: 1rem;
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
+        .options-menu {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            z-index: 29;
+            width: 200px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
 
-            .options-menu.hidden {
-                display: none;
-            }
+        .options-menu.hidden {
+            display: none;
+        }
 
-            /* A visual indicator for the selected maze color button */
-            .color-option.selected {
-                border-color: #00ff88;
-                box-shadow: 0 0 8px #00ff88;
-            }
+        /* A visual indicator for the selected maze color button */
+        .color-option.selected {
+            border-color: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
 
-            /* Toggle Switch Styles */
-            .toggle-switch {
-                position: relative;
-                display: inline-block;
-                width: 40px;
-                height: 20px;
-            }
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
 
-            .toggle-switch input {
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
 
-            .slider {
-                position: absolute;
-                cursor: pointer;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: #555;
-                transition: .4s;
-                border: 2px solid #888;
-            }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border: 2px solid #888;
+        }
 
-            .slider:before {
-                position: absolute;
-                content: "";
-                height: 12px;
-                width: 12px;
-                left: 2px;
-                bottom: 2px;
-                background-color: #e0e0e0;
-                transition: .4s;
-            }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #e0e0e0;
+            transition: .4s;
+        }
 
-            input:checked+.slider {
-                background-color: #c084fc;
-                border-color: #a855f7;
-            }
+        input:checked+.slider {
+            background-color: #c084fc;
+            border-color: #a855f7;
+        }
 
-            input:checked+.slider:before {
-                transform: translateX(20px);
-                background-color: #1a1a1a;
-            }
+        input:checked+.slider:before {
+            transform: translateX(20px);
+            background-color: #1a1a1a;
+        }
 
-            .toggle-btn:disabled {
-                opacity: 0.3;
-            }
+        .toggle-btn:disabled {
+            opacity: 0.3;
+        }
 
-            /* FIX: Prevents icons inside buttons from capturing click events. */
-            .pixel-button span,
-            .pixel-button i {
-                pointer-events: none;
-            }
+        /* FIX: Prevents icons inside buttons from capturing click events. */
+        .pixel-button span,
+        .pixel-button i {
+            pointer-events: none;
+        }
     </style>
 
 </head>

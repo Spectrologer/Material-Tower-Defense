@@ -146,9 +146,9 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
     if (uiElements.setGroundTargetBtn) uiElements.setGroundTargetBtn.classList.add('hidden');
 
     if (selectedTowers.length > 0) {
-        if(uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.add('hidden');
+        if (uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.add('hidden');
         uiElements.gameControls.classList.add('hidden');
-        
+
         if (settingAttackGroundForTower) {
             uiElements.sellPanel.classList.add('hidden');
         } else {
@@ -617,6 +617,12 @@ const statDisplayConfig = {
     burnDps: { label: 'Burn', icon: 'local_fire_department', family: 'material-symbols-outlined', color: '#f97316', condition: (s) => s.burnDps, formatter: (val, stats) => `${val}/s for ${stats.burnDuration}s` },
 };
 
+const enemyStatDisplayConfig = {
+    health: { label: 'Health', icon: 'favorite', family: 'material-symbols-outlined', color: '#ef4444', condition: (s) => s.health > 0 },
+    speed: { label: 'Speed', icon: 'speed', family: 'material-symbols-outlined', color: '#4ade80', condition: (s) => s.speed > 0 },
+    gold: { label: 'Gold', icon: 'paid', family: 'material-symbols-outlined', color: '#facc15', condition: (s) => s.gold >= 0 },
+};
+
 
 function createTowerCardHTML(type, isDiscovered) {
     const stats = TOWER_TYPES[type];
@@ -648,7 +654,7 @@ function createTowerCardHTML(type, isDiscovered) {
         iconHTML = `<span class="${iconInfo.className}" style="${style}">${iconInfo.icon}</span>`;
     }
 
-    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic">"${stats.comment || ''}"</p>`;
+    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic whitespace-normal">"${stats.comment || ''}"</p>`;
 
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(statDisplayConfig)
@@ -665,16 +671,20 @@ function createTowerCardHTML(type, isDiscovered) {
 
 
     return `
-        <div class="tower-card absolute inset-0 p-2 flex flex-col items-center justify-between text-center">
-            <div>
+        <div class="tower-card absolute inset-0 p-2 flex flex-col items-center text-center">
+            <div class="flex-shrink-0">
                 ${iconHTML}
-                <h4 class="text-4xl mt-2" style="color: ${stats.color};">${name}</h4>
+                <h4 class="text-3xl mt-2 whitespace-normal" style="color: ${stats.color};">${name}</h4>
                 <p class="text-sm text-gray-400">(${type})</p>
             </div>
-            <div class="text-left text-lg w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
-                ${statsGridHTML}
+            <div class="flex-grow overflow-y-auto w-full my-2">
+                <div class="text-left text-base w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
+                    ${statsGridHTML}
+                </div>
             </div>
+            <div class="flex-shrink-0">
              ${commentHTML}
+            </div>
         </div>
     `;
 }
@@ -682,8 +692,6 @@ function createTowerCardHTML(type, isDiscovered) {
 function createEnemyCardHTML(type, isDiscovered) {
     const stats = ENEMY_TYPES[type];
     if (!stats) return '';
-
-    const iconHTML = `<span style="font-family: ${stats.iconFamily}; font-size: 100px; color: ${stats.color};">${stats.icon}</span>`;
 
     if (!isDiscovered) {
         return `
@@ -697,39 +705,68 @@ function createEnemyCardHTML(type, isDiscovered) {
 
     const name = stats.icon.replace(/_/g, ' ').toUpperCase();
 
-    let specialText = '';
-    if (stats.isFlying) specialText += 'Flying, ';
-    if (stats.splashImmune) specialText += 'Splash Immune, ';
-    if (stats.laysEggs) specialText += 'Lays Eggs, ';
-    if (specialText) specialText = specialText.slice(0, -2);
-    else specialText = 'No special abilities';
+    let iconHTML;
+    const iconStyle = `font-size: 100px; color: ${stats.color};`;
+    // Assuming enemy icons are always material-symbols-outlined or material-icons
+    // If there are font-awesome icons for enemies, this logic needs to be extended.
+    if (stats.iconFamily && stats.iconFamily.includes('Font Awesome')) { // Check for Font Awesome
+        iconHTML = `<i class="fa-solid fa-${stats.icon}" style="${iconStyle}"></i>`;
+    } else {
+        let style = iconStyle;
+        if (stats.iconFamily && stats.iconFamily.includes('Material Symbols Outlined')) {
+            style += ` font-variation-settings: 'FILL' 0;`;
+        }
+        iconHTML = `<span class="${stats.iconFamily === 'Material Symbols Outlined' ? 'material-symbols-outlined' : 'material-icons'}" style="${style}">${stats.icon}</span>`;
+    }
 
-    const specialHTML = `<p class="text-sm text-yellow-400 mt-2">${specialText}</p>`;
-    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic">"${stats.comment || ''}"</p>`;
+    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic whitespace-normal">"${stats.comment || ''}"</p>`;
 
-    let statsGridHTML = '';
-    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-2xl align-bottom" style="color:#ef4444;">favorite</span>Health: ${stats.health}</p>`;
-    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-2xl align-bottom" style="color:#4ade80;">speed</span>Speed: ${stats.speed}</p>`;
-    statsGridHTML += `<p class="flex items-center gap-1"><span class="material-symbols-outlined text-2xl align-bottom" style="color:#facc15;">paid</span>Gold: ${stats.gold}</p>`;
+    const specialAbilities = [];
+    if (stats.isFlying) specialAbilities.push('Flying');
+    if (stats.splashImmune) specialAbilities.push('Splash Immune');
+    if (stats.laysEggs) specialAbilities.push('Lays Eggs');
+    if (stats.isInvisible) specialAbilities.push('Stealth');
+    if (stats.prefersDetour) specialAbilities.push('Prefers Detour');
+    if (stats.isStationary) specialAbilities.push('Stationary');
+    if (stats.hatchTime) specialAbilities.push(`Hatches into ${stats.hatchesTo}`);
 
+    const specialHTML = specialAbilities.length > 0
+        ? `<p class="text-sm text-yellow-400 mt-2 whitespace-normal">Special: ${specialAbilities.join(', ')}</p>`
+        : '';
+
+    // Build stats with icons dynamically from the config
+    const statsGridHTML = Object.entries(enemyStatDisplayConfig)
+        .map(([key, config]) => {
+            if (config.condition && config.condition(stats)) {
+                const statValue = stats[key];
+                const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
+                const iconFamily = config.family || 'material-symbols-outlined';
+                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+            }
+            return '';
+        })
+        .join('');
 
     return `
-        <div class="enemy-card absolute inset-0 p-2 flex flex-col items-center justify-between text-center">
-            <div>
+        <div class="enemy-card absolute inset-0 p-2 flex flex-col items-center text-center">
+            <div class="flex-shrink-0">
                 ${iconHTML}
-                <h4 class="text-4xl mt-2" style="color: ${stats.color};">${name}</h4>
+                <h4 class="text-3xl mt-2 whitespace-normal" style="color: ${stats.color};">${name}</h4>
                 <p class="text-sm text-gray-400">(${type})</p>
             </div>
-            <div class="text-left text-lg w-full grid grid-cols-1 gap-y-1 px-4">
-                ${statsGridHTML}
-            </div>
-            <div>
+            <div class="flex-grow overflow-y-auto w-full my-2">
+                <div class="text-left text-base w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
+                    ${statsGridHTML}
+                </div>
                 ${specialHTML}
+            </div>
+            <div class="flex-shrink-0">
                 ${commentHTML}
             </div>
         </div>
     `;
 }
+
 
 function populateTowerLibrary(gameState) {
     const allTowerTypes = Object.keys(TOWER_TYPES);
