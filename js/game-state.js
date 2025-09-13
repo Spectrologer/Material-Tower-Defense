@@ -28,6 +28,7 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} hasPerformedFirstMerge - Whether the player has performed their first tower merge.
  * @property {boolean} onboardingTipDismissed - Whether the onboarding tip has been dismissed.
  * @property {Set} discoveredMerges - Set of tower merge types the player has discovered.
+ * @property {number} towersSoldThisGame - The number of towers sold in the current game.
  * @property {Set} discoveredTowerTypes - Set of tower types the player has discovered.
  * @property {Set<string>} unlockedTrophies - Set of unlocked trophy IDs.
  * @property {boolean} usedPinHeartTower - Whether a PIN_HEART tower has been used in the current game.
@@ -143,6 +144,7 @@ function getInitialGameState() {
         hasPerformedFirstMerge: false,
         onboardingTipDismissed: false,
         discoveredMerges: new Set(),
+        towersSoldThisGame: 0,
         discoveredTowerTypes: new Set(['PIN', 'CASTLE', 'SUPPORT']),
         unlockedTrophies: new Set(),
         usedPinHeartTower: false,
@@ -201,6 +203,7 @@ function getSerializedGameState() {
         discoveredMerges: Array.from(gameState.discoveredMerges),
         discoveredTowerTypes: Array.from(gameState.discoveredTowerTypes),
         unlockedTrophies: Array.from(gameState.unlockedTrophies),
+        towersSoldThisGame: gameState.towersSoldThisGame,
         usedPinHeartTower: gameState.usedPinHeartTower,
         onlyPinTowersUsed: gameState.onlyPinTowersUsed,
     });
@@ -234,4 +237,3 @@ function deserializeGameState(serializedGameState) {
         return getInitialGameState();
     }
 }
-

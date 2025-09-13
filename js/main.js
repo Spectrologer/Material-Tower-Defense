@@ -536,7 +536,7 @@ function gameLoop(currentTime) {
 
     const newlySpawnedEnemies = [];
 
-    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies, gameState.path));
+    gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies, gameState.path, gameState.effects));
     gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects, effectiveDeltaTime));
     gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
         (e) => { // onFinish

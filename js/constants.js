@@ -29,6 +29,7 @@ export const TOWER_TYPES = {
     MIND: { cost: 120, range: 0, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, stealthDetectionRange: 3, special: 'Aura: Boost/Slow', comment: "A weapon to surpass metal gear." },
     ORBIT: { cost: 150, range: 0, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters', comment: "Weeeeeeeee!" },
 
+    STUN_BOT: { cost: 150, range: 180, damage: 8, fireRate: 90, color: '#fef08a', projectileSpeed: 0, projectileSize: 0, projectileColor: '#fef08a', special: 'Chain Lightning', chainTargets: 5, chainRange: 100, maxLevel: 3, comment: "Shocking, isn't it?" },
     // All the stats for hybrid towers.
 
     CAT: { cost: 180, range: 0, damage: 0, fireRate: 0, color: '#f59e0b', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, goldBonus: 1, stealthDetectionRange: 4, special: 'Aura + Greed', iconSize: 0.9, maxLevel: 1, comment: "Meow-ney talks." },
@@ -47,5 +48,5 @@ export const ENEMY_TYPES = {
     BOSS: { speed: 1.2, health: 5400, color: '#f589ffff', size: 28, gold: 50, icon: 'flutter_dash', iconFamily: 'Material Icons', isFlying: true, damagesLives: false, laysEggs: true, layEggInterval: 5, eggLayStopTime: 1.5, wiggleTime: 1, splashImmune: true, comment: "Has commitment issues.", musicTrack: SpecialTrack.flutterDash },
     EGG: { speed: 0, health: 200, color: '#ffedceff', size: 12, gold: 0, icon: 'egg', iconFamily: 'Material Symbols Outlined', damagesLives: false, hatchTime: 5, hatchesTo: 'HATCHED', isStationary: true, comment: "What's inside? It's probably not a surprise party." },
     HATCHED: { speed: 2.6, health: 200, color: '#90CAF9', size: 14, gold: 0, icon: 'boy', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "Why." },
-        STEALTH: { speed: 2.2, health: 15, color: '#BDBDBD', size: 16, gold: 5, icon: 'settings_accessibility', iconFamily: 'Material Symbols Outlined', damagesLives: true, isInvisible: true, prefersDetour: true, comment: "He's  not your a11y." }
+    STEALTH: { speed: 2.2, health: 15, color: '#BDBDBD', size: 16, gold: 5, icon: 'settings_accessibility', iconFamily: 'Material Symbols Outlined', damagesLives: true, isInvisible: true, prefersDetour: true, comment: "He's  not your a11y." }
 };

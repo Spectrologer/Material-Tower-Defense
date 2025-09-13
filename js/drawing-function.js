@@ -45,10 +45,10 @@ function createPixelatedPattern(ctx, color) {
     patternCanvas.width = 8;
     patternCanvas.height = 8;
     const patternCtx = patternCanvas.getContext('2d');
-    
+
     patternCtx.fillStyle = color;
     patternCtx.fillRect(0, 0, 8, 8);
-    
+
     patternCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Slight dark pixels
     patternCtx.fillRect(0, 0, 1, 1);
     patternCtx.fillRect(4, 4, 1, 1);
@@ -339,6 +339,9 @@ export function getTowerIconInfo(type) {
         case 'ANTI_AIR':
             icon = 'open_jam';
             className = "material-symbols-outlined";
+            break;
+        case 'STUN_BOT':
+            icon = 'smart_toy';
             break;
         default:
             icon = 'help';

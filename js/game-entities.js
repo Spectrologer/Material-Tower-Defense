@@ -296,6 +296,7 @@ export class Enemy {
         this.isDying = false;
         this.deathAnimationTimer = 0;
         this.rotation = 0;
+        this.stunTimer = 0;
         this.jostleX = 0;
         this.jostleY = 0;
         this.jostleTimer = 0;
@@ -312,6 +313,10 @@ export class Enemy {
         if (this.type.hatchTime) {
             this.hatchTimer = this.type.hatchTime;
         }
+    }
+    applyStun(duration) {
+        // Apply the longer stun duration
+        this.stunTimer = Math.max(this.stunTimer, duration);
     }
     applyBurn(dps, durationInSeconds) {
         const existingBurn = this.burns.find(b => b.dps >= dps);
@@ -359,6 +364,12 @@ export class Enemy {
             ctx.fillText(this.type.icon, this.x, this.y);
             ctx.restore();
         }
+        if (this.stunTimer > 0) {
+            ctx.font = `${this.size * 1.5}px 'Material Symbols Outlined'`;
+            ctx.fillStyle = `rgba(254, 240, 138, ${0.5 + Math.sin(Date.now() / 100) * 0.2})`;
+            ctx.fillText('bolt', this.x, this.y - this.size);
+        }
+
         if (this.burns.length > 0) {
             ctx.globalAlpha = 0.5;
             ctx.font = `${this.size * 2.5}px 'Material Symbols Outlined'`;
@@ -386,6 +397,11 @@ export class Enemy {
         } else {
             this.jostleX = 0;
             this.jostleY = 0;
+        }
+
+        if (this.stunTimer > 0) {
+            this.stunTimer -= deltaTime;
+            return true; // Skip all other updates while stunned
         }
 
         // --- Death Animation ---
@@ -631,7 +647,7 @@ class TowerController {
             potentialTargets = potentialTargets.filter(enemy => enemy.type.isFlying);
         } else {
             const groundOnlyTowers = ['CASTLE', 'FORT', 'ORBIT', 'FIREPLACE'];
-            if (groundOnlyTowers.includes(tower.type)) {
+            if (groundOnlyTowers.includes(tower.type) || tower.type === 'STUN_BOT') {
                 potentialTargets = potentialTargets.filter(enemy => !enemy.type.isFlying);
             }
         }
@@ -670,50 +686,48 @@ class TowerController {
 
     shoot(projectiles) {
         const tower = this.tower;
-        if (!tower.target && !((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.targetingMode === 'ground' && tower.attackGroundTarget)) return;
+        if (!tower.target && !(tower.type === 'FORT' && tower.attackGroundTarget)) return;
 
-        if (tower.type === 'FORT') {
-            const locationTarget = (tower.targetingMode === 'ground' && tower.attackGroundTarget)
-                ? { x: tower.attackGroundTarget.x, y: tower.attackGroundTarget.y, health: 1 }
-                : { x: tower.target.x, y: tower.target.y, health: 1 };
-            projectiles.push(new Projectile(tower, locationTarget));
-            return;
-        }
-        if (tower.type === 'NINE_PIN') {
-            const targetPoint = (tower.targetingMode === 'ground' && tower.attackGroundTarget)
-                ? tower.attackGroundTarget
-                : tower.target;
-            if (!targetPoint) return;
-            const angle = Math.atan2(targetPoint.y - tower.y, targetPoint.x - tower.x);
-            const fakeTarget = {
-                x: tower.x + Math.cos(angle) * 2000,
-                y: tower.y + Math.sin(angle) * 2000,
-                health: Infinity,
-            };
-            projectiles.push(new Projectile(tower, fakeTarget));
-            return;
-        }
-        if (tower.projectileCount > 1 && tower.target) {
-            const angleToTarget = Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x);
-            const spreadAngle = Math.PI / 24;
-            projectiles.push(new Projectile(tower, tower.target));
-            for (let i = 1; i < tower.projectileCount; i++) {
-                const side = (i % 2 === 0) ? -1 : 1;
-                const magnitude = Math.ceil(i / 2);
-                const offsetAngle = angleToTarget + (spreadAngle * magnitude * side);
-                const fakeTarget = {
-                    x: tower.x + Math.cos(offsetAngle) * (tower.range + 50),
-                    y: tower.y + Math.sin(offsetAngle) * (tower.range + 50),
-                    health: Infinity
-                };
-                projectiles.push(new Projectile(tower, fakeTarget));
+        const projectileCount = tower.projectileCount || 1;
+        for (let i = 0; i < projectileCount; i++) {
+            if (tower.type === 'FORT' && tower.attackGroundTarget) {
+                projectiles.push(new Projectile(tower, tower.attackGroundTarget));
+            } else {
+                projectiles.push(new Projectile(tower, tower.target));
             }
-        } else {
-            projectiles.push(new Projectile(tower, tower.target));
         }
     }
 
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path) {
+    chainLightning(effects, enemies, onEnemyDeath) {
+        const tower = this.tower;
+        if (!tower.target) return;
+
+        let currentTarget = tower.target;
+        const hitEnemies = new Set([currentTarget]);
+        const chainPositions = [{ x: tower.x, y: tower.y }];
+
+        for (let i = 0; i < tower.chainTargets; i++) {
+            if (!currentTarget) break;
+
+            const finalDamage = tower.damage * tower.damageMultiplier;
+            if (currentTarget.takeDamage(finalDamage)) {
+                tower.killCount++;
+                onEnemyDeath(currentTarget);
+            }
+            if (tower.stunDuration > 0) {
+                currentTarget.applyStun(tower.stunDuration);
+            }
+            chainPositions.push({ x: currentTarget.x, y: currentTarget.y });
+
+            let nextTarget = findNextChainTarget(currentTarget, enemies, hitEnemies, tower.chainRange);
+            currentTarget = nextTarget;
+        }
+
+        // Create a visual effect for the chain
+        effects.push(new Effect(0, 0, 'chain', 0, tower.projectileColor, 0.3, { chain: chainPositions }));
+    }
+
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects) {
         const tower = this.tower;
 
         if (tower.isMobile && path && path.length > tower.pathIndex + 1) {
@@ -775,6 +789,11 @@ class TowerController {
             }
         } else {
             this.findTarget(enemies, frameTargetedEnemies);
+            if (tower.type === 'STUN_BOT' && tower.target && tower.cooldown <= 0) {
+                this.chainLightning(effects, enemies, onEnemyDeath);
+                tower.cooldown = tower.fireRate / 60;
+                return;
+            }
             if (tower.target && tower.cooldown <= 0) {
                 this.shoot(projectiles);
                 tower.cooldown = tower.fireRate / 60; // Cooldown in seconds
@@ -870,6 +889,10 @@ class TowerRenderer {
                 icon = 'open_jam';
                 iconFamily = "'Material Symbols Outlined'";
                 break;
+            case 'STUN_BOT':
+                icon = 'smart_toy';
+                iconFamily = "'Material Icons'";
+                break;
         }
         ctx.font = `${fontWeight} ${iconSize}px ${iconFamily}`;
         const angle = tower.target ? Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x) : 0;
@@ -939,6 +962,24 @@ class TowerRenderer {
     }
 }
 
+function findNextChainTarget(currentEnemy, allEnemies, hitEnemies, chainRange) {
+    let closestEnemy = null;
+    let minDistance = Infinity;
+
+    for (const enemy of allEnemies) {
+        if (!hitEnemies.has(enemy) && !enemy.isDying && enemy.isVisible && !enemy.type.isFlying) {
+            const dist = Math.hypot(currentEnemy.x - enemy.x, currentEnemy.y - enemy.y);
+            if (dist < minDistance && dist <= chainRange) {
+                minDistance = dist;
+                closestEnemy = enemy;
+            }
+        }
+    }
+    if (closestEnemy) {
+        hitEnemies.add(closestEnemy);
+    }
+    return closestEnemy;
+}
 
 export class Tower {
     constructor(x, y, type) {
@@ -965,6 +1006,9 @@ export class Tower {
         this.attackSpeedBoost = 1;
         this.damageBoost = 1;
         this.enemySlow = 1;
+        this.chainTargets = 0;
+        this.chainRange = 0;
+        this.stunDuration = 0;
         this.rotation = 0;
 
         // Explicitly set default targeting modes
@@ -1031,8 +1075,8 @@ export class Tower {
     draw(ctx) { this.renderer.draw(ctx); }
     drawRange(ctx) { this.renderer.drawRange(ctx); }
     drawBuffEffect(ctx) { this.renderer.drawBuffEffect(ctx); }
-    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path) {
-        this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path);
+    update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects) {
+        this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects);
     }
 
 
@@ -1092,6 +1136,11 @@ export class Tower {
         if (this.type === 'SUPPORT') {
             data.attackSpeedBoost = this.attackSpeedBoost;
         }
+        if (this.type === 'STUN_BOT') {
+            data.chainTargets = this.chainTargets;
+            data.chainRange = this.chainRange;
+            data.stunDuration = this.stunDuration;
+        }
         return data;
     }
 
@@ -1102,7 +1151,8 @@ export class Tower {
             "damageMultiplier", "projectileCount", "damageMultiplierFromMerge", "fragmentBounces",
             "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color",
             "projectileSize", "burnDps", "burnDuration", "attackSpeedBoost", "damageBoost",
-            "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount",
+            "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount", "chainTargets", "stunDuration",
+            "chainRange",
             "isMobile", "speed", "pathIndex", "progress", "rotation", "orbitDirection"
         ];
 
@@ -1129,8 +1179,8 @@ export class Tower {
 }
 
 export class Effect {
-    constructor(x, y, icon, size, color, duration) {
-        this.x = x; this.y = y; this.icon = icon; this.size = size; this.color = color; this.life = duration; this.maxLife = duration;
+    constructor(x, y, icon, size, color, duration, extraData = {}) {
+        this.x = x; this.y = y; this.icon = icon; this.size = size; this.color = color; this.life = duration; this.maxLife = duration; this.extraData = extraData;
     }
     update(deltaTime) {
         this.life -= deltaTime;
@@ -1140,6 +1190,23 @@ export class Effect {
         let progress = 1 - (this.life / this.maxLife);
         let currentSize = this.size * progress;
         let opacity = 1 - progress;
+
+        if (this.icon === 'chain' && this.extraData.chain) {
+            ctx.save();
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = opacity;
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.moveTo(this.extraData.chain[0].x, this.extraData.chain[0].y);
+            for (let i = 1; i < this.extraData.chain.length; i++) {
+                ctx.lineTo(this.extraData.chain[i].x, this.extraData.chain[i].y);
+            }
+            ctx.stroke();
+            ctx.restore();
+            return;
+        }
 
         let iconFamily = '';
         if (['explosion', 'gps_fixed'].includes(this.icon) || this.icon === 'attach_money' || this.icon === 'lens') {

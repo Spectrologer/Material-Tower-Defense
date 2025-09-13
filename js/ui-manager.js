@@ -104,6 +104,10 @@ export const uiElements = {
     statFrags: document.getElementById('stat-frags'),
     statPinsP: document.getElementById('stat-pins-p'),
     statPins: document.getElementById('stat-pins'),
+    statJumpsP: document.getElementById('stat-jumps-p'),
+    statJumps: document.getElementById('stat-jumps'),
+    statStunP: document.getElementById('stat-stun-p'),
+    statStun: document.getElementById('stat-stun'),
     towerKillCount: document.getElementById('tower-kill-count'),
     killCountValue: document.getElementById('kill-count-value'),
 };
@@ -171,8 +175,8 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
             uiElements.statBoostP, uiElements.statSlowP, uiElements.statGoldP,
-            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP,
-            uiElements.statRangeP, uiElements.statFragsP, uiElements.statPinsP
+            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP, uiElements.statRangeP,
+            uiElements.statFragsP, uiElements.statPinsP, uiElements.statJumpsP, uiElements.statStunP
         ].forEach(p => {
             if (p) p.classList.add('hidden');
         });
@@ -535,6 +539,21 @@ function updateStatsDisplay(selectedTower) {
             }
             if (uiElements.statProjectiles) {
                 uiElements.statProjectiles.textContent = selectedTower.type === 'NAT' ? (selectedTower.projectileCount || 1) : selectedTower.orbiters.length;
+            }
+        }
+        if (selectedTower.type === 'STUN_BOT') {
+            if (uiElements.statJumpsP) {
+                uiElements.statJumpsP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statJumpsP.querySelector('span'));
+                if (icon) icon.style.color = '#fef08a';
+            }
+            if (uiElements.statJumps) uiElements.statJumps.textContent = selectedTower.chainTargets;
+
+            if (selectedTower.stunDuration > 0) {
+                if (uiElements.statStunP) uiElements.statStunP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statStunP.querySelector('span'));
+                if (icon) icon.style.color = '#fef08a';
+                if (uiElements.statStun) uiElements.statStun.textContent = selectedTower.stunDuration;
             }
         }
     }

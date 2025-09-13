@@ -158,6 +158,50 @@ export class MergeHandler {
             }
         });
 
+        this._addRecipe('FORT', 'SUPPORT', {
+            resultType: 'STUN_BOT',
+            apply: (tower, { existingTowerLevel }) => {
+                tower.type = 'STUN_BOT'; // This is a transformation, not an upgrade.
+                tower.level = 1;
+                tower.damageLevel = 1;
+                tower.updateStats();
+                tower.color = TOWER_TYPES.STUN_BOT.color;
+                tower.chainTargets = TOWER_TYPES.STUN_BOT.chainTargets;
+                tower.chainRange = TOWER_TYPES.STUN_BOT.chainRange;
+                tower.targetingMode = 'strongest';
+            }
+        });
+
+        this._addRecipe('STUN_BOT', 'CASTLE', {
+            resultType: 'STUN_BOT', text: 'Upgrade',
+            upgrade: { text: '+1 Jump', icon: 'electric_bolt', family: 'material-icons' },
+            canApply: (tower) => tower.level < 3,
+            apply: (tower) => {
+                tower.level++;
+                tower.chainTargets++;
+                tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.05; // 5% damage increase
+                tower.updateStats();
+                tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
+            }
+        });
+
+        this._addRecipe('STUN_BOT', 'PIN', {
+            resultType: 'STUN_BOT', text: 'Upgrade',
+            upgrade: { text: '+ Stun', icon: 'bolt', family: 'material-icons' },
+            canApply: (tower) => tower.level < 3,
+            apply: (tower) => {
+                tower.level++;
+                if (tower.stunDuration > 0) {
+                    tower.stunDuration += 0.2; // Increase existing stun
+                } else {
+                    tower.stunDuration = 0.2; // Add stun property
+                }
+                tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.05; // 5% damage increase
+                tower.updateStats();
+                tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
+            }
+        });
+
 
         // --- TOWER UPGRADE RECIPES ---
 
