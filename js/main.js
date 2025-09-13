@@ -55,6 +55,7 @@ let libraryActiveTab = 'towers';
 let isSelecting = false;
 let selectionStart = { x: 0, y: 0 };
 let selectionEnd = { x: 0, y: 0 };
+let isDoubleClick = false;
 
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
@@ -885,6 +886,11 @@ function checkForNinePinOnBoard() {
 }
 
 function handleCanvasClick(e) {
+    if (isDoubleClick) {
+        // If a double-click just occurred, ignore this single click event
+        return;
+    }
+
     const previouslySelectedTowers = [...selectedTowers];
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
@@ -956,7 +962,8 @@ function handleCanvasClick(e) {
             };
             if (isMergeConfirmationEnabled) {
                 showMergeConfirmation(pendingMergeState);
-            } else {
+            }
+            else {
                 performPendingMerge();
             }
             placingTower = null;
@@ -1025,7 +1032,12 @@ function handleCanvasClick(e) {
         });
 
         if (clickedTower) {
-            selectedTowers = [clickedTower];
+            // If the clicked tower is already the only selected tower, deselect it.
+            if (selectedTowers.length === 1 && selectedTowers[0].id === clickedTower.id) {
+                selectedTowers = [];
+            } else {
+                selectedTowers = [clickedTower];
+            }
             selectedEnemy = null;
         } else {
             selectedTowers = [];
@@ -1348,6 +1360,39 @@ canvas.addEventListener('drop', e => {
     placingTower = null;
     draggedCloudTower = null;
     draggedCanvasTower = null;
+});
+
+canvas.addEventListener('dblclick', e => {
+    resumeAudioContext();
+    isDoubleClick = true;
+    setTimeout(() => {
+        isDoubleClick = false;
+    }, 300); // Reset after 300ms, a common double-click interval
+
+    const mousePos = getMousePos(canvas, e);
+    const gridX = Math.floor(mousePos.x / TILE_SIZE);
+    const gridY = Math.floor(mousePos.y / TILE_SIZE);
+
+    const clickedTower = gameState.towers.find(t => {
+        const tGridX = Math.floor(t.x / TILE_SIZE);
+        const tGridY = Math.floor(t.y / TILE_SIZE);
+        // For Nine Pin, check the whole 3x3 area for a click
+        if (t.type === 'NINE_PIN') {
+            const startX = tGridX - 1;
+            const startY = tGridY - 1;
+            return gridX >= startX && gridX < startX + 3 && gridY >= startY && gridY < startY + 3;
+        }
+        return tGridX === gridX && tGridY === gridY;
+    });
+
+    if (clickedTower) {
+        selectedTowers = gameState.towers.filter(t => t.type === clickedTower.type);
+        selectedEnemy = null;
+        isSellConfirmPending = false;
+        updateUI(gameState);
+        updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+        persistGameState(0);
+    }
 });
 
 function getMousePos(canvas, evt) {
@@ -1968,6 +2013,27 @@ window.addEventListener('click', (event) => {
         const isClickInsideMenu = uiElements.optionsMenu.contains(target) || uiElements.optionsBtn.contains(target);
         if (!isClickInsideMenu) {
             uiElements.optionsMenu.classList.add('hidden');
+        }
+    }
+
+    // New deselection logic
+    const target = /** @type {HTMLElement} */ (event.target);
+    const isClickOnCanvas = canvas.contains(target);
+    const isClickOnSellButton = uiElements.sellTowerBtn.contains(target);
+    const isClickOnTargetingButton = uiElements.toggleTargetingBtn.contains(target);
+    const isClickOnSetGroundTargetButton = uiElements.setGroundTargetBtn && uiElements.setGroundTargetBtn.contains(target);
+    const isClickOnToggleModeButton = uiElements.toggleModeBtn.contains(target);
+    const isClickOnToggleOrbitDirectionButton = uiElements.toggleOrbitDirectionBtn.contains(target);
+
+
+    if (!isClickOnCanvas && !isClickOnSellButton && !isClickOnTargetingButton && !isClickOnSetGroundTargetButton && !isClickOnToggleModeButton && !isClickOnToggleOrbitDirectionButton) {
+        if (selectedTowers.length > 0 || selectedEnemy !== null) {
+            selectedTowers = [];
+            selectedEnemy = null;
+            isSellConfirmPending = false;
+            settingAttackGroundForTower = null; // Also clear this if active
+            updateUI(gameState);
+            updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
         }
     }
 });
