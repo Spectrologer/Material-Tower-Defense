@@ -21,7 +21,8 @@ const mergeHandler = new MergeHandler();
 let canvasWidth, canvasHeight;
 let isInfiniteGold = false;
 let mazeColor = '#818181ff';
-let detourMazeColor = '#666666ff'; // Darker gray for the detour path
+let detourMazeColor = 'rgba(102, 102, 102, 0.2)'; // Slightly visible when inactive
+let detourUpcomingColor = 'rgba(150, 150, 150, 0.8)'; // More visible when upcoming
 
 const TROPHIES = {
     'NO_HEARTS_15': {
@@ -156,7 +157,12 @@ function spawnWave() {
         return;
     }
 
-    gameState.isDetourOpen = (waveDef.detourRatio || 0) > 0;
+    // New logic: Force detour closed for wave 1
+    if (nextWave === 1) {
+        gameState.isDetourOpen = false;
+    } else {
+        gameState.isDetourOpen = (waveDef.detourRatio || 0) > 0;
+    }
 
     if (!waveDef.isBoss) {
         setMusicTrack(1, { bossMode: false });
@@ -571,9 +577,11 @@ function gameLoop(currentTime) {
     // Determine detour path color based on current and next wave
     const nextWaveDef = waveDefinitions[gameState.wave - 1];
     const isDetourInNextWave = nextWaveDef && nextWaveDef.detourRatio > 0;
-    const effectiveDetourColor = (gameState.isDetourOpen || isDetourInNextWave) ? mazeColor : detourMazeColor;
 
-    // Draw detour first so main path draws over it
+    let effectiveDetourColor = detourMazeColor; // Default to slightly visible
+    if (gameState.isDetourOpen || isDetourInNextWave) { // Fully visible if active or upcoming
+        effectiveDetourColor = mazeColor;
+    }
     drawDetourPath(ctx, gameState.detourPath, effectiveDetourColor);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
 
@@ -1527,6 +1535,8 @@ function init(fromReset = false) {
     if (uiElements.toggleMergeConfirm) {
         uiElements.toggleMergeConfirm.checked = isMergeConfirmationEnabled;
     }
+
+    gameState.isDetourOpen = false; // Explicitly reset detour state on init
 
     uiElements.speedToggleBtn.textContent = 'x1';
     uiElements.buyPinBtn.classList.remove('selected');

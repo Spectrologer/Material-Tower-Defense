@@ -20,7 +20,7 @@ export const waveDefinitions = [
     {
         composition: [comp(ENEMY_TYPES.NORMAL, 10)],
         healthMultiplier: 0.9, healthBonus: 0,
-        detourRatio: 1.0,
+        detourRatio: 0,
     },
     // Wave 2: More NORMAL enemies, testing basic tower placement without a detour.
     {

@@ -7,55 +7,63 @@ export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid,
     const cols = Math.floor(canvasWidth / TILE_SIZE);
     const rows = Math.floor(canvasHeight / TILE_SIZE);
     ctx.save();
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 1;
 
     // Loop through every square on the grid.
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
             const gridType = placementGrid[y][x];
-            // If the spot is empty, give it a faint white background.
+
             if (gridType === GRID_EMPTY) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                // Draw a more visually appealing indicator for empty, placable spots
+                ctx.fillStyle = 'rgba(0, 200, 100, 0.08)'; // Light green fill
                 ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+                ctx.strokeStyle = 'rgba(0, 200, 100, 0.2)'; // Green border
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             }
-            // Draw the grid lines for every square.
-            ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
     }
+
     // Highlight the square your mouse is currently hovering over.
     const mouseGridX = Math.floor(mouse.x / TILE_SIZE);
     const mouseGridY = Math.floor(mouse.y / TILE_SIZE);
+
     if (placementGrid[mouseGridY] && placementGrid[mouseGridY][mouseGridX] === GRID_EMPTY) {
-        ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
+        ctx.fillStyle = 'rgba(0, 200, 100, 0.2)'; // Brighter green fill for hover
         ctx.fillRect(mouseGridX * TILE_SIZE, mouseGridY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        ctx.strokeStyle = 'rgba(0, 255, 136, 0.5)';
+        ctx.strokeStyle = 'rgba(0, 200, 100, 0.6)'; // Stronger green border for hover
+        ctx.lineWidth = 2;
         ctx.strokeRect(mouseGridX * TILE_SIZE, mouseGridY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
     ctx.restore();
 }
 
+// Helper to create a pixelated pattern
+function createPixelatedPattern(ctx, color) {
+    const patternCanvas = document.createElement('canvas');
+    patternCanvas.width = 8;
+    patternCanvas.height = 8;
+    const patternCtx = patternCanvas.getContext('2d');
+    
+    patternCtx.fillStyle = color;
+    patternCtx.fillRect(0, 0, 8, 8);
+    
+    patternCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Slight dark pixels
+    patternCtx.fillRect(0, 0, 1, 1);
+    patternCtx.fillRect(4, 4, 1, 1);
+    patternCtx.fillRect(2, 6, 1, 1);
+    patternCtx.fillRect(6, 2, 1, 1);
+
+    return ctx.createPattern(patternCanvas, 'repeat');
+}
+
 // Draws the path that enemies will follow.
 export function drawPath(ctx, canvasWidth, path, mazeColor) {
-    // This draws the darker border of the path.
-    ctx.strokeStyle = '#acacacff';
-    ctx.lineWidth = TILE_SIZE;
+    ctx.strokeStyle = createPixelatedPattern(ctx, mazeColor);
+    ctx.lineWidth = TILE_SIZE; // Use full tile size for the textured path
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'miter';
-    ctx.beginPath();
-    if (path.length > 0) {
-        ctx.moveTo(0, path[0].y);
-        ctx.lineTo(path[0].x, path[0].y);
-    }
-    for (let i = 0; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
-    if (path.length > 0) {
-        ctx.lineTo(canvasWidth, path[path.length - 1].y);
-    }
-    ctx.stroke();
-
-    // This draws the main, lighter part of the path on top.
-    ctx.strokeStyle = mazeColor;
-    ctx.lineWidth = TILE_SIZE - 10;
     ctx.beginPath();
     if (path.length > 0) {
         ctx.moveTo(0, path[0].y);
@@ -92,21 +100,10 @@ export function drawDetourPath(ctx, path, mazeColor) {
     if (!path || path.length < 1) return;
     ctx.save();
 
-    // This draws the darker border of the path.
-    ctx.strokeStyle = '#7c7c7cff'; // Darker border for detour
+    ctx.strokeStyle = createPixelatedPattern(ctx, mazeColor);
     ctx.lineWidth = TILE_SIZE;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) {
-        ctx.lineTo(path[i].x, path[i].y);
-    }
-    ctx.stroke();
-
-    // This draws the main, lighter part of the path on top.
-    ctx.strokeStyle = mazeColor;
-    ctx.lineWidth = TILE_SIZE - 10;
     ctx.beginPath();
     ctx.moveTo(path[0].x, path[0].y);
     for (let i = 1; i < path.length; i++) {
