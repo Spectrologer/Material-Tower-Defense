@@ -35,8 +35,19 @@ test('Projectile should be removed after hitting a target', () => {
 
 test('ANTI_AIR rocket should accelerate', () => {
     const owner = new Tower(0, 0, 'ANTI_AIR');
-    const projectile = new Projectile(owner, { x: 200, y: 0, health: 100 });
+    const target = new Enemy(ENEMY_TYPES.FLYING, [{ x: 200, y: 0 }], 'FLYING');
+    const projectile = new Projectile(owner, target);
+
+    // The projectile is emerging for the first few frames and doesn't move or accelerate.
+    // We need to update past this emerging phase.
+    projectile.isEmerging = false; // Bypass the emerging state for this test
+
     const initialSpeed = projectile.currentSpeed;
-    projectile.update(() => { }, [], [], DELTA_TIME);
+    const shouldKeep = projectile.update(() => { }, [], [], DELTA_TIME);
+
+    assert.strictEqual(shouldKeep, true, 'Projectile should not be removed on the first frame');
     assert(projectile.currentSpeed > initialSpeed, 'Rocket speed should increase over time');
+    const speedAfterFirstUpdate = projectile.currentSpeed;
+    projectile.update(() => { }, [], [], DELTA_TIME);
+    assert(projectile.currentSpeed > speedAfterFirstUpdate, 'Rocket speed should continue to increase on subsequent updates');
 });

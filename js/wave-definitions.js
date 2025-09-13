@@ -69,7 +69,7 @@ export const waveDefinitions = [
     },
     // Wave 9: Introduce STEALTH enemies, testing detection tower usage.
     {
-        composition: [comp(ENEMY_TYPES.STEALTH, 10)],
+        composition: [comp(ENEMY_TYPES.STEALTH, 8)],
         healthMultiplier: 1.1, healthBonus: 10,
         detourRatio: 0.5,
     },
@@ -94,7 +94,7 @@ export const waveDefinitions = [
     },
     // Wave 13: Mixed wave including STEALTH to test layered defenses.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.STEALTH, 4), comp(ENEMY_TYPES.FAST, 4)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.STEALTH, 2), comp(ENEMY_TYPES.FAST, 4)],
         healthMultiplier: 2.2, healthBonus: 35,
         detourRatio: 0.5,
     },
