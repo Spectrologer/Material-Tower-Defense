@@ -215,8 +215,6 @@ function deserializeGameState(serializedGameState) {
         const { towers, cloudInventory, introducedEnemies, killedEnemies, discoveredMerges, discoveredTowerTypes, unlockedTrophies, ...basicData } = JSON.parse(serializedGameState);
 
         const initialState = getInitialGameState();
-        // If the save file doesn't have detour paths, the initial state will provide them.
-        // If it does, the saved data from basicData will overwrite the defaults.
         return {
             ...initialState,
             ...basicData,

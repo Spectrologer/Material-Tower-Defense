@@ -1,5 +1,106 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE } from './constants.js';
 
+/**
+ * Defines behavior for different projectile types.
+ * This helps break up the massive switch statements in the Projectile class.
+ */
+const projectileBehaviors = {
+    DEFAULT: {
+        draw: (ctx, projectile) => {
+            ctx.fillStyle = projectile.owner.projectileColor;
+            ctx.beginPath();
+            ctx.arc(projectile.x, projectile.y, projectile.owner.projectileSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    },
+    ORBIT: {
+        draw: (ctx, projectile) => {
+            const gradient = ctx.createRadialGradient(
+                projectile.x - 2, projectile.y - 2, 0,
+                projectile.x, projectile.y, 8
+            );
+            gradient.addColorStop(0, 'white');
+            gradient.addColorStop(0.5, projectile.owner.projectileColor);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(projectile.x, projectile.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    },
+    ICON_BASED: {
+        draw: (ctx, projectile) => {
+            let icon;
+            let iconFamily;
+            let rotation = 0;
+
+            if (projectile.target) {
+                const dx = projectile.target.x - projectile.x;
+                const dy = projectile.target.y - projectile.y;
+                rotation = Math.atan2(dy, dx);
+            }
+
+            switch (projectile.owner.type) {
+                case 'PIN':
+                case 'NINE_PIN':
+                    icon = 'arrow_upward';
+                    iconFamily = "'Material Symbols Outlined'";
+                    rotation += Math.PI / 2;
+                    break;
+                case 'PIN_HEART':
+                    icon = 'favorite';
+                    iconFamily = 'Material Icons';
+                    rotation -= Math.PI / 2;
+                    break;
+                case 'NAT':
+                    icon = 'arrow_forward';
+                    iconFamily = "'Material Symbols Outlined'";
+                    break;
+                case 'ANTI_AIR':
+                    icon = 'rocket';
+                    iconFamily = "'Material Symbols Outlined'";
+                    rotation += Math.PI / 2;
+                    break;
+            }
+
+            let fontSize = 24;
+            if (projectile.owner.type === 'NINE_PIN') {
+                fontSize = 40;
+            } else if (projectile.owner.type === 'PIN_HEART') {
+                fontSize = 16;
+            } else if (projectile.owner.type === 'ANTI_AIR') {
+                const baseFontSize = 32;
+                if (projectile.isEmerging) {
+                    const emergeProgress = Math.max(0, 1 - (projectile.emergeTimer / projectile.emergeDuration));
+                    fontSize = baseFontSize * emergeProgress;
+                } else {
+                    fontSize = baseFontSize;
+                }
+            }
+
+            ctx.font = `${fontSize}px ${iconFamily}`;
+            ctx.fillStyle = projectile.owner.projectileColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.translate(projectile.x, projectile.y);
+            ctx.rotate(rotation);
+            ctx.fillText(icon, 0, 0);
+            ctx.restore();
+        }
+    }
+};
+
+const projectileBehaviorMap = {
+    'PIN': 'ICON_BASED',
+    'NINE_PIN': 'ICON_BASED',
+    'PIN_HEART': 'ICON_BASED',
+    'NAT': 'ICON_BASED',
+    'ANTI_AIR': 'ICON_BASED',
+    'ORBIT': 'ORBIT',
+};
+
 export class Projectile {
     constructor(owner, target, startAngle = 0) {
         this.owner = owner;
@@ -9,11 +110,11 @@ export class Projectile {
         this.hitEnemies = new Set();
         this.hitCooldown = 0;
         this.bounces = owner.fragmentBounces || 0;
+        this.behavior = projectileBehaviors[projectileBehaviorMap[owner.type] || 'DEFAULT']; // This line was already present from the previous turn, but it's correct.
         this.damageMultiplier = 1;
 
         if (this.owner.type === 'ORBIT') {
             this.angle = startAngle;
-            this.orbitRadius = this.owner.orbitMode === 'near' ? 40 : 60;
         }
         if (this.owner.type === 'FORT') {
             this.isMortar = true;
@@ -25,6 +126,7 @@ export class Projectile {
             this.travelTime = this.totalDist / (this.owner.projectileSpeed * 60); // In seconds
             this.life = this.travelTime;
             this.peakHeight = this.totalDist / 2;
+            this.z = 0;
         }
         if (this.owner.type === 'ANTI_AIR') {
             this.isRocket = true;
@@ -38,120 +140,10 @@ export class Projectile {
         }
     }
     draw(ctx) {
-        if (this.isMortar) {
-            // Draw shadow on the ground
-            const shadowSize = this.owner.projectileSize * 0.75;
-            const shadowOpacity = 0.4 - (this.z / this.peakHeight) * 0.2;
-            ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, shadowSize, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Draw projectile "in the air"
-            const scale = 1 + (this.z / this.peakHeight) * 0.5;
-            const gradient = ctx.createRadialGradient(
-                this.x, this.y - this.z, 0,
-                this.x, this.y - this.z, this.owner.projectileSize * scale
-            );
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-            gradient.addColorStop(0.5, this.owner.projectileColor);
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y - this.z, this.owner.projectileSize * scale, 0, Math.PI * 2);
-            ctx.fill();
-            return;
-        }
-
-        switch (this.owner.type) {
-            case 'ORBIT':
-                const gradient = ctx.createRadialGradient(
-                    this.x - 2, this.y - 2, 0, // Inner circle (offset slightly)
-                    this.x, this.y, 8 // Outer circle
-                );
-                gradient.addColorStop(0, 'white'); // Center color
-                gradient.addColorStop(0.5, this.owner.projectileColor); // Mid color
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)'); // Outer color (fading to transparent)
-
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
-                ctx.fill();
-                break;
-            case 'PIN':
-            case 'NINE_PIN':
-            case 'PIN_HEART':
-            case 'NAT':
-            case 'ANTI_AIR':
-                let icon;
-                let iconFamily;
-                let rotation = 0;
-
-                if (this.target) {
-                    const dx = this.target.x - this.x;
-                    const dy = this.target.y - this.y;
-                    rotation = Math.atan2(dy, dx);
-                }
-
-                switch (this.owner.type) {
-                    case 'PIN':
-                    case 'NINE_PIN':
-                        icon = 'arrow_upward';
-                        iconFamily = "'Material Symbols Outlined'";
-                        rotation += Math.PI / 2;
-                        break;
-                    case 'PIN_HEART':
-                        icon = 'favorite';
-                        iconFamily = 'Material Icons';
-                        rotation -= Math.PI / 2;
-                        break;
-                    case 'NAT':
-                        icon = 'arrow_forward';
-                        iconFamily = "'Material Symbols Outlined'";
-                        break;
-                    case 'ANTI_AIR':
-                        icon = 'rocket';
-                        iconFamily = "'Material Symbols Outlined'";
-                        rotation += Math.PI / 2;
-                        break;
-                }
-
-                let fontSize = 24;
-                if (this.owner.type === 'NINE_PIN') {
-                    fontSize = 40;
-                } else if (this.owner.type === 'PIN_HEART') {
-                    fontSize = 16;
-                } else if (this.owner.type === 'ANTI_AIR') {
-                    const baseFontSize = 32;
-                    if (this.isEmerging) {
-                        const emergeProgress = Math.max(0, 1 - (this.emergeTimer / this.emergeDuration));
-                        fontSize = baseFontSize * emergeProgress;
-                    } else {
-                        fontSize = baseFontSize;
-                    }
-                }
-
-                ctx.font = `${fontSize}px ${iconFamily}`;
-                ctx.fillStyle = this.owner.projectileColor;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(rotation);
-                ctx.fillText(icon, 0, 0);
-                ctx.restore();
-                break;
-            default:
-                ctx.fillStyle = this.owner.projectileColor;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.owner.projectileSize, 0, Math.PI * 2);
-                ctx.fill();
-                break;
-        }
+        this.behavior.draw(ctx, this);
     }
     update(onHit, enemies, effects, deltaTime) {
-        if (this.isEmerging) {
+        if (this.isEmerging) { // This property is set for ANTI_AIR projectiles
             this.emergeTimer -= deltaTime;
             if (this.emergeTimer <= 0) {
                 this.isEmerging = false;
@@ -161,7 +153,7 @@ export class Projectile {
 
         const dt_scaler = deltaTime * 60;
 
-        if (this.isRocket) {
+        if (this.isRocket) { // This property is set for ANTI_AIR projectiles
             this.smokeTrailTimer -= deltaTime;
             if (this.smokeTrailTimer <= 0) {
                 effects.push(new Effect(this.x, this.y, 'lens', 10, '#808080', 0.5));
@@ -169,7 +161,7 @@ export class Projectile {
             }
         }
 
-        if (this.isMortar) {
+        if (this.isMortar) { // This property is set for FORT projectiles
             this.life -= deltaTime;
             if (this.life <= 0) {
                 // Mortar explosion occurs when it lands
@@ -179,7 +171,7 @@ export class Projectile {
             }
             const progress = 1 - (this.life / this.travelTime);
             this.x = this.startX + (this.targetX - this.startX) * progress;
-            this.y = this.startY + (this.targetY - this.startY) * progress; // FIX: Corrected y-axis calculation
+            this.y = this.startY + (this.targetY - this.startY) * progress;
             this.z = Math.sin(progress * Math.PI) * this.peakHeight;
             return true;
         }
@@ -237,7 +229,7 @@ export class Projectile {
         const hitCondition = distance < moveDistance || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
 
         if (hitCondition) {
-            // Check if it is a rocket BEFORE onHit and removal.
+            // Check if it is a rocket BEFORE onHit and removal
             if (this.isRocket) {
                 // Use a smaller size for the rocket explosion
                 effects.push(new Effect(this.x, this.y, 'explosion', 15, '#FFA500', 0.2));

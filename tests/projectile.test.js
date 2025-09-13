@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { Projectile, Tower, Enemy } from '../js/game-entities.js';
+import { Projectile, Tower, Enemy } from '../js/game-entities.js'; // This path is likely correct if your test runner resolves from the root.
 import { TOWER_TYPES, ENEMY_TYPES } from '../js/constants.js';
 
 const DELTA_TIME = 1 / 60; // Simulate a 60 FPS game loop
