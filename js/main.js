@@ -540,10 +540,9 @@ function gameLoop(currentTime) {
         }
     };
 
-    const newlySpawnedEnemies = [];
-
     gameState.towers.forEach(tower => tower.update(gameState.enemies, gameState.projectiles, onEnemyDeath, effectiveDeltaTime, frameTargetedEnemies, gameState.path, gameState.effects, playBzztSound));
     gameState.projectiles = gameState.projectiles.filter(p => p.update(handleProjectileHit, gameState.enemies, gameState.effects, effectiveDeltaTime));
+    const newlySpawnedEnemies = [];
     gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
         (e) => { // onFinish
             if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
@@ -576,7 +575,8 @@ function gameLoop(currentTime) {
         playCrackSound,
         effectiveDeltaTime,
         playHitSound, // This argument was missing
-        gameState.effects
+        gameState.effects,
+        newlySpawnedEnemies
     ));
     // Add any newly spawned enemies (from splitters, summoners, etc.) to the main list
     gameState.enemies.push(...newlySpawnedEnemies);

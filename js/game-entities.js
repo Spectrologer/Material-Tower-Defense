@@ -416,7 +416,7 @@ export class Enemy {
         ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
         ctx.stroke();
     }
-    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects) {
+    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects, newlySpawnedEnemies) {
         if (this.hitTimer > 0) {
             this.hitTimer -= deltaTime;
         }
@@ -467,7 +467,7 @@ export class Enemy {
                     splitEnemy.x = this.x + (Math.random() - 0.5) * 15; // Spawn near parent
                     splitEnemy.y = this.y + (Math.random() - 0.5) * 15;
                     splitEnemy.pathIndex = this.pathIndex;
-                    allEnemies.push(splitEnemy);
+                    newlySpawnedEnemies.push(splitEnemy);
                 }
                 onDeath(this, { isAnimatedDeath: false });
                 return false;
@@ -485,7 +485,7 @@ export class Enemy {
                 hatched.x = this.x;
                 hatched.y = this.y;
                 hatched.pathIndex = this.pathIndex; // New enemy starts from egg's path index
-                allEnemies.push(hatched);
+                newlySpawnedEnemies.push(hatched);
                 if (playCrackSound) playCrackSound();
                 // FIX: Register egg as "killed" so it appears in the library.
                 onDeath(this, { isAnimatedDeath: false });
@@ -537,37 +537,6 @@ export class Enemy {
             }
         }
 
-        // Consolidate the egg-laying logic into a single block.
-        if (this.type.laysEggs) {
-            if (this.isLayingEgg) {
-                // We are currently in the egg-laying state
-                this.stopTimer -= deltaTime;
-                if (this.wiggleTimer > 0) {
-                    this.wiggleTimer -= deltaTime;
-                    if (this.wiggleTimer % 0.33 < deltaTime) { // roughly every 20 frames
-                        playWiggleSound();
-                    }
-                }
-                if (this.stopTimer <= 0) {
-                    this.isLayingEgg = false;
-                    this.timeUntilLay = this.type.layEggInterval;
-                    const egg = new Enemy(ENEMY_TYPES.EGG, this.path, 'EGG');
-                    egg.x = this.x;
-                    egg.y = this.y;
-                    egg.pathIndex = this.pathIndex;
-                    allEnemies.push(egg);
-                }
-            } else {
-                // We are moving, but checking to start the egg-laying state
-                this.timeUntilLay -= deltaTime;
-                if (this.timeUntilLay <= 0) {
-                    this.isLayingEgg = true;
-                    this.stopTimer = this.type.eggLayStopTime;
-                    this.wiggleTimer = this.type.wiggleTime;
-                }
-            }
-        }
-
         // --- Minion Spawning Logic ---
         if (this.type.spawnsMinions) {
             // Check if it's time to start a new spawn cycle
@@ -591,7 +560,7 @@ export class Enemy {
                     minion.x = this.x + (Math.random() - 0.5) * 10; // Spawn near summoner
                     minion.y = this.y + (Math.random() - 0.5) * 10;
                     minion.pathIndex = this.pathIndex;
-                    allEnemies.push(minion);
+                    newlySpawnedEnemies.push(minion);
                 }
             }
         }
@@ -627,11 +596,40 @@ export class Enemy {
             }
         }
 
-        // --- Movement Logic ---
-        if (this.wiggleTimer > 0) {
-            this.wiggleTimer -= deltaTime;
+        // --- Egg Laying Logic (for BOSS) ---
+        if (this.type.laysEggs) {
+            if (this.isLayingEgg) {
+                // We are currently in the egg-laying state
+                this.stopTimer -= deltaTime;
+                if (this.wiggleTimer > 0) {
+                    this.wiggleTimer -= deltaTime;
+                    if (this.wiggleTimer % 0.33 < deltaTime) { // roughly every 20 frames
+                        playWiggleSound();
+                    }
+                    if (this.wiggleTimer <= 0) { // Lay egg when wiggle finishes
+                        const egg = new Enemy(ENEMY_TYPES.EGG, this.path, 'EGG');
+                        egg.x = this.x;
+                        egg.y = this.y;
+                        egg.pathIndex = this.pathIndex;
+                        newlySpawnedEnemies.push(egg);
+                    }
+                }
+                if (this.stopTimer <= 0) {
+                    this.isLayingEgg = false; // Stop the laying state
+                    this.timeUntilLay = this.type.layEggInterval; // Reset for next time
+                }
+            } else {
+                // We are moving, but checking to start the egg-laying state
+                this.timeUntilLay -= deltaTime;
+                if (this.timeUntilLay <= 0) {
+                    this.isLayingEgg = true;
+                    this.stopTimer = this.type.eggLayStopTime;
+                    this.wiggleTimer = this.type.wiggleTime;
+                }
+            }
         }
 
+        // --- Movement Logic ---
         let atEnd = this.pathIndex >= this.path.length - 1;
         let atStart = this.pathIndex <= 0;
 
