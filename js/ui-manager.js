@@ -669,6 +669,9 @@ const statDisplayConfig = {
     goldBonus: { label: 'Gold Aura', icon: 'savings', family: 'material-icons', color: '#facc15', condition: (s) => s.goldBonus, formatter: (val) => `+${val}G` },
     armorPenetration: { label: 'AP', icon: 'shield_moon', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armorPenetration > 0, formatter: (val) => `${(val * 100).toFixed(0)}%` },
     burnDps: { label: 'Burn', icon: 'local_fire_department', family: 'material-symbols-outlined', color: '#f97316', condition: (s) => s.burnDps, formatter: (val, stats) => `${val}/s for ${stats.burnDuration}s` },
+    chainTargets: { label: 'Jumps', icon: 'electric_bolt', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.chainTargets > 0 },
+    chainRange: { label: 'Jump Range', icon: 'social_distance', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.chainRange > 0 },
+    stunDuration: { label: 'Stun', icon: 'bolt', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.stunDuration > 0, formatter: (val) => `${val}s` },
 };
 
 const enemyStatDisplayConfig = {
@@ -676,6 +679,9 @@ const enemyStatDisplayConfig = {
     speed: { label: 'Speed', icon: 'speed', family: 'material-symbols-outlined', color: '#4ade80', condition: (s) => s.speed > 0 },
     gold: { label: 'Gold', icon: 'paid', family: 'material-symbols-outlined', color: '#facc15', condition: (s) => s.gold >= 0 },
     armor: { label: 'Armor', icon: 'security', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armor > 0 },
+    healInterval: { label: 'Heal Cooldown', icon: 'timer', family: 'material-symbols-outlined', color: '#4fc3f7', condition: (s) => s.isHealer, formatter: (val) => `${val}s` },
+    healRange: { label: 'Heal Range', icon: 'social_distance', family: 'material-symbols-outlined', color: '#4fc3f7', condition: (s) => s.isHealer },
+    healPercent: { label: 'Heal Amount', icon: 'healing', family: 'material-symbols-outlined', color: '#4fc3f7', condition: (s) => s.isHealer, formatter: (val) => `${(val * 100).toFixed(0)}%` },
 };
 
 
@@ -714,16 +720,26 @@ function createTowerCardHTML(type, isDiscovered) {
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(statDisplayConfig)
         .map(([key, config]) => {
-            if (config.condition && config.condition(stats)) {
-                const statValue = stats[key];
-                const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
+            const statValue = stats[key];
+            const shouldDisplay = config.condition && config.condition(stats);
+            // Special case: Always show Stun for STUN_BOT, even if the value is 0
+            const isStunBotStun = type === 'STUN_BOT' && key === 'stunDuration';
+
+            if (shouldDisplay || isStunBotStun) {
+                const formattedValue = config.formatter ? config.formatter(statValue || 0, stats) : (statValue || 0);
+                const pClass = `flex items-center gap-1 ${!statValue && isStunBotStun ? 'text-gray-500' : ''}`;
                 const iconFamily = config.family || 'material-icons';
-                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+                return `<p class="${pClass}"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
             }
-            return '';
+            return ''; // Don't render the stat if the condition isn't met
         })
         .join('');
 
+
+    const specialAbilities = [];
+    if (stats.special) {
+        specialAbilities.push(stats.special);
+    }
 
     return `
         <div class="tower-card absolute inset-0 p-2 flex flex-col items-center text-center">
@@ -736,6 +752,11 @@ function createTowerCardHTML(type, isDiscovered) {
                 <div class="text-left text-base w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
                     ${statsGridHTML}
                 </div>
+                ${specialAbilities.length > 0 ? `
+                    <div class="text-left text-base w-full mt-4 px-2">
+                        <h5 class="text-fuchsia-400">Abilities:</h5>
+                        <ul class="list-disc list-inside text-sm">${specialAbilities.map(s => `<li>${s}</li>`).join('')}</ul>
+                    </div>` : ''}
             </div>
             <div class="flex-shrink-0">
              ${commentHTML}
@@ -783,6 +804,7 @@ function createEnemyCardHTML(type, isDiscovered) {
     if (stats.isInvisible) specialAbilities.push('Stealth');
     if (stats.prefersDetour) specialAbilities.push('Prefers Detour');
     if (stats.isStationary) specialAbilities.push('Stationary');
+    if (stats.isHealer) specialAbilities.push('Heals nearby allies');
     if (stats.spawnsMinions) specialAbilities.push(`Spawns ${stats.spawnCount} ${stats.minionType}s`);
     if (stats.hatchTime) specialAbilities.push(`Hatches into ${stats.hatchesTo}`);
     if (stats.phaseInterval) specialAbilities.push('Phasing');
