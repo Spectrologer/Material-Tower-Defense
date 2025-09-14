@@ -317,6 +317,7 @@ export class Enemy {
             this.spinSpeed = 0.5; // Radians per second
             this.minionsToSpawn = 0;
             this.minionSpawnDelayTimer = 0;
+            this.wiggleTimer = 0;
         }
     }
     applyStun(duration) {
@@ -560,6 +561,7 @@ export class Enemy {
                 if (this.minionSpawnDelayTimer <= 0) {
                     this.minionSpawnDelayTimer = this.type.spawnDelay;
                     this.minionsToSpawn--;
+                    this.wiggleTimer = 0.5; // Wiggle for half a second
                     const minion = new Enemy(ENEMY_TYPES[this.type.minionType], this.path, this.type.minionType);
                     minion.x = this.x + (Math.random() - 0.5) * 10; // Spawn near summoner
                     minion.y = this.y + (Math.random() - 0.5) * 10;
@@ -570,6 +572,10 @@ export class Enemy {
         }
 
         // --- Movement Logic ---
+        if (this.wiggleTimer > 0) {
+            this.wiggleTimer -= deltaTime;
+        }
+
         let atEnd = this.pathIndex >= this.path.length - 1;
         let atStart = this.pathIndex <= 0;
 
