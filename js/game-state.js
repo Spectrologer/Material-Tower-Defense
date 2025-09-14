@@ -22,7 +22,7 @@ import { generatePath } from "./path-generator.js";
  * @property {Array} projectiles - List of active projectiles.
  * @property {Array} effects - List of active visual effects.
  * @property {Array} announcements - List of active announcements.
- * @property {Array<TextAnnouncement>} announcementLog - A persistent log of all announcements.
+ * @property {Array<Object>} announcementLog - A persistent log of all announcements.
  * @property {Set} introducedEnemies - Set of enemy types the player has encountered.
  * @property {Set} killedEnemies - Set of enemy types the player has defeated.
  * @property {boolean} hasPlacedFirstSupport - Whether the player has placed their first Support tower.

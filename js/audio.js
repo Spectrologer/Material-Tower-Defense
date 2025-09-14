@@ -8,6 +8,7 @@ const audioContext = new (window.AudioContext || /** @type {any} */ (window).web
 
 let isSoundEnabled = true;
 let isMusicPlaying = false;
+let musicWasPlayingBeforeHidden = false;
 let isAudioResumed = false;
 
 const trackRotation = Object.values(Track);
@@ -136,6 +137,23 @@ export function playExplosionSound() {
     noise.start(now);
     noise.stop(now + duration);
 }
+
+// Handle page visibility changes to mute/unmute audio
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        // Page is not visible
+        musicWasPlayingBeforeHidden = isMusicPlaying;
+        if (isMusicPlaying) {
+            toggleMusic(); // This will pause the music
+        }
+    } else {
+        // Page is visible again
+        if (musicWasPlayingBeforeHidden && !isMusicPlaying) {
+            toggleMusic(); // This will resume the music
+        }
+        musicWasPlayingBeforeHidden = false;
+    }
+});
 
 export function playWiggleSound() {
     if (!isSoundEnabled) return;
