@@ -967,6 +967,23 @@ class TowerRenderer {
         ctx.fillRect(startX, startY, size, size);
         ctx.restore();
     }
+
+    drawStealthRange(ctx) {
+        const tower = this.tower;
+        const detectionRange = TOWER_TYPES[tower.type].stealthDetectionRange;
+        if (!detectionRange) return;
+
+        const auraColor = (tower.type === 'MIND' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
+        const startX = tower.x - TILE_SIZE * (detectionRange + 0.5);
+        const startY = tower.y - TILE_SIZE * (detectionRange + 0.5);
+        const size = TILE_SIZE * (detectionRange * 2 + 1);
+
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = auraColor;
+        ctx.fillRect(startX, startY, size, size);
+        ctx.restore();
+    }
 }
 
 function findNextChainTarget(currentEnemy, allEnemies, hitEnemies, chainRange) {

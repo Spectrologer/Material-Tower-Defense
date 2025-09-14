@@ -72,6 +72,7 @@ let isSelecting = false;
 let selectionStart = { x: 0, y: 0 };
 let selectionEnd = { x: 0, y: 0 };
 let isDoubleClick = false;
+let showingStealthRadiusForTower = null;
 
 function resizeCanvas() {
     const container = document.getElementById('canvas-container');
@@ -655,6 +656,10 @@ function gameLoop(currentTime) {
             if (['SUPPORT', 'MIND', 'CAT'].includes(t.type)) t.drawBuffEffect(ctx);
         });
     }
+    if (showingStealthRadiusForTower) {
+        showingStealthRadiusForTower.drawStealthRange(ctx);
+    }
+
     gameState.projectiles.forEach(p => p.draw(ctx));
     gameState.effects.forEach(effect => effect.draw(ctx));
     gameState.announcements.forEach(announcement => announcement.draw(ctx));
@@ -941,6 +946,7 @@ function handleCanvasClick(e) {
     const previouslySelectedTowers = [...selectedTowers];
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
+    showingStealthRadiusForTower = null; // Hide radius on any click
     const gridY = Math.floor(mousePos.y / TILE_SIZE);
     const snappedX = gridX * TILE_SIZE + TILE_SIZE / 2;
     const snappedY = gridY * TILE_SIZE + TILE_SIZE / 2;
@@ -1729,6 +1735,10 @@ consoleCommands.debug = () => {
 /** @type {typeof window & { consoleCommands: typeof consoleCommands }} */(
     window
 ).consoleCommands = consoleCommands;
+
+window.toggleStealthRadius = (towerId) => {
+    showingStealthRadiusForTower = gameState.towers.find(t => t.id === towerId) || null;
+};
 
 // Event Listeners
 uiElements.startWaveBtn.addEventListener('click', () => {

@@ -204,16 +204,18 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
             if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) {
                 const detectionRange = TOWER_TYPES[selectedTower.type].stealthDetectionRange;
                 const indicatorContainer = document.createElement('div');
-                indicatorContainer.className = 'detection-indicator-container absolute top-2 left-2 flex items-center gap-1 text-white';
+                indicatorContainer.className = 'detection-indicator-container absolute top-2 left-2 flex items-center text-white';
                 indicatorContainer.style.textShadow = '1px 1px 3px #000';
                 const eyeIcon = document.createElement('span');
-                eyeIcon.className = 'material-icons';
-                eyeIcon.textContent = 'visibility';
-                const rangeText = document.createElement('span');
-                rangeText.className = 'text-sm font-bold';
-                rangeText.textContent = `${detectionRange}x${detectionRange}`;
+                eyeIcon.className = 'material-symbols-outlined';
+                eyeIcon.textContent = 'eye_tracking';
+                eyeIcon.style.fontSize = '24px';
+                eyeIcon.style.cursor = 'pointer';
+                eyeIcon.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent the click from deselecting the tower
+                    window.toggleStealthRadius(selectedTower.id);
+                });
                 indicatorContainer.appendChild(eyeIcon);
-                indicatorContainer.appendChild(rangeText);
                 uiElements.sellPanel.classList.add('relative');
                 uiElements.sellPanel.prepend(indicatorContainer);
             }
