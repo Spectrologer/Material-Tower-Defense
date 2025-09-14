@@ -1715,7 +1715,8 @@ consoleCommands.spawnHelicopter = () => {
 // Function to add gold from the console
 consoleCommands.addGold = (value) => {
     if (gameState) {
-        gameState.gold += value;
+        const amount = parseInt(value, 10);
+        gameState.gold += amount;
         updateUI(gameState, gameSpeed);
         console.log(`Added ${value} gold. Current gold: ${gameState.gold}`);
     } else {
@@ -1726,7 +1727,8 @@ consoleCommands.addGold = (value) => {
 // Function to set the wave number from the console
 consoleCommands.setWave = (waveNumber) => {
     if (gameState) {
-        gameState.wave = waveNumber - 1; // Subtract 1 to account for the next wave starting at `waveNumber`.
+        const num = parseInt(waveNumber, 10);
+        gameState.wave = num - 1; // Subtract 1 to account for the next wave starting at `waveNumber`.
         gameState.enemies = [];
         gameState.projectiles = [];
         gameState.effects = [];

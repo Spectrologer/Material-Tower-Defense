@@ -783,7 +783,9 @@ function createEnemyCardHTML(type, isDiscovered) {
     if (stats.isInvisible) specialAbilities.push('Stealth');
     if (stats.prefersDetour) specialAbilities.push('Prefers Detour');
     if (stats.isStationary) specialAbilities.push('Stationary');
+    if (stats.spawnsMinions) specialAbilities.push(`Spawns ${stats.spawnCount} ${stats.minionType}s`);
     if (stats.hatchTime) specialAbilities.push(`Hatches into ${stats.hatchesTo}`);
+    if (stats.phaseInterval) specialAbilities.push('Phasing');
 
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(enemyStatDisplayConfig)
@@ -809,6 +811,11 @@ function createEnemyCardHTML(type, isDiscovered) {
                 <div class="text-left text-base w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
                     ${statsGridHTML}
                 </div>
+                ${specialAbilities.length > 0 ? `
+                    <div class="text-left text-base w-full mt-2 px-2">
+                        <h5 class="text-fuchsia-400">Abilities:</h5>
+                        <ul class="list-disc list-inside text-sm">${specialAbilities.map(s => `<li>${s}</li>`).join('')}</ul>
+                    </div>` : ''}
             </div>
             <div class="flex-shrink-0">
                 ${commentHTML}
