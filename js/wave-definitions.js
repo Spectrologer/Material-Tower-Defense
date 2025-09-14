@@ -58,7 +58,7 @@ export const waveDefinitions = [
         composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 2)],
         healthMultiplier: 1.2, healthBonus: 10,
         detourRatio: 0,
-        endOfWaveAnnouncement: { text: "They can heal each other now?!", color: '#4fc3f7' }
+        endOfWaveAnnouncement: { text: "Fliers incoming!", color: '#4fc3f7' }
     },
     // Wave 7: A pure anti-air check with a tough ground-based surprise at the end.
     {

@@ -171,7 +171,7 @@ export class MergeHandler {
         this._addRecipe('STUN_BOT', 'CASTLE', {
             resultType: 'STUN_BOT', text: 'Upgrade',
             upgrade: { text: '+1 Jump', icon: 'electric_bolt', family: 'material-icons' },
-            canApply: (tower) => tower.level < 3,
+            canApply: (tower) => tower.level < 5,
             apply: (tower) => {
                 tower.level++;
                 tower.chainTargets++;
@@ -184,7 +184,7 @@ export class MergeHandler {
         this._addRecipe('STUN_BOT', 'PIN', {
             resultType: 'STUN_BOT', text: 'Upgrade',
             upgrade: { text: '+ Stun', icon: 'bolt', family: 'material-icons' },
-            canApply: (tower) => tower.level < 3,
+            canApply: (tower) => tower.level < 5,
             apply: (tower) => {
                 tower.level++;
                 if (tower.stunDuration > 0) {
@@ -317,7 +317,7 @@ export class MergeHandler {
         this._addRecipe('FIREPLACE', 'CASTLE', {
             resultType: 'FIREPLACE', text: 'Upgrade',
             upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
-            canApply: (tower) => tower.level < 3,
+            canApply: (tower) => tower.level < 5,
             apply: (tower, { originalTowerColor, mergingTowerType }) => {
                 tower.splashRadius += 10;
                 tower.level++;
@@ -329,9 +329,9 @@ export class MergeHandler {
         this._addRecipe('FIREPLACE', 'PIN', {
             resultType: 'FIREPLACE', text: 'Upgrade',
             upgrade: { text: '+ Burn', icon: 'local_fire_department', family: 'material-symbols-outlined' },
-            canApply: (tower) => tower.level < 3,
+            canApply: (tower) => tower.level < 5,
             apply: (tower, { originalTowerColor, mergingTowerType }) => {
-                tower.burnDps += 1;
+                tower.burnDps += 2;
                 tower.level++;
                 tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
                 tower.updateStats();
