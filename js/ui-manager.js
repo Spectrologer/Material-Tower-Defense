@@ -173,7 +173,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
 
     if (selectedTowers.length > 0) {
         if (uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.add('hidden');
-        uiElements.gameControls.classList.add('hidden');
+        if (uiElements.gameControls) uiElements.gameControls.classList.add('hidden');
 
         if (settingAttackGroundForTower) {
             uiElements.sellPanel.classList.add('hidden');

@@ -483,6 +483,10 @@
         <!-- This container holds the actual game canvas AND the new cloud inventory -->
         <div class="flex-grow relative w-full max-w-[440px] min-h-0 flex gap-2">
             <div id="canvas-container" class="flex-grow relative h-full min-h-0">
+                <button id="delete-btn"
+                    class="pixel-button !p-0 w-12 h-12 hidden absolute bottom-2 right-2 bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c] flex items-center justify-center z-10">
+                    <span class="material-symbols-outlined !text-2xl">ink_eraser</span>
+                </button>
                 <!-- The canvas is now draggable to enable dragging towers from the game grid -->
                 <canvas id="gameCanvas" draggable="true"></canvas>
             </div>
@@ -507,7 +511,7 @@
                 </button>
             </div>
 
-            <div id="tower-buttons-group">
+            <div id="tower-buttons-group" class="relative">
                 <h2 id="towers-title" class="text-lg sm:text-xl text-fuchsia-400 text-center">TOWERS</h2>
                 <!-- Buttons to buy the different towers -->
                 <div id="tower-buttons" class="grid grid-cols-3 gap-4 mt-2">
@@ -629,8 +633,6 @@
                     class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center">START
                     WAVE
                 </button>
-                <button id="delete-btn"
-                    class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center hidden bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c]">DELETE</button>
                 <button id="speed-toggle"
                     class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center">x1</button>
                 <button id="cloud-button" class="pixel-button flex-auto flex items-center justify-center text-sm">
