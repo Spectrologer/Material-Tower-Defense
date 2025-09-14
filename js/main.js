@@ -71,6 +71,7 @@ let libraryActiveTab = 'towers';
 let isSelecting = false;
 let selectionStart = { x: 0, y: 0 };
 let selectionEnd = { x: 0, y: 0 };
+let lastClickTime = 0;
 let isDoubleClick = false;
 let showingStealthRadiusForTower = null;
 
@@ -937,8 +938,27 @@ function checkForNinePinOnBoard() {
 }
 
 function handleCanvasClick(e) {
+    const now = Date.now();
+    if (now - lastClickTime < 300) { // 300ms threshold for double click
+        isDoubleClick = true;
+    }
+    lastClickTime = now;
+
+    // NEW, ROBUST FIX: Check if the click occurred inside any of the main UI panels.
+    // If so, it's a UI click, not a canvas click, so we should ignore it completely.
+    const clickX = e.clientX;
+    const clickY = e.clientY;
+    const sellPanelRect = uiElements.sellPanel.getBoundingClientRect();
+    const towerButtonsRect = uiElements.towerButtonsGroup.getBoundingClientRect();
+
+    if ((!uiElements.sellPanel.classList.contains('hidden') && clickX >= sellPanelRect.left && clickX <= sellPanelRect.right && clickY >= sellPanelRect.top && clickY <= sellPanelRect.bottom) ||
+        (!uiElements.towerButtonsGroup.classList.contains('hidden') && clickX >= towerButtonsRect.left && clickX <= towerButtonsRect.right && clickY >= towerButtonsRect.top && clickY <= towerButtonsRect.bottom)) {
+        return;
+    }
+
     const isShiftPressed = e.shiftKey;
     if (isDoubleClick) {
+        isDoubleClick = false; // Reset for the next click
         // If a double-click just occurred, ignore this single click event
         return;
     }
@@ -1142,6 +1162,12 @@ function handleCanvasClick(e) {
 }
 
 canvas.addEventListener('mousedown', e => {
+    // If the mousedown didn't originate on the canvas, it's a UI click.
+    // Don't initiate a selection/drag operation.
+    if (e.target !== canvas) {
+        isSelecting = false; // Ensure no selection is active
+        return;
+    }
     if (placingTower) return;
     isSelecting = true;
     selectionStart = getMousePos(canvas, e);
@@ -1187,6 +1213,12 @@ canvas.addEventListener('mousemove', e => {
 });
 
 canvas.addEventListener('mouseup', e => {
+    // If a selection wasn't initiated from the canvas, ignore this mouseup event.
+    // This prevents UI clicks from being processed as canvas clicks.
+    if (!isSelecting) {
+        return;
+    }
+
     if (placingTower) {
         handleCanvasClick(e);
         return;
@@ -1439,10 +1471,7 @@ canvas.addEventListener('drop', e => {
 
 canvas.addEventListener('dblclick', e => {
     resumeAudioContext();
-    isDoubleClick = true;
-    setTimeout(() => {
-        isDoubleClick = false;
-    }, 300); // Reset after 300ms, a common double-click interval
+    // The double-click logic is now handled in handleCanvasClick to avoid race conditions.
 
     const mousePos = getMousePos(canvas, e);
     const gridX = Math.floor(mousePos.x / TILE_SIZE);
@@ -1732,12 +1761,12 @@ consoleCommands.debug = () => {
     }
 };
 
-/** @type {typeof window & { consoleCommands: typeof consoleCommands }} */(
-    window
-).consoleCommands = consoleCommands;
-
+window.consoleCommands = consoleCommands;
 window.toggleStealthRadius = (towerId) => {
-    showingStealthRadiusForTower = gameState.towers.find(t => t.id === towerId) || null;
+    const tower = gameState.towers.find((t) => t.id === towerId) || null;
+    // If we're already showing the radius for this tower, clicking again will hide it.
+    // Otherwise, show the radius for the clicked tower.
+    showingStealthRadiusForTower = showingStealthRadiusForTower?.id === towerId ? null : tower;
 };
 
 // Event Listeners

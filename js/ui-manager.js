@@ -202,20 +202,27 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         if (selectedTower) {
             // SINGLE TOWER SELECTED
             if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) {
-                const detectionRange = TOWER_TYPES[selectedTower.type].stealthDetectionRange;
                 const indicatorContainer = document.createElement('div');
                 indicatorContainer.className = 'detection-indicator-container absolute top-2 left-2 flex items-center text-white';
                 indicatorContainer.style.textShadow = '1px 1px 3px #000';
                 const eyeIcon = document.createElement('span');
-                eyeIcon.className = 'material-symbols-outlined';
+                eyeIcon.className = 'material-symbols-outlined text-white';
                 eyeIcon.textContent = 'eye_tracking';
                 eyeIcon.style.fontSize = '24px';
                 eyeIcon.style.cursor = 'pointer';
                 eyeIcon.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent the click from deselecting the tower
-                    window.toggleStealthRadius(selectedTower.id);
+                    e.stopPropagation(); // Prevent click from bubbling to canvas listener
+                    window.toggleStealthRadius?.(selectedTower.id);
                 });
+
+                const rangeValue = document.createElement('span');
+                rangeValue.className = 'text-lg font-bold ml-1';
+                rangeValue.textContent = TOWER_TYPES[selectedTower.type].stealthDetectionRange.toString();
+                rangeValue.style.cursor = 'pointer';
+                rangeValue.addEventListener('click', (e) => { e.stopPropagation(); window.toggleStealthRadius?.(selectedTower.id); });
+
                 indicatorContainer.appendChild(eyeIcon);
+                indicatorContainer.appendChild(rangeValue);
                 uiElements.sellPanel.classList.add('relative');
                 uiElements.sellPanel.prepend(indicatorContainer);
             }

@@ -974,14 +974,14 @@ class TowerRenderer {
         if (!detectionRange) return;
 
         const auraColor = (tower.type === 'MIND' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
-        const startX = tower.x - TILE_SIZE * (detectionRange + 0.5);
-        const startY = tower.y - TILE_SIZE * (detectionRange + 0.5);
-        const size = TILE_SIZE * (detectionRange * 2 + 1);
+        const radius = detectionRange * TILE_SIZE;
 
         ctx.save();
-        ctx.globalAlpha = 0.2;
+        ctx.globalAlpha = 0.3;
         ctx.fillStyle = auraColor;
-        ctx.fillRect(startX, startY, size, size);
+        ctx.beginPath();
+        ctx.arc(tower.x, tower.y, radius, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
     }
 }
@@ -1099,6 +1099,7 @@ export class Tower {
     draw(ctx) { this.renderer.draw(ctx); }
     drawRange(ctx) { this.renderer.drawRange(ctx); }
     drawBuffEffect(ctx) { this.renderer.drawBuffEffect(ctx); }
+    drawStealthRange(ctx) { this.renderer.drawStealthRange(ctx); }
     update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound) {
         this.controller.update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound);
     }
