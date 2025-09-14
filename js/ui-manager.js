@@ -1,4 +1,4 @@
-import { TOWER_TYPES, ENEMY_TYPES } from './constants.js';
+import { TOWER_TYPES, ENEMY_TYPES, CLOUD_STORAGE_COST } from './constants.js';
 import { getTowerIconInfo } from './drawing-function.js';
 
 /**
@@ -135,13 +135,15 @@ export function updateUI(state, gameSpeed) {
     }
 
     if (state.isCloudUnlocked) {
-        uiElements.cloudButton.disabled = false;
+        uiElements.cloudButton.disabled = state.waveInProgress;
         uiElements.cloudIcon.textContent = 'cloud_done';
+        uiElements.cloudButton.classList.add('active');
         uiElements.cloudText.classList.add('hidden');
     } else {
-        uiElements.cloudButton.disabled = state.gold < 100;
+        uiElements.cloudButton.disabled = state.gold < CLOUD_STORAGE_COST;
         uiElements.cloudIcon.textContent = 'cloud_download';
         uiElements.cloudText.classList.remove('hidden');
+        uiElements.cloudButton.classList.remove('active');
     }
 
     uiElements.startWaveBtn.classList.toggle('depressed', state.waveInProgress);

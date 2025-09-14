@@ -1,4 +1,4 @@
-import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
+import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS, CLOUD_STORAGE_COST } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice, populateMessageLog } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
@@ -169,6 +169,9 @@ function checkTrophies() {
 function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
+
+    // Lock cloud storage at the start of the wave
+    gameState.isCloudUnlocked = false;
     updateUI(gameState, gameSpeed);
     uiElements.startWaveBtn.disabled = true;
 
@@ -1860,6 +1863,7 @@ window.toggleStealthRadius = (towerId) => {
 // Event Listeners
 uiElements.startWaveBtn.addEventListener('click', () => {
     resumeAudioContext();
+    uiElements.cloudInventoryPanel.classList.add('hidden');
     spawnWave();
 });
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
@@ -2104,20 +2108,21 @@ uiElements.musicToggleBtn.addEventListener('click', () => {
 
 uiElements.cloudButton.addEventListener('click', () => {
     resumeAudioContext();
-    if (!gameState.isCloudUnlocked) {
-        if (gameState.gold >= 100 || isInfiniteGold) {
+    if (gameState.isCloudUnlocked) {
+        // If already unlocked, just toggle the panel.
+        uiElements.cloudInventoryPanel.classList.toggle('hidden');
+    } else {
+        // If not unlocked, handle the purchase.
+        if (gameState.gold >= CLOUD_STORAGE_COST || isInfiniteGold) {
             if (!isInfiniteGold) {
-                gameState.gold -= 100;
+                gameState.gold -= CLOUD_STORAGE_COST;
             }
             gameState.isCloudUnlocked = true;
-            uiElements.cloudInventoryPanel.classList.remove('hidden');
-            const announcement = new TextAnnouncement("Cloud Storage Unlocked!", canvasWidth / 2, 50, 3, undefined, canvasWidth);
+            const announcement = new TextAnnouncement("Cloud access granted until next wave", canvasWidth / 2, 50, 3, undefined, canvasWidth);
             gameState.announcements.push(announcement);
             gameState.announcementLog.push(announcement);
             updateUI(gameState, gameSpeed);
         }
-    } else {
-        uiElements.cloudInventoryPanel.classList.toggle('hidden');
     }
 });
 

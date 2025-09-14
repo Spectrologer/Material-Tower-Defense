@@ -13,6 +13,9 @@ export const GRID_EMPTY = 0; // An empty spot where you can build.
 export const GRID_PATH = 1;  // Part of the enemy path.
 export const GRID_TOWER = 2; // A spot where a tower is already built.
 
+// Gameplay Features
+export const CLOUD_STORAGE_COST = 25;
+
 // All the stats for basic towers.
 
 export const TOWER_TYPES = {
