@@ -50,5 +50,5 @@ export const ENEMY_TYPES = {
     EGG: { speed: 0, health: 200, armor: 2, color: '#ffedceff', size: 12, gold: 0, icon: 'egg', iconFamily: 'Material Symbols Outlined', damagesLives: false, hatchTime: 5, hatchesTo: 'HATCHED', isStationary: true, comment: "What's inside? It's probably not a surprise party." },
     HATCHED: { speed: 2.6, health: 200, armor: 0, color: '#90CAF9', size: 14, gold: 0, icon: 'boy', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "Why." },
     STEALTH: { speed: 2.2, health: 15, armor: 1, color: '#BDBDBD', size: 16, gold: 3, icon: 'settings_accessibility', iconFamily: 'Material Symbols Outlined', damagesLives: true, isInvisible: true, prefersDetour: true, comment: "He's  not your a11y." },
-    PHANTOM: { speed: 1.8, health: 40, armor: 2, color: '#9333ea', size: 16, gold: 3, icon: 'blur_on', phasingIcon: 'lens_blur', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "Now you see me, now you don't.", phaseInterval: 1.9, phaseDistance: 60, phaseDuration: 0.4 }
+    PHANTOM: { speed: 3.8, health: 40, armor: 2, color: '#9333ea', size: 16, gold: 3, icon: 'blur_on', phasingIcon: 'lens_blur', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "He's a disruptor.", phaseInterval: 1, phaseDistance: -50, phaseDuration: 1 }
 };
