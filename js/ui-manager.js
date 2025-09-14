@@ -1047,7 +1047,7 @@ function handleCloudPower() {
 
 function handleLivesPower() {
     gameState.lives += 20;
-    const announcement = new TextAnnouncement("+20 Lives!", 400, 300, 3, '#00ff00', 800);
+    const announcement = new TextAnnouncement("+20 Lives!", 440 / 2, 720 / 2, 3, '#00ff00', 440);
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);
     hideWave16PowerChoice();

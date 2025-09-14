@@ -88,7 +88,7 @@ export const waveDefinitions = [
     },
     // Wave 12: A difficult pincer attack with HEAVY and FAST enemies on separate paths.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.HEALER, 3), comp(ENEMY_TYPES.FAST, 13)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.HEALER, 3), comp(ENEMY_TYPES.FAST, 7)],
         healthMultiplier: 1.9, healthBonus: 35,
         detourRatio: 1.0,
     },
