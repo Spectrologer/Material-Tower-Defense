@@ -5,7 +5,7 @@ import { getTowerIconInfo } from './drawing-function.js';
  * @param {string} id
  * @returns {HTMLButtonElement}
  */
-function getButton(id) {
+function getButton(id) { // This is a good helper function!
     return /** @type {HTMLButtonElement} */ (document.getElementById(id));
 }
 
@@ -61,7 +61,7 @@ export const uiElements = {
     optionsBtn: getButton('options-btn'),
     optionsMenu: document.getElementById('options-menu'),
     optionsMenuOverlay: document.getElementById('options-menu-overlay'),
-    toggleMergeConfirm: /** @type {HTMLInputElement} */ (document.getElementById('toggle-merge-confirm-checkbox')),
+    toggleMergeConfirmBtn: getButton('toggle-merge-confirm-btn'),
     resetGameBtn: getButton('reset-game-btn'),
     libraryBtn: getButton('library-btn'),
     libraryModal: document.getElementById('library-modal'),
@@ -82,6 +82,11 @@ export const uiElements = {
     changelogList: document.getElementById('changelog-list'),
     changelogCloseBtn: getButton('changelog-close-btn'),
     changelogIndicator: document.getElementById('changelog-indicator'),
+    // Message Log
+    logBtn: getButton('log-btn'),
+    logModal: document.getElementById('log-modal'),
+    logList: document.getElementById('log-list'),
+    logCloseBtn: getButton('log-close-btn'),
     // Cached stat elements
     statDamageP: document.getElementById('stat-damage-p'),
     statDamage: document.getElementById('stat-damage'),
@@ -927,6 +932,25 @@ export function populateChangelog(changelogData) {
         `;
         uiElements.changelogList.appendChild(entryElement);
     }
+}
+
+export function populateMessageLog(announcements) {
+    if (!uiElements.logList) return;
+    uiElements.logList.innerHTML = '';
+
+    // We iterate in reverse to show the newest messages at the bottom,
+    // but since the container has `flex-col-reverse`, they appear at the top.
+    [...announcements].reverse().forEach(announcement => {
+        const logItem = document.createElement('div');
+        logItem.className = 'p-2 bg-gray-800/50 rounded-md text-sm';
+
+        const text = announcement.text.replace(/\n/g, ' ');
+        const color = announcement.color || '#00ff88';
+
+        logItem.innerHTML = `<p style="color: ${color}; text-shadow: 1px 1px 2px #000;">${text}</p>`;
+
+        uiElements.logList.appendChild(logItem);
+    });
 }
 
 export function showEndlessChoice() {

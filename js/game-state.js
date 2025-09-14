@@ -22,6 +22,7 @@ import { generatePath } from "./path-generator.js";
  * @property {Array} projectiles - List of active projectiles.
  * @property {Array} effects - List of active visual effects.
  * @property {Array} announcements - List of active announcements.
+ * @property {Array<TextAnnouncement>} announcementLog - A persistent log of all announcements.
  * @property {Set} introducedEnemies - Set of enemy types the player has encountered.
  * @property {Set} killedEnemies - Set of enemy types the player has defeated.
  * @property {boolean} hasPlacedFirstSupport - Whether the player has placed their first Support tower.
@@ -53,7 +54,7 @@ export let gameState;
 // Wipes the slate clean and starts a brand new game.
 // Can perform a "soft" reset (keeping library progress) or a "hard" reset (wiping everything).
 export function resetGameState(hardReset = false) {
-    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies;
+    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog;
 
     if (hardReset) {
         // For a hard reset, start with fresh, default persistent data.
@@ -62,6 +63,7 @@ export function resetGameState(hardReset = false) {
         discoveredTowerTypes = new Set(['PIN', 'CASTLE', 'SUPPORT']);
         killedEnemies = new Set();
         unlockedTrophies = new Set();
+        announcementLog = [];
     } else {
         // For a soft reset, load the last state from storage to preserve persistent data.
         const lastState = getGameStateFromStorage();
@@ -70,6 +72,9 @@ export function resetGameState(hardReset = false) {
         discoveredTowerTypes = lastState.discoveredTowerTypes;
         killedEnemies = lastState.killedEnemies;
         unlockedTrophies = lastState.unlockedTrophies;
+        // For a soft reset, we want to clear the log for the new game,
+        // so we just initialize an empty array.
+        announcementLog = [];
     }
 
     // This just removes the 'gameState' item from local storage
@@ -84,6 +89,7 @@ export function resetGameState(hardReset = false) {
     newGameState.discoveredTowerTypes = discoveredTowerTypes;
     newGameState.killedEnemies = killedEnemies;
     newGameState.unlockedTrophies = unlockedTrophies;
+    newGameState.announcementLog = announcementLog;
 
 
     // Set the module's gameState to the newly prepared state
@@ -138,6 +144,7 @@ function getInitialGameState() {
         projectiles: [],
         effects: [],
         announcements: [],
+        announcementLog: [],
         introducedEnemies: new Set(),
         killedEnemies: new Set(),
         hasPlacedFirstSupport: false,
@@ -198,6 +205,7 @@ function getSerializedGameState() {
         placementGrid: gameState.placementGrid,
         towers: gameState.towers.map((t) => t.toJSON()),
         cloudInventory: gameState.cloudInventory.map((t) => t.toJSON()),
+        announcementLog: gameState.announcementLog,
         introducedEnemies: Array.from(gameState.introducedEnemies),
         killedEnemies: Array.from(gameState.killedEnemies),
         discoveredMerges: Array.from(gameState.discoveredMerges),
@@ -212,7 +220,7 @@ function getSerializedGameState() {
 // Takes a saved game string and turns it back into a usable game state object.
 function deserializeGameState(serializedGameState) {
     try {
-        const { towers, cloudInventory, introducedEnemies, killedEnemies, discoveredMerges, discoveredTowerTypes, unlockedTrophies, ...basicData } = JSON.parse(serializedGameState);
+        const { towers, cloudInventory, introducedEnemies, killedEnemies, discoveredMerges, discoveredTowerTypes, unlockedTrophies, announcementLog, ...basicData } = JSON.parse(serializedGameState);
 
         const initialState = getInitialGameState();
         return {
@@ -220,6 +228,7 @@ function deserializeGameState(serializedGameState) {
             ...basicData,
             cloudInventory: cloudInventory.map((data) => Tower.fromJSON(data)),
             towers: towers.map((data) => Tower.fromJSON(data)),
+            announcementLog: announcementLog || [],
             introducedEnemies: new Set(introducedEnemies),
             killedEnemies: new Set(killedEnemies || []),
             onboardingTipDismissed: basicData.onboardingTipDismissed || false,

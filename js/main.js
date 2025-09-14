@@ -1,6 +1,6 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice, populateMessageLog } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, addTower, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
@@ -1626,9 +1626,16 @@ function init(fromReset = false) {
 
     // Load saved settings
     const savedMergeConfirm = localStorage.getItem('mergeConfirmation');
-    isMergeConfirmationEnabled = savedMergeConfirm === null ? true : JSON.parse(savedMergeConfirm);
-    if (uiElements.toggleMergeConfirm) {
-        uiElements.toggleMergeConfirm.checked = isMergeConfirmationEnabled;
+    isMergeConfirmationEnabled = savedMergeConfirm === null ? true : JSON.parse(savedMergeConfirm); // Default to true
+    if (uiElements.toggleMergeConfirmBtn) {
+        const isOn = isMergeConfirmationEnabled;
+        uiElements.toggleMergeConfirmBtn.textContent = `CONFIRM MERGES: ${isOn ? 'ON' : 'OFF'}`;
+        // "ON" state styles
+        uiElements.toggleMergeConfirmBtn.classList.toggle('bg-green-700', isOn);
+        uiElements.toggleMergeConfirmBtn.classList.toggle('border-green-500', isOn);
+        uiElements.toggleMergeConfirmBtn.classList.toggle('shadow-[0_4px_0_#15803d]', isOn);
+        // "OFF" state styles
+        uiElements.toggleMergeConfirmBtn.classList.toggle('bg-red-800', !isOn);
     }
 
     gameState.isDetourOpen = false; // Explicitly reset detour state on init
@@ -2205,9 +2212,17 @@ window.addEventListener('touchend', (event) => {
     }
 });
 
-uiElements.toggleMergeConfirm.addEventListener('change', () => {
-    isMergeConfirmationEnabled = uiElements.toggleMergeConfirm.checked;
+uiElements.toggleMergeConfirmBtn.addEventListener('click', () => {
+    isMergeConfirmationEnabled = !isMergeConfirmationEnabled;
     localStorage.setItem('mergeConfirmation', JSON.stringify(isMergeConfirmationEnabled));
+    const isOn = isMergeConfirmationEnabled;
+    uiElements.toggleMergeConfirmBtn.textContent = `CONFIRM MERGES: ${isOn ? 'ON' : 'OFF'}`;
+    // "ON" state styles
+    uiElements.toggleMergeConfirmBtn.classList.toggle('bg-green-700', isOn);
+    uiElements.toggleMergeConfirmBtn.classList.toggle('border-green-500', isOn);
+    uiElements.toggleMergeConfirmBtn.classList.toggle('shadow-[0_4px_0_#15803d]', isOn);
+    // "OFF" state styles
+    uiElements.toggleMergeConfirmBtn.classList.toggle('bg-red-800', !isOn);
 });
 
 uiElements.libraryBtn.addEventListener('click', () => {
@@ -2301,6 +2316,16 @@ uiElements.changelogBtn.addEventListener('click', () => {
 
 uiElements.changelogCloseBtn.addEventListener('click', () => {
     uiElements.changelogModal.classList.add('hidden');
+});
+
+uiElements.logBtn.addEventListener('click', () => {
+    populateMessageLog(gameState.announcementLog);
+    uiElements.logModal.classList.remove('hidden');
+    closeOptionsMenu();
+});
+
+uiElements.logCloseBtn.addEventListener('click', () => {
+    uiElements.logModal.classList.add('hidden');
 });
 
 

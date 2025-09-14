@@ -1439,6 +1439,26 @@ export class TextAnnouncement {
         this.color = color;
         this.maxWidth = maxWidth;
     }
+
+    toJSON() {
+        return {
+            text: this.text,
+            x: this.x,
+            y: this.y,
+            duration: this.maxLife,
+            color: this.color,
+            maxWidth: this.maxWidth,
+            // We don't need to save life, as it's a transient state
+        };
+    }
+
+    static fromJSON(data) {
+        return new TextAnnouncement(
+            data.text, data.x, data.y,
+            data.duration, data.color, data.maxWidth
+        );
+    }
+
     update(deltaTime) {
         this.life -= deltaTime;
         return this.life > 0;

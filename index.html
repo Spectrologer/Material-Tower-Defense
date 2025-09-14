@@ -427,16 +427,26 @@
         <div id="options-menu-overlay" class="hidden fixed inset-0 z-25 bg-black/50"></div> <!-- New overlay -->
         <div id="options-menu" class="options-menu game-ui-panel hidden">
             <h3 class="text-lg text-fuchsia-400 mb-2">OPTIONS</h3>
-            <!-- New controls for the options menu -->
-            <div id="merge-confirm-toggle-container" class="flex items-center justify-between text-xs py-2">
-                <label for="toggle-merge-confirm-checkbox" class="text-white cursor-pointer">Confirm Merges</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-merge-confirm-checkbox">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <button id="library-btn" class="pixel-button text-sm py-2 text-center mt-2">LIBRARY</button>
-            <button id="trophies-btn" class="pixel-button text-sm py-2 text-center">TROPHIES</button>
+            <button id="library-btn"
+                class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 mt-2 shadow-[0_4px_0_#4b5563] border-gray-400">
+                <span class="material-symbols-outlined !text-lg justify-self-center"
+                    style="color: #81d4fa;">menu_book</span>
+                <span class="text-left">LIBRARY</span>
+            </button>
+            <button id="trophies-btn"
+                class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 shadow-[0_4px_0_#4b5563] border-gray-400">
+                <span class="material-symbols-outlined !text-lg justify-self-center"
+                    style="color: #ffd700;">emoji_events</span>
+                <span class="text-left">TROPHIES</span>
+            </button>
+            <button id="log-btn"
+                class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 shadow-[0_4px_0_#4b5563] border-gray-400">
+                <span class="material-symbols-outlined !text-lg justify-self-center"
+                    style="color: #a5d6a7;">history_edu</span>
+                <span class="text-left">MESSAGE LOG</span>
+            </button>
+            <button id="toggle-merge-confirm-btn" class="pixel-button text-sm py-2 text-center mt-2">CONFIRM MERGES:
+                ON</button>
             <button id="reset-game-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] text-sm py-2 text-center mt-2">RESET
                 GAME</button>
@@ -444,7 +454,8 @@
                 <div class="relative w-1/2">
                     <button id="changelog-btn"
                         class="pixel-button text-sm py-2 text-center w-full flex items-center justify-center">
-                        <span class="material-symbols-outlined align-middle !text-lg">history</span>
+                        <span class="material-symbols-outlined align-middle !text-lg"
+                            style="color: #b39ddb;">history</span>
                     </button>
                     <span id="changelog-indicator"
                         class="hidden absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 bg-red-600 text-white text-[8px] font-bold rounded-full">NEW</span>
@@ -733,6 +744,18 @@
         </div>
     </div>
 
+    <!-- Message Log Modal -->
+    <div id="log-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
+        <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
+            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">MESSAGE LOG</h3>
+            <div id="log-list"
+                class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto flex flex-col-reverse gap-2">
+                <!-- Log items will be generated here -->
+            </div>
+            <button id="log-close-btn"
+                class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
+        </div>
+    </div>
 
     <script type="module" src="js/main.js"></script>
 
