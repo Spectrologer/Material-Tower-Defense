@@ -19,6 +19,8 @@ import { generatePath } from "./path-generator.js";
  * @property {number} wave - The current wave number.
  * @property {Array} enemies - List of active enemies.
  * @property {Array} towers - List of active towers.
+ *  * @property {boolean} hasDelete - Whether the player has a delete charge available.
+
  * @property {Array} projectiles - List of active projectiles.
  * @property {Array} effects - List of active visual effects.
  * @property {Array} announcements - List of active announcements.
@@ -37,7 +39,10 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} waveInProgress - Whether a wave is currently in progress.
  * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
  * @property {boolean} gameOver - Whether the game is over.
+ * @property {boolean} hasDelete - Whether the player has a delete charge available.
+ * @property {boolean} wave16PowerChosen - Whether the player has made their wave 16 power choice.
  * @property {boolean} isCloudUnlocked - Whether the cloud inventory feature is unlocked.
+ * @property {boolean} hasPermanentCloud - Whether the player has unlocked permanent cloud access.
  * @property {Array} cloudInventory - List of towers stored in the cloud inventory.
  * @property {boolean} isDetourOpen - Whether the detour path is open.
  * @property {Array} path - The main enemy path coordinates.
@@ -54,7 +59,7 @@ export let gameState;
 // Wipes the slate clean and starts a brand new game.
 // Can perform a "soft" reset (keeping library progress) or a "hard" reset (wiping everything).
 export function resetGameState(hardReset = false) {
-    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog;
+    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog, wave16PowerChosen;
 
     if (hardReset) {
         // For a hard reset, start with fresh, default persistent data.
@@ -64,6 +69,7 @@ export function resetGameState(hardReset = false) {
         killedEnemies = new Set();
         unlockedTrophies = new Set();
         announcementLog = [];
+        wave16PowerChosen = false;
     } else {
         // For a soft reset, load the last state from storage to preserve persistent data.
         const lastState = getGameStateFromStorage();
@@ -72,6 +78,7 @@ export function resetGameState(hardReset = false) {
         discoveredTowerTypes = lastState.discoveredTowerTypes;
         killedEnemies = lastState.killedEnemies;
         unlockedTrophies = lastState.unlockedTrophies;
+        wave16PowerChosen = lastState.wave16PowerChosen;
         // For a soft reset, we want to clear the log for the new game,
         // so we just initialize an empty array.
         announcementLog = [];
@@ -90,6 +97,7 @@ export function resetGameState(hardReset = false) {
     newGameState.killedEnemies = killedEnemies;
     newGameState.unlockedTrophies = unlockedTrophies;
     newGameState.announcementLog = announcementLog;
+    newGameState.wave16PowerChosen = wave16PowerChosen;
 
 
     // Set the module's gameState to the newly prepared state
@@ -159,7 +167,10 @@ function getInitialGameState() {
         waveInProgress: false,
         spawningEnemies: false,
         gameOver: false,
+        hasDelete: false,
+        wave16PowerChosen: false,
         isCloudUnlocked: false,
+        hasPermanentCloud: false,
         cloudInventory: [],
         isDetourOpen: false,
         path: pathData.path,
@@ -197,7 +208,10 @@ function getSerializedGameState() {
         waveInProgress: gameState.waveInProgress,
         spawningEnemies: gameState.spawningEnemies,
         gameOver: gameState.gameOver,
+        hasDelete: gameState.hasDelete,
+        wave16PowerChosen: gameState.wave16PowerChosen,
         isCloudUnlocked: gameState.isCloudUnlocked,
+        hasPermanentCloud: gameState.hasPermanentCloud,
         isDetourOpen: gameState.isDetourOpen,
         path: gameState.path,
         detourPath: gameState.detourPath,
@@ -235,7 +249,10 @@ function deserializeGameState(serializedGameState) {
             discoveredMerges: new Set(discoveredMerges || []),
             discoveredTowerTypes: new Set(discoveredTowerTypes || ['PIN', 'CASTLE', 'SUPPORT']),
             unlockedTrophies: new Set(unlockedTrophies || []),
+            hasDelete: basicData.hasDelete || false,
             usedPinHeartTower: basicData.usedPinHeartTower || false,
+            wave16PowerChosen: basicData.wave16PowerChosen || false,
+            hasPermanentCloud: basicData.hasPermanentCloud || false,
             onlyPinTowersUsed: basicData.onlyPinTowersUsed === undefined ? true : basicData.onlyPinTowersUsed,
             towersSoldThisGame: basicData.towersSoldThisGame || 0,
         };

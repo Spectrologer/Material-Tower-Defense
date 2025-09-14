@@ -1,5 +1,7 @@
 import { TOWER_TYPES, ENEMY_TYPES, CLOUD_STORAGE_COST } from './constants.js';
 import { getTowerIconInfo } from './drawing-function.js';
+import { gameState } from './game-state.js';
+import { TextAnnouncement, Effect } from './game-entities.js';
 
 /**
  * @param {string} id
@@ -24,6 +26,11 @@ export const uiElements = {
     endlessChoiceModal: document.getElementById('endless-choice-modal'),
     startEndlessBtn: getButton('start-endless-btn'),
     restartEndlessBtn: getButton('restart-endless-btn'),
+    wave16PowerChoiceModal: document.getElementById('wave-16-power-choice-modal'),
+    deletePowerBtn: getButton('delete-power-btn'),
+    cloudPowerBtn: getButton('cloud-power-btn'),
+    deleteActivateBtn: getButton('delete-btn'),
+    livesPowerBtn: getButton('lives-power-btn'),
     sellPanel: document.getElementById('sell-panel'),
     sellTowerBtn: getButton('sell-tower-btn'),
     moveToCloudBtn: getButton('move-to-cloud-btn'),
@@ -134,7 +141,7 @@ export function updateUI(state, gameSpeed) {
         uiElements.onboardingMergeTip.classList.toggle('hidden', state.hasPerformedFirstMerge || state.onboardingTipDismissed);
     }
 
-    if (state.isCloudUnlocked) {
+    if (state.isCloudUnlocked || state.hasPermanentCloud) {
         uiElements.cloudButton.disabled = state.waveInProgress;
         uiElements.cloudIcon.textContent = 'cloud_done';
         uiElements.cloudButton.classList.add('active');
@@ -148,6 +155,9 @@ export function updateUI(state, gameSpeed) {
 
     uiElements.startWaveBtn.classList.toggle('depressed', state.waveInProgress);
     uiElements.speedToggleBtn.classList.toggle('depressed', gameSpeed > 1);
+
+    // Show or hide the nuke button
+    uiElements.deleteActivateBtn.classList.toggle('hidden', !state.hasDelete);
 }
 
 export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
@@ -967,3 +977,100 @@ export function populateMessageLog(announcements) {
 export function showEndlessChoice() {
     if (uiElements.endlessChoiceModal) uiElements.endlessChoiceModal.classList.remove('hidden');
 }
+
+let glitterInterval = null;
+
+function startGlitterAnimation() {
+    const panel = uiElements.wave16PowerChoiceModal.querySelector('.game-over-modal');
+    if (!panel) return;
+
+    // Stop any existing animation
+    if (glitterInterval) clearInterval(glitterInterval);
+
+    panel.style.position = 'relative'; // Needed for the absolute positioning of the glitter
+    panel.style.overflow = 'hidden'; // Keep the glitter inside the panel bounds
+
+    glitterInterval = setInterval(() => {
+        const glitter = document.createElement('div');
+        glitter.className = 'absolute bg-white rounded-full';
+        glitter.style.width = '2px';
+        glitter.style.height = '2px';
+        glitter.style.boxShadow = '0 0 6px 1px #ffffff';
+        glitter.style.animation = `glitter-border ${2 + Math.random() * 2}s linear forwards`;
+        glitter.style.left = `${Math.random() * 100}%`;
+        glitter.style.top = `${Math.random() * 100}%`;
+        panel.appendChild(glitter);
+
+        // Clean up the glitter element after animation
+        setTimeout(() => glitter.remove(), 4000);
+    }, 100);
+}
+
+export function showWave16PowerChoice() {
+    return new Promise(resolve => {
+        if (uiElements.wave16PowerChoiceModal) uiElements.wave16PowerChoiceModal.classList.remove('hidden');
+        startGlitterAnimation();
+
+        const createHandler = (handler) => (event) => {
+            handler(event);
+            resolve(); // Resolve the promise when a choice is made
+        };
+
+        // Use .once = true to automatically remove the listener after it's called.
+        uiElements.deletePowerBtn.addEventListener('click', createHandler(handleDeletePower), { once: true });
+        uiElements.cloudPowerBtn.addEventListener('click', createHandler(handleCloudPower), { once: true });
+        uiElements.livesPowerBtn.addEventListener('click', createHandler(handleLivesPower), { once: true });
+    });
+}
+
+function handleDeletePower() {
+    // Grant the player a delete charge
+    gameState.hasDelete = true;
+    const announcement = new TextAnnouncement("DELETE armed! Press the button to use it.", 400, 300, 3, '#ff0000', 800);
+    gameState.announcements.push(announcement);
+    gameState.announcementLog.push(announcement);
+    hideWave16PowerChoice();
+}
+
+function handleCloudPower() {
+    gameState.hasPermanentCloud = true;
+    gameState.isCloudUnlocked = true; // Also unlock it for the current pre-wave phase
+    const announcement = new TextAnnouncement("Cloud access permanently granted!", 400, 300, 3, '#00bfff', 800);
+    // This is a persistent upgrade, so we should also update the UI to reflect it immediately.
+    gameState.announcements.push(announcement);
+    gameState.announcementLog.push(announcement);
+    hideWave16PowerChoice();
+}
+
+function handleLivesPower() {
+    gameState.lives += 20;
+    const announcement = new TextAnnouncement("+20 Lives!", 400, 300, 3, '#00ff00', 800);
+    gameState.announcements.push(announcement);
+    gameState.announcementLog.push(announcement);
+    hideWave16PowerChoice();
+}
+
+function hideWave16PowerChoice() {
+    if (uiElements.wave16PowerChoiceModal) uiElements.wave16PowerChoiceModal.classList.add('hidden');
+    if (glitterInterval) clearInterval(glitterInterval);
+    updateUI(gameState, 1); // Update UI after choice
+}
+
+// Event listener for the actual nuke button
+uiElements.deleteActivateBtn.addEventListener('click', () => {
+    if (!gameState.hasDelete) return;
+
+    // Use the nuke
+    let goldFromNuke = 0;
+    gameState.enemies.forEach(enemy => {
+        goldFromNuke += enemy.gold;
+        gameState.effects.push(new Effect(enemy.x, enemy.y, 'delete', enemy.size * 4, '#ff4d4d', 0.5));
+    });
+
+    gameState.gold += goldFromNuke;
+    gameState.enemies = [];
+    gameState.hasDelete = false; // It's a one-time use
+
+    // Update the UI to hide the button
+    updateUI(gameState, 1);
+});

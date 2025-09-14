@@ -44,19 +44,20 @@ test('Enemy should move along its path', () => {
     assert(enemy.pathIndex >= 1, 'Enemy should have reached at least the second path node');
 });
 
-test('BOSS enemy should lay an EGG', () => {
+    test('BOSS enemy should lay an EGG', () => {
     const path = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
     const boss = new Enemy(ENEMY_TYPES.BOSS, path, 'BOSS');
     const allEnemies = [];
+    const newlySpawnedEnemies = [];
     boss.timeUntilLay = 0.1; // Set time to lay an egg very soon
 
     // Simulate enough time to trigger egg laying
     for (let i = 0; i < 120; i++) { // 2 seconds
-        boss.update(() => { }, () => { }, allEnemies, () => { }, () => { }, DELTA_TIME);
+        boss.update(() => { }, () => { }, allEnemies, () => { }, () => { }, DELTA_TIME, null, newlySpawnedEnemies);
     }
 
-    assert.strictEqual(allEnemies.length, 1, 'Boss should have laid one egg');
-    assert.strictEqual(allEnemies[0].type, ENEMY_TYPES.EGG, 'The spawned enemy should be an EGG');
+    assert.strictEqual(newlySpawnedEnemies.length, 1, 'Boss should have laid one egg');
+    assert.strictEqual(newlySpawnedEnemies[0].type, ENEMY_TYPES.EGG, 'The spawned enemy should be an EGG');
 });
 
 
@@ -64,16 +65,17 @@ test('EGG enemy should hatch into a HATCHED enemy', () => {
     const path = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
     const egg = new Enemy(ENEMY_TYPES.EGG, path, 'EGG');
     const allEnemies = [];
+    const newlySpawnedEnemies = [];
     egg.hatchTimer = 0.1; // Set hatch time to be very soon
 
     // Simulate time passing to trigger hatch
     for (let i = 0; i < 10; i++) { // ~0.16 seconds
-        const keepEnemy = egg.update(() => { }, () => { }, allEnemies, null, () => { }, DELTA_TIME);
+        const keepEnemy = egg.update(() => { }, () => { }, allEnemies, null, () => { }, DELTA_TIME, null, newlySpawnedEnemies);
         if (!keepEnemy) break; // Stop updating if enemy should be removed
     }
 
-    assert.strictEqual(allEnemies.length, 1, 'Egg should have hatched one enemy');
-    assert.strictEqual(allEnemies[0].type, ENEMY_TYPES.HATCHED, 'The hatched enemy should be of type HATCHED');
+    assert.strictEqual(newlySpawnedEnemies.length, 1, 'Egg should have hatched one enemy');
+    assert.strictEqual(newlySpawnedEnemies[0].type, ENEMY_TYPES.HATCHED, 'The hatched enemy should be of type HATCHED');
 });
 
 test('Enemy should take burn damage over time', () => {

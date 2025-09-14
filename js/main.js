@@ -1,6 +1,6 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS, CLOUD_STORAGE_COST } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice, populateMessageLog } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice, populateMessageLog, showWave16PowerChoice } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, addTower, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
@@ -166,12 +166,22 @@ function checkTrophies() {
 }
 
 
-function spawnWave() {
+async function spawnWave() {
+    // Check for Wave 16 Power-up choice
+    if (gameState.wave === 16 && !gameState.wave16PowerChosen) {
+        gameState.wave16PowerChosen = true;
+        persistGameState(0);
+        await showWave16PowerChoice(); // Wait for the player to make a choice
+        return; // Stop here and let the UI handler continue the wave
+    }
+
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
 
     // Lock cloud storage at the start of the wave
-    gameState.isCloudUnlocked = false;
+    if (!gameState.hasPermanentCloud) {
+        gameState.isCloudUnlocked = false;
+    }
     updateUI(gameState, gameSpeed);
     uiElements.startWaveBtn.disabled = true;
 
@@ -786,8 +796,10 @@ function onEndWave() {
     }
 
     gameState.wave++;
+
     uiElements.startWaveBtn.disabled = false;
     setMusicTrack(1, { bossMode: false });
+
     if (gameState.wave > 1) {
         const interestEarned = Math.floor(gameState.gold * 0.05);
         if (interestEarned > 0) {
@@ -1842,6 +1854,15 @@ consoleCommands.showEndless = () => {
     }
 };
 
+consoleCommands.powerup = () => {
+    if (gameState) {
+        showWave16PowerChoice();
+        console.log("Showing Wave 16 power-up choice window.");
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
 consoleCommands.debug = () => {
     if (gameState) {
         isInfiniteGold = true;
@@ -2118,7 +2139,7 @@ uiElements.cloudButton.addEventListener('click', () => {
                 gameState.gold -= CLOUD_STORAGE_COST;
             }
             gameState.isCloudUnlocked = true;
-            const announcement = new TextAnnouncement("Cloud access granted until next wave", canvasWidth / 2, 50, 3, undefined, canvasWidth);
+            const announcement = new TextAnnouncement("Cloud access granted until wave start.", canvasWidth / 2, 50, 3, undefined, canvasWidth);
             gameState.announcements.push(announcement);
             gameState.announcementLog.push(announcement);
             updateUI(gameState, gameSpeed);

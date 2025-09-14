@@ -627,7 +627,10 @@
             <div id="game-controls" class="flex gap-4">
                 <button id="start-wave"
                     class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center">START
-                    WAVE</button>
+                    WAVE
+                </button>
+                <button id="delete-btn"
+                    class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center hidden bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c]">DELETE</button>
                 <button id="speed-toggle"
                     class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center">x1</button>
                 <button id="cloud-button" class="pixel-button flex-auto flex items-center justify-center text-sm">
@@ -661,6 +664,32 @@
                     ENDLESS</button>
                 <button id="restart-endless-btn"
                     class="pixel-button text-2xl flex items-center justify-center">RESTART</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wave 16 Power Choice Modal -->
+    <div id="wave-16-power-choice-modal"
+        class="hidden absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
+        <div class="game-over-modal text-center p-8">
+            <h2 class="text-4xl mb-4 text-fuchsia-400">POWER UP!</h2>
+            <p class="text-xl mb-6">You've reached Wave 16! Choose your power:</p>
+            <div class="flex flex-row gap-4 w-full justify-center">
+                <button id="delete-power-btn"
+                    class="pixel-button text-lg bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c] flex flex-col items-center justify-center h-24 w-24">
+                    <span class="material-symbols-outlined !text-3xl">ink_eraser</span>
+                    <span class="text-sm">DELETE</span>
+                </button>
+                <button id="cloud-power-btn"
+                    class="pixel-button text-lg bg-blue-700 border-blue-500 shadow-[0_4px_0_#1e40af] flex flex-col items-center justify-center h-24 w-24">
+                    <span class="material-symbols-outlined !text-3xl">cloud_done</span>
+                    <span class="text-sm">CLOUD</span>
+                </button>
+                <button id="lives-power-btn"
+                    class="pixel-button text-lg bg-green-700 border-green-500 shadow-[0_4px_0_#15803d] flex flex-col items-center justify-center h-24 w-24">
+                    <span class="material-symbols-outlined !text-3xl">heart_plus</span>
+                    <span class="text-sm">+20 LIVES</span>
+                </button>
             </div>
         </div>
     </div>
