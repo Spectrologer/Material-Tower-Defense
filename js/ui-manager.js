@@ -373,8 +373,10 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                     currentCommonMode = firstTowerMode;
                 }
 
-                // Update button text to reflect the current common mode, or the first common mode if no single common current mode
-                const displayMode = currentCommonMode || commonModes[0];
+                // If there's no single common mode, display "MIXED".
+                // Otherwise, show the common mode.
+                const displayMode = currentCommonMode || 'mixed';
+
                 updateTargetingButton(displayMode, selectedTowers[0].type); // Use the type of the first tower for styling
             }
         }
@@ -394,7 +396,11 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
 
 function updateTargetingButton(targetingMode, towerType) {
     if (!uiElements.toggleTargetingBtn) return;
-    let targetingText = targetingMode.toUpperCase();
+    // If the targeting mode is 'mixed', we want to display it as "MIXED".
+    // Otherwise, we show the mode in uppercase as before.
+    let targetingText = targetingMode === 'mixed'
+        ? 'MIXED'
+        : targetingMode.toUpperCase();
     let lockIcon = '';
     if (towerType === 'PIN_HEART') {
         lockIcon = '<span class="material-symbols-outlined !text-base !leading-none">lock</span>';
@@ -408,7 +414,10 @@ function updateTargetingButton(targetingMode, towerType) {
         'bg-blue-800', 'border-blue-400', 'shadow-[0_4px_0_#1e40af]', 'text-white'
     );
 
-    if (towerType === 'PIN_HEART') {
+    // If targeting is mixed, or if it's a PIN_HEART, we don't apply a specific color.
+    // The button will use its default styling.
+    if (targetingMode === 'mixed') {
+    } else if (towerType === 'PIN_HEART') {
         // PIN_HEART targeting is locked, so we can disable the button.
         uiElements.toggleTargetingBtn.disabled = true;
     } else {

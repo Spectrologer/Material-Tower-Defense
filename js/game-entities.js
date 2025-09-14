@@ -372,6 +372,18 @@ export class Enemy {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
+        // --- Shadow ---
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 4;
+        ctx.shadowOffsetY = 4;
+        const shadowIconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
+        ctx.fillText(shadowIconToDraw, 0, 0);
+        ctx.restore();
+        // --- End Shadow ---
+
         const iconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
         ctx.fillText(iconToDraw, 0, 0);
         ctx.restore();
