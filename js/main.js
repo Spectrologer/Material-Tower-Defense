@@ -144,8 +144,10 @@ function gcd(a, b) {
 function checkTrophies() {
     // Trophy: NO_HEARTS_15 (Reach wave 15)
     if (gameState.wave === 15 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
+        const announcement = new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth);
         gameState.unlockedTrophies.add('NO_HEARTS_15');
-        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth));
+        gameState.announcements.push(announcement);
+        gameState.announcementLog.push(announcement);
     }
 
     // Trophy: PIN_15 (Reach wave 15 using only PIN towers)
@@ -156,8 +158,10 @@ function checkTrophies() {
 
     // Trophy: LIQUIDATION (Sold more than 4 towers and reached wave 15)
     if (gameState.towersSoldThisGame > 4 && gameState.wave === 15 && !gameState.unlockedTrophies.has('LIQUIDATION')) {
+        const announcement = new TextAnnouncement("Trophy Unlocked!\nLiquidation", canvasWidth / 2, canvasHeight / 2, 5, '#facc15', canvasWidth);
         gameState.unlockedTrophies.add('LIQUIDATION');
-        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nLiquidation", canvasWidth / 2, canvasHeight / 2, 5, '#facc15', canvasWidth));
+        gameState.announcements.push(announcement);
+        gameState.announcementLog.push(announcement);
     }
 }
 
@@ -234,7 +238,9 @@ function spawnWave() {
         if (enemyTypeName && !gameState.introducedEnemies.has(enemyTypeName)) {
             gameState.introducedEnemies.add(enemyTypeName);
             const displayName = enemyType.icon.replace(/_/g, ' ');
-            gameState.announcements.push(new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 3, undefined, canvasWidth));
+            const announcement = new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 3, undefined, canvasWidth);
+            gameState.announcements.push(announcement);
+            gameState.announcementLog.push(announcement);
         }
 
         let finalHealth, finalArmor;
@@ -600,8 +606,10 @@ function gameLoop(currentTime) {
         const completedWaveDef = waveDefinitions[gameState.wave - 1];
         if (completedWaveDef && completedWaveDef.endOfWaveAnnouncement) {
             const announcement = completedWaveDef.endOfWaveAnnouncement;
+            const announcementObj = new TextAnnouncement(announcement.text, canvasWidth / 2, canvasHeight / 2, 5, announcement.color, canvasWidth);
             setTimeout(() => {
-                gameState.announcements.push(new TextAnnouncement(announcement.text, canvasWidth / 2, canvasHeight / 2, 5, announcement.color, canvasWidth));
+                gameState.announcements.push(announcementObj);
+                gameState.announcementLog.push(announcementObj);
             }, 1500);
         }
 
@@ -781,7 +789,9 @@ function onEndWave() {
         const interestEarned = Math.floor(gameState.gold * 0.05);
         if (interestEarned > 0) {
             gameState.gold += interestEarned;
-            gameState.announcements.push(new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 3, undefined, canvasWidth));
+            const announcement = new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 3, undefined, canvasWidth);
+            gameState.announcements.push(announcement);
+            gameState.announcementLog.push(announcement);
         }
     }
     const waveBonus = 20 + gameState.wave;
@@ -929,7 +939,9 @@ function checkForNinePinOnBoard() {
                         }
                     }
 
-                    gameState.announcements.push(new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 3, '#FFFFFF', canvasWidth));
+                    const announcement = new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 3, '#FFFFFF', canvasWidth);
+                    gameState.announcements.push(announcement);
+                    gameState.announcementLog.push(announcement);
                     selectedTowers = [ninePin];
                     return; // Found and created one, so we are done.
                 }
@@ -1076,7 +1088,9 @@ function handleCanvasClick(e) {
             }
 
             if (newTower.type === 'SUPPORT' && !gameState.hasPlacedFirstSupport) {
-                gameState.announcements.push(new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 3, undefined, canvasWidth));
+                const announcement = new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 3, undefined, canvasWidth);
+                gameState.announcements.push(announcement);
+                gameState.announcementLog.push(announcement);
                 gameState.hasPlacedFirstSupport = true;
             }
             if (isNinePin) {
@@ -2097,8 +2111,10 @@ uiElements.cloudButton.addEventListener('click', () => {
             }
             gameState.isCloudUnlocked = true;
             uiElements.cloudInventoryPanel.classList.remove('hidden');
+            const announcement = new TextAnnouncement("Cloud Storage Unlocked!", canvasWidth / 2, 50, 3, undefined, canvasWidth);
+            gameState.announcements.push(announcement);
+            gameState.announcementLog.push(announcement);
             updateUI(gameState, gameSpeed);
-            gameState.announcements.push(new TextAnnouncement("Cloud Storage Unlocked!", canvasWidth / 2, 50, 3, undefined, canvasWidth));
         }
     } else {
         uiElements.cloudInventoryPanel.classList.toggle('hidden');
