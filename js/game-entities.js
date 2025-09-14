@@ -521,7 +521,7 @@ export class Enemy {
                 hatched.pathIndex = this.pathIndex; // New enemy starts from egg's path index
                 newlySpawnedEnemies.push(hatched);
                 if (playCrackSound) playCrackSound();
-                // FIX: Register egg as "killed" so it appears in the library.
+                // Register egg as "killed" so it appears in the library.
                 onDeath(this, { isAnimatedDeath: false });
                 return false; // Remove the egg
             }
@@ -735,19 +735,6 @@ export class Enemy {
 
         const isTrueDamage = projectile && projectile.isTrueDamage;
 
-        if (!isTrueDamage && armor > 0 && projectile && projectile.owner) {
-            const penetration = projectile.owner.armorPenetration || 0;
-            const effectiveArmor = armor * (1 - penetration);
-
-            // Damage reduction formula: damage * (100 / (100 + armor))
-            // This means 100 armor = 50% reduction, 200 armor = 66% reduction.
-            const damageMultiplier = 100 / (100 + effectiveArmor);
-            finalDamage *= damageMultiplier;
-        }
-        this.health -= finalDamage;
-        this.hitTimer = 0.08;
-        this.jostleTimer = 0.1;
-        return this.health <= 0;
     }
 }
 

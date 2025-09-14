@@ -1034,6 +1034,12 @@ function handleDeletePower() {
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);
     hideWave16PowerChoice();
+    // Manually trigger the next step in the game loop since we paused it.
+    // We need to import the function to call it.
+    import('../js/main.js').then(main => {
+        // This will increment the wave to 16 and prepare for the next wave.
+        main.onEndWave();
+    });
 }
 
 function handleCloudPower() {
@@ -1044,6 +1050,10 @@ function handleCloudPower() {
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);
     hideWave16PowerChoice();
+    import('../js/main.js').then(main => {
+        // This will increment the wave to 16 and prepare for the next wave.
+        main.onEndWave();
+    });
 }
 
 function handleLivesPower() {
@@ -1052,6 +1062,10 @@ function handleLivesPower() {
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);
     hideWave16PowerChoice();
+    import('../js/main.js').then(main => {
+        // This will increment the wave to 16 and prepare for the next wave.
+        main.onEndWave();
+    });
 }
 
 function hideWave16PowerChoice() {

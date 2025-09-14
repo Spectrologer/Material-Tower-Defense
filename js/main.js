@@ -186,15 +186,6 @@ async function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
 
-    // Lock cloud storage at the start of the wave
-    if (!gameState.hasPermanentCloud) {
-        gameState.isCloudUnlocked = false;
-    }
-    updateUI(gameState, gameSpeed);
-    uiElements.startWaveBtn.disabled = true;
-
-    checkTrophies();
-
     const nextWave = gameState.wave;
 
     let waveDef;
@@ -224,17 +215,16 @@ async function spawnWave() {
 
     let enemiesToSpawn = [];
     if (waveDef.interleave) {
-        // Interleave: Alternate between enemy types in a round-robin fashion.
-        const enemyCounts = waveDef.composition.map(comp => ({ type: comp.type, count: comp.count }));
-        let totalEnemies = enemyCounts.reduce((sum, comp) => sum + comp.count, 0);
-        let typeIndex = 0;
-
-        while (enemiesToSpawn.length < totalEnemies) {
-            if (enemyCounts[typeIndex].count > 0) {
-                enemiesToSpawn.push(enemyCounts[typeIndex].type);
-                enemyCounts[typeIndex].count--;
+        // Interleave: Create a flat list of all enemies and shuffle it.
+        waveDef.composition.forEach(comp => {
+            for (let i = 0; i < comp.count; i++) {
+                enemiesToSpawn.push(comp.type);
             }
-            typeIndex = (typeIndex + 1) % enemyCounts.length;
+        });
+        // Fisher-Yates shuffle algorithm
+        for (let i = enemiesToSpawn.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [enemiesToSpawn[i], enemiesToSpawn[j]] = [enemiesToSpawn[j], enemiesToSpawn[i]];
         }
     } else {
         // Default behavior: Spawn in blocks.
@@ -567,20 +557,7 @@ function gameLoop(currentTime) {
 
     updateStealthVisibility();
     applyAuraEffects();
-    const onEnemyDeath = async (enemy, payload = {}) => {
-        if (selectedEnemy === enemy) {
-            selectedEnemy = null;
-        }
-        if (enemy.typeName) {
-            gameState.killedEnemies.add(enemy.typeName);
-            // Check if the first boss was just killed
-            if (enemy.typeName === 'BOSS' && !gameState.hasChosenPowerUp) {
-                gameState.hasChosenPowerUp = true;
-                persistGameState(0);
-                await showWave16PowerChoice(); // Wait for the player to make a choice
-                updateUI(gameState, gameSpeed); // Update UI after choice is made
-            }
-        }
+    const onEnemyDeath = (enemy, payload = {}) => {
         if (enemy.gold > 0) {
             playMoneySound();
         }
@@ -624,7 +601,7 @@ function gameLoop(currentTime) {
         playWiggleSound,
         playCrackSound,
         effectiveDeltaTime,
-        playHitSound, // This argument was missing
+        playHitSound,
         gameState.effects,
         newlySpawnedEnemies
     ));
@@ -819,7 +796,15 @@ function gameLoop(currentTime) {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function onEndWave() {
+async function onEndWave() {
+    // Check for Wave 16 Power-up choice (after wave 15 ends)
+    if (gameState.wave === 15 && !gameState.wave16PowerChosen) {
+        gameState.wave16PowerChosen = true;
+        persistGameState(0);
+        await showWave16PowerChoice(); // Wait for the player to make a choice
+        // The UI handler will call onEndWave again after a choice is made.
+    }
+
     if (gameState.wave === 25 && !gameState.waveInProgress) {
         showEndlessChoice();
         persistGameState(0);
@@ -1898,8 +1883,6 @@ consoleCommands.debug = () => {
     if (gameState) {
         isInfiniteGold = true;
         gameState.lives = Infinity;
-        const announcement = new TextAnnouncement("DEBUG MODE\nACTIVATED", canvasWidth / 2, canvasHeight / 2, 3, '#00ff00', canvasWidth);
-        gameState.announcements.push(announcement);
         console.log("Debug mode enabled: Infinite gold and lives.");
     } else {
         console.error("Game not initialized.");
@@ -1924,7 +1907,10 @@ uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
 
 uiElements.startEndlessBtn.addEventListener('click', () => {
     uiElements.endlessChoiceModal.classList.add('hidden');
-    onEndWave(); // This will increment the wave to 26 and prepare for the next wave
+    onEndWave().catch(error => {
+        console.error("Error proceeding to endless mode:", error);
+        // Handle potential errors from async onEndWave, though unlikely here.
+    });
 });
 
 uiElements.restartEndlessBtn.addEventListener('click', () => {
