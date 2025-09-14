@@ -2424,8 +2424,13 @@ const handleTitleInteraction = () => {
     }
 };
 
-uiElements.gameTitle.addEventListener('click', handleTitleInteraction);
-uiElements.gameTitle.addEventListener('touchend', handleTitleInteraction);
+if (uiElements.gameTitle) {
+    uiElements.gameTitle.addEventListener('click', handleTitleInteraction);
+    uiElements.gameTitle.addEventListener('touchend', (e) => {
+        e.preventDefault(); // Prevents firing a 'click' event after the touch
+        handleTitleInteraction();
+    });
+}
 
 window.addEventListener('resize', resizeCanvas);
 
