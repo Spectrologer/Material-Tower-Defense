@@ -1687,6 +1687,21 @@ consoleCommands.phantom = (count = 1) => {
     }
 };
 
+consoleCommands.spawnSummoner = (count = 1) => {
+    if (gameState && gameState.path.length > 0) {
+        const numToSpawn = parseInt(count, 10);
+        if (isNaN(numToSpawn) || numToSpawn < 1) {
+            console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.spawnSummoner(3)");
+            return;
+        }
+        for (let i = 0; i < numToSpawn; i++) {
+            const summoner = new Enemy(ENEMY_TYPES.SUMMONER, gameState.path, 'SUMMONER');
+            gameState.enemies.push(summoner);
+        }
+        console.log(`Spawned ${numToSpawn} SUMMONER enemies!`);
+    }
+};
+
 consoleCommands.spawnHelicopter = () => {
     if (gameState && gameState.path.length > 0) {
         const helicopter = new Enemy(ENEMY_TYPES.FLYING, gameState.path, 'FLYING');

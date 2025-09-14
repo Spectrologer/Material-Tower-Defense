@@ -311,6 +311,13 @@ export class Enemy {
             this.phaseTimer = this.type.phaseInterval;
             this.phaseDurationTimer = 0;
         }
+
+        if (this.type.spawnsMinions) {
+            this.spawnTimer = this.type.spawnInterval;
+            this.spinSpeed = 0.5; // Radians per second
+            this.minionsToSpawn = 0;
+            this.minionSpawnDelayTimer = 0;
+        }
     }
     applyStun(duration) {
         // Apply the longer stun duration
@@ -340,7 +347,7 @@ export class Enemy {
             ctx.translate(this.x + this.jostleX, this.y + this.jostleY);
         }
 
-        if (this.rotation) {
+        if (this.rotation !== 0) {
             ctx.rotate(this.rotation);
         }
 
@@ -460,6 +467,11 @@ export class Enemy {
             }
         }
 
+        // Handle continuous spinning for summoner
+        if (this.type.spawnsMinions) {
+            this.rotation += this.spinSpeed * deltaTime;
+        }
+
         if (this.type.isStationary) {
             // FIX: Calculate progress for stationary enemies so they can be targeted correctly.
             if (this.path && this.path.length > 1) {
@@ -526,6 +538,33 @@ export class Enemy {
                     this.isLayingEgg = true;
                     this.stopTimer = this.type.eggLayStopTime;
                     this.wiggleTimer = this.type.wiggleTime;
+                }
+            }
+        }
+
+        // --- Minion Spawning Logic ---
+        if (this.type.spawnsMinions) {
+            // Check if it's time to start a new spawn cycle
+            if (this.minionsToSpawn <= 0) {
+                this.spawnTimer -= deltaTime;
+                if (this.spawnTimer <= 0) {
+                    this.spawnTimer = this.type.spawnInterval;
+                    this.minionsToSpawn = this.type.spawnCount;
+                    this.minionSpawnDelayTimer = 0; // Start spawning the first minion immediately
+                }
+            }
+
+            // If there are minions to spawn, handle the sequential spawning
+            if (this.minionsToSpawn > 0) {
+                this.minionSpawnDelayTimer -= deltaTime;
+                if (this.minionSpawnDelayTimer <= 0) {
+                    this.minionSpawnDelayTimer = this.type.spawnDelay;
+                    this.minionsToSpawn--;
+                    const minion = new Enemy(ENEMY_TYPES[this.type.minionType], this.path, this.type.minionType);
+                    minion.x = this.x + (Math.random() - 0.5) * 10; // Spawn near summoner
+                    minion.y = this.y + (Math.random() - 0.5) * 10;
+                    minion.pathIndex = this.pathIndex;
+                    allEnemies.push(minion);
                 }
             }
         }

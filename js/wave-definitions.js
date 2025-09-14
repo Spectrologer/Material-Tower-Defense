@@ -115,9 +115,9 @@ export const waveDefinitions = [
         isBoss: true,
         composition: [comp(ENEMY_TYPES.BOSS, 1)],
     },
-    // Wave 16: A dense wave of normal enemies to test sustained damage.
+    // Wave 16: Introduce the Summoner.
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 40)],
+        composition: [comp(ENEMY_TYPES.SUMMONER, 3), comp(ENEMY_TYPES.NORMAL, 10)],
         healthMultiplier: 2.5, healthBonus: 50,
         detourRatio: 0.2,
     },
