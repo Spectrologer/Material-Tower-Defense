@@ -121,9 +121,9 @@ export const waveDefinitions = [
         healthMultiplier: 2.5, healthBonus: 50,
         detourRatio: 0.2,
     },
-    // Wave 17: Fast and stealthy enemies attacking from both paths.
+    // Wave 17: Introduce Phantoms alongside fast and stealthy enemies.
     {
-        composition: [comp(ENEMY_TYPES.FAST, 15), comp(ENEMY_TYPES.STEALTH, 10)],
+        composition: [comp(ENEMY_TYPES.FAST, 10), comp(ENEMY_TYPES.STEALTH, 8), comp(ENEMY_TYPES.PHANTOM, 5)],
         healthMultiplier: 2.8, healthBonus: 60,
         detourRatio: 0.6,
     },
@@ -206,6 +206,7 @@ export function generateWave(waveNumber) {
     const baseHeavy = 5;
     const baseFlying = 4;
     const baseStealth = 3;
+    const basePhantom = 2;
 
     // Add a mix of enemies, increasing their count and difficulty based on the wave number.
     wave.composition.push(comp(ENEMY_TYPES.NORMAL, baseNormal + difficultyScale * 4));
@@ -217,6 +218,9 @@ export function generateWave(waveNumber) {
 
     // Introduce and scale stealth enemies.
     wave.composition.push(comp(ENEMY_TYPES.STEALTH, baseStealth + Math.floor(difficultyScale * 1.2)));
+
+    // Introduce and scale phantom enemies.
+    wave.composition.push(comp(ENEMY_TYPES.PHANTOM, basePhantom + Math.floor(difficultyScale * 1.1)));
 
     return wave;
 }

@@ -294,6 +294,7 @@ export class Enemy {
         this.jostleTimer = 0;
         this.progress = 0;
         this.isVisible = !this.type.isInvisible;
+        this.isPhasing = false;
 
         if (this.type.laysEggs) {
             this.timeUntilLay = this.type.layEggInterval;
@@ -304,6 +305,11 @@ export class Enemy {
 
         if (this.type.hatchTime) {
             this.hatchTimer = this.type.hatchTime;
+        }
+
+        if (this.type.phaseInterval) {
+            this.phaseTimer = this.type.phaseInterval;
+            this.phaseDurationTimer = 0;
         }
     }
     applyStun(duration) {
@@ -320,6 +326,11 @@ export class Enemy {
     }
     draw(ctx) {
         if (!this.isVisible) return;
+
+        if (this.isPhasing) {
+            ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 50) * 0.2;
+        }
+
         ctx.save();
         if (this.wiggleTimer > 0) {
             const wiggleAmount = 3;
@@ -337,7 +348,9 @@ export class Enemy {
         ctx.fillStyle = this.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(this.type.icon, 0, 0);
+
+        const iconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
+        ctx.fillText(iconToDraw, 0, 0);
         ctx.restore();
 
         const healthBarWidth = this.size * 2;
@@ -353,7 +366,8 @@ export class Enemy {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(this.type.icon, this.x, this.y);
+            const iconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
+            ctx.fillText(iconToDraw, this.x, this.y);
             ctx.restore();
         }
         if (this.stunTimer > 0) {
@@ -369,6 +383,8 @@ export class Enemy {
             ctx.fillText('local_fire_department', this.x, this.y);
             ctx.globalAlpha = 1.0;
         }
+
+        ctx.globalAlpha = 1.0; // Reset alpha after drawing
     }
     drawSelection(ctx) {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
@@ -452,6 +468,37 @@ export class Enemy {
             return true; // Don't move
         }
 
+        // --- Phasing Logic ---
+        if (this.type.phaseInterval) {
+            if (this.isPhasing) {
+                this.phaseDurationTimer -= deltaTime;
+                if (this.phaseDurationTimer <= 0) {
+                    this.isPhasing = false;
+                    this.isVisible = !this.type.isInvisible; // Become visible again unless stealthed
+                    this.phaseTimer = this.type.phaseInterval;
+                }
+            } else {
+                this.phaseTimer -= deltaTime;
+                if (this.phaseTimer <= 0) {
+                    this.isPhasing = true;
+                    this.isVisible = false; // Become untargetable
+                    this.phaseDurationTimer = this.type.phaseDuration;
+
+                    // Teleport forward
+                    const targetIndex = this.pathIndex + this.direction;
+                    if (this.path[targetIndex]) {
+                        const target = this.path[targetIndex];
+                        const dx = target.x - this.x;
+                        const dy = target.y - this.y;
+                        const distanceToNextNode = Math.hypot(dx, dy);
+                        const moveDistance = Math.min(this.type.phaseDistance, distanceToNextNode);
+                        this.x += (dx / distanceToNextNode) * moveDistance;
+                        this.y += (dy / distanceToNextNode) * moveDistance;
+                    }
+                }
+            }
+        }
+
         // Consolidate the egg-laying logic into a single block.
         if (this.type.laysEggs) {
             if (this.isLayingEgg) {
@@ -498,7 +545,7 @@ export class Enemy {
         }
 
         // Only update movement if we are NOT laying an egg.
-        if (!this.isLayingEgg) {
+        if (!this.isLayingEgg && !this.isPhasing) {
             const targetIndex = this.pathIndex + this.direction;
             if (targetIndex < 0 || targetIndex >= this.path.length) {
                 // This case should primarily be for the boss turning around
@@ -643,7 +690,7 @@ class TowerController {
     findTarget(enemies, frameTargetedEnemies) {
         const tower = this.tower;
         tower.target = null;
-        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
+        let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible && !enemy.isPhasing);
 
         if (tower.isUnderDiversifyAura) {
             potentialTargets = potentialTargets.filter(enemy => !frameTargetedEnemies.has(enemy.id));
@@ -660,7 +707,7 @@ class TowerController {
 
         if (potentialTargets.length === 0) {
             if (tower.isUnderDiversifyAura) {
-                potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible);
+                potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible && !enemy.isPhasing);
             } else {
                 return;
             }

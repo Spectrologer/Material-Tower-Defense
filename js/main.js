@@ -1672,6 +1672,21 @@ consoleCommands.spawnFlutterdash = () => {
     }
 };
 
+consoleCommands.phantom = (count = 1) => {
+    if (gameState && gameState.path.length > 0) {
+        const numToSpawn = parseInt(count, 10);
+        if (isNaN(numToSpawn) || numToSpawn < 1) {
+            console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.phantom(5)");
+            return;
+        }
+        for (let i = 0; i < numToSpawn; i++) {
+            const phantom = new Enemy(ENEMY_TYPES.PHANTOM, gameState.path, 'PHANTOM');
+            gameState.enemies.push(phantom);
+        }
+        console.log(`Spawned ${numToSpawn} PHANTOM enemies!`);
+    }
+};
+
 consoleCommands.spawnHelicopter = () => {
     if (gameState && gameState.path.length > 0) {
         const helicopter = new Enemy(ENEMY_TYPES.FLYING, gameState.path, 'FLYING');
