@@ -55,5 +55,6 @@ export const ENEMY_TYPES = {
     MINION: { speed: 3.5, health: 10, armor: 0, color: '#4ade80', size: 12, gold: 0, icon: 'attribution', iconFamily: 'Material Symbols Outlined', damagesLives: true, comment: "Just following orders." },
     SPLITTER: { speed: 2.0, health: 25, armor: 2, color: '#84cc16', size: 16, gold: 2, icon: 'coronavirus', iconFamily: 'Material Icons', damagesLives: true, splitsOnDeath: true, splitCount: 2, splitInto: 'SPLITTER_MINI', comment: "What's worse than one? Two. Sometimes." },
     SPLITTER_MINI: { speed: 2.5, health: 10, armor: 0, color: '#a3e635', size: 10, gold: 1, icon: 'coronavirus', iconFamily: 'Material Icons', damagesLives: true, splitsOnDeath: true, splitCount: 2, splitInto: 'SPLITTER_MICRO', comment: "It keeps happening!" },
-    SPLITTER_MICRO: { speed: 3.0, health: 5, armor: 0, color: '#bef264', size: 6, gold: 0, icon: 'coronavirus', iconFamily: 'Material Icons', damagesLives: true, comment: "This seems derivative." }
+    SPLITTER_MICRO: { speed: 3.0, health: 5, armor: 0, color: '#bef264', size: 6, gold: 0, icon: 'coronavirus', iconFamily: 'Material Icons', damagesLives: true, comment: "This seems derivative." },
+    HEALER: { speed: 1.8, health: 50, armor: 3, color: '#4fc3f7', size: 18, gold: 5, icon: 'digital_wellbeing', iconFamily: 'Material Symbols Outlined', damagesLives: true, isHealer: true, healInterval: 2.5, healRange: 80, healPercent: 0.10, comment: "Sharing is caring." },
 };

@@ -49,12 +49,12 @@ export const waveDefinitions = [
         composition: [comp(ENEMY_TYPES.HEAVY, 7)],
         healthMultiplier: 1.1, healthBonus: 30,
     },
-    // Wave 6: A mix of HEAVY on main path and FAST on detour to challenge tower specialization.
+    // Wave 6: Introduce HEALERs alongside HEAVY enemies to teach the importance of focus fire.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.FAST, 8)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 2)],
         healthMultiplier: 1.2, healthBonus: 10,
-        detourRatio: 1.0,
-        endOfWaveAnnouncement: { text: "Warning:\nAirspace violation detected!", color: '#af97d4ff' }
+        detourRatio: 0,
+        endOfWaveAnnouncement: { text: "They can heal each other now?!", color: '#4fc3f7' }
     },
     // Wave 7: Introduce FLYING enemies, a pure anti-air check.
     {
@@ -63,8 +63,8 @@ export const waveDefinitions = [
     },
     // Wave 8: A mix of ground and air to test defense flexibility.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.FLYING, 5)],
-        healthMultiplier: 1.4, healthBonus: 22,
+        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.HEALER, 2), comp(ENEMY_TYPES.FLYING, 5)],
+        healthMultiplier: 1.4, healthBonus: 25,
         endOfWaveAnnouncement: { text: "Unseen threats ahead!\nDetection required.", color: '#BDBDBD' }
     },
     // Wave 9: Introduce STEALTH enemies, testing detection tower usage.
@@ -88,20 +88,20 @@ export const waveDefinitions = [
     },
     // Wave 12: A difficult pincer attack with HEAVY and FAST enemies on separate paths.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.FAST, 13)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.HEALER, 3), comp(ENEMY_TYPES.FAST, 13)],
         healthMultiplier: 1.9, healthBonus: 35,
         detourRatio: 1.0,
     },
     // Wave 13: Mixed wave including STEALTH to test layered defenses.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.STEALTH, 2), comp(ENEMY_TYPES.FAST, 4)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 2), comp(ENEMY_TYPES.STEALTH, 2), comp(ENEMY_TYPES.FAST, 4)],
         healthMultiplier: 2.2, healthBonus: 35,
         detourRatio: 0.5,
     },
     // Wave 14: Pre-boss wave with a mix of all major threats.
     {
         composition: [
-            comp(ENEMY_TYPES.HEAVY, 4),
+            comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.HEALER, 2),
             comp(ENEMY_TYPES.FLYING, 4),
             comp(ENEMY_TYPES.SWARM, 4),
             comp(ENEMY_TYPES.STEALTH, 4)
@@ -150,7 +150,7 @@ export const waveDefinitions = [
     },
     // Wave 21: Splitters are now mixed with Heavies, creating a durable, high-density threat.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.SPLITTER, 8)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.HEALER, 4), comp(ENEMY_TYPES.SPLITTER, 8)],
         healthMultiplier: 4.5, healthBonus: 120,
     },
     // Wave 22: A test of detection and area damage with Stealth and Splitter units.
@@ -167,7 +167,7 @@ export const waveDefinitions = [
     },
     // Wave 24: A challenging air and ground pincer attack.
     {
-        composition: [comp(ENEMY_TYPES.FLYING, 15), comp(ENEMY_TYPES.HEAVY, 8)],
+        composition: [comp(ENEMY_TYPES.FLYING, 15), comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.HEALER, 4)],
         healthMultiplier: 5.5, healthBonus: 180,
     },
     // Wave 25: A pre-infinite wave with a bit of everything, including stealth.

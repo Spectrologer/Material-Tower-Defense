@@ -571,13 +571,14 @@ function gameLoop(currentTime) {
             }
         },
         onEnemyDeath,
-        newlySpawnedEnemies,
+        gameState.enemies, // Pass the full list of enemies for abilities like healing
         playWiggleSound,
         playCrackSound,
         effectiveDeltaTime,
-        playHitSound
+        playHitSound, // This argument was missing
+        gameState.effects
     ));
-
+    // Add any newly spawned enemies (from splitters, summoners, etc.) to the main list
     gameState.enemies.push(...newlySpawnedEnemies);
 
     gameState.effects = gameState.effects.filter(effect => effect.update(effectiveDeltaTime));
@@ -944,15 +945,13 @@ function handleCanvasClick(e) {
     }
     lastClickTime = now;
 
-    // NEW, ROBUST FIX: Check if the click occurred inside any of the main UI panels.
-    // If so, it's a UI click, not a canvas click, so we should ignore it completely.
-    const clickX = e.clientX;
-    const clickY = e.clientY;
-    const sellPanelRect = uiElements.sellPanel.getBoundingClientRect();
-    const towerButtonsRect = uiElements.towerButtonsGroup.getBoundingClientRect();
-
-    if ((!uiElements.sellPanel.classList.contains('hidden') && clickX >= sellPanelRect.left && clickX <= sellPanelRect.right && clickY >= sellPanelRect.top && clickY <= sellPanelRect.bottom) ||
-        (!uiElements.towerButtonsGroup.classList.contains('hidden') && clickX >= towerButtonsRect.left && clickX <= towerButtonsRect.right && clickY >= towerButtonsRect.top && clickY <= towerButtonsRect.bottom)) {
+    // If the event target is not the canvas itself, it's a UI click, so ignore it.
+    // This is a more reliable way to distinguish UI interaction from game interaction.
+    // The `placingTower` check is removed because even when placing, the initial click
+    // might be on a UI button, which is handled by other logic. This listener should
+    // only care about clicks directly on the canvas.
+    if (e.target !== canvas) {
+        // It's a click on a UI element layered on top of the canvas, not the canvas itself.
         return;
     }
 
@@ -1215,12 +1214,12 @@ canvas.addEventListener('mousemove', e => {
 canvas.addEventListener('mouseup', e => {
     // If a selection wasn't initiated from the canvas, ignore this mouseup event.
     // This prevents UI clicks from being processed as canvas clicks.
-    if (!isSelecting) {
+    if (placingTower) {
+        handleCanvasClick(e);
         return;
     }
 
-    if (placingTower) {
-        handleCanvasClick(e);
+    if (!isSelecting) {
         return;
     }
     if (isSelecting) {
@@ -1656,7 +1655,9 @@ function init(fromReset = false) {
 
 const consoleCommands = {};
 
-consoleCommands.setTrack = setMusicTrack;
+consoleCommands.setTrack = (trackNameOrNumber, options) => {
+    setMusicTrack(trackNameOrNumber, options);
+};
 consoleCommands.setMusicOptions = setMusicOptions;
 consoleCommands.nextTrack = nextMusicTrack;
 consoleCommands.prevTrack = previousMusicTrack;
@@ -1672,9 +1673,10 @@ consoleCommands.spawnFlutterdash = () => {
     }
 };
 
-consoleCommands.phantom = (count = 1) => {
+consoleCommands.phantom = (count) => {
+    const numToSpawn = parseInt(String(count), 10) || 1;
+
     if (gameState && gameState.path.length > 0) {
-        const numToSpawn = parseInt(count, 10);
         if (isNaN(numToSpawn) || numToSpawn < 1) {
             console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.phantom(5)");
             return;
@@ -1687,9 +1689,10 @@ consoleCommands.phantom = (count = 1) => {
     }
 };
 
-consoleCommands.spawnSummoner = (count = 1) => {
+consoleCommands.spawnSummoner = (count) => {
+    const numToSpawn = parseInt(String(count), 10) || 1;
+
     if (gameState && gameState.path.length > 0) {
-        const numToSpawn = parseInt(count, 10);
         if (isNaN(numToSpawn) || numToSpawn < 1) {
             console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.spawnSummoner(3)");
             return;
@@ -1702,9 +1705,10 @@ consoleCommands.spawnSummoner = (count = 1) => {
     }
 };
 
-consoleCommands.spawnSplitter = (count = 1) => {
+consoleCommands.spawnSplitter = (count) => {
+    const numToSpawn = parseInt(String(count), 10) || 1;
+
     if (gameState && gameState.path.length > 0) {
-        const numToSpawn = parseInt(count, 10);
         if (isNaN(numToSpawn) || numToSpawn < 1) {
             console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.spawnSplitter(3)");
             return;
@@ -1714,6 +1718,22 @@ consoleCommands.spawnSplitter = (count = 1) => {
             gameState.enemies.push(splitter);
         }
         console.log(`Spawned ${numToSpawn} SPLITTER enemies!`);
+    }
+};
+
+consoleCommands.spawnHealer = (count) => {
+    const numToSpawn = parseInt(String(count), 10) || 1;
+
+    if (gameState && gameState.path.length > 0) {
+        if (isNaN(numToSpawn) || numToSpawn < 1) {
+            console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.spawnHealer(3)");
+            return;
+        }
+        for (let i = 0; i < numToSpawn; i++) {
+            const healer = new Enemy(ENEMY_TYPES.HEALER, gameState.path, 'HEALER');
+            gameState.enemies.push(healer);
+        }
+        console.log(`Spawned ${numToSpawn} HEALER enemies!`);
     }
 };
 

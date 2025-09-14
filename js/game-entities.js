@@ -319,6 +319,11 @@ export class Enemy {
             this.minionSpawnDelayTimer = 0;
             this.wiggleTimer = 0;
         }
+
+        if (this.type.isHealer) {
+            this.healTimer = this.type.healInterval;
+            this.isHealingPulse = false;
+        }
     }
     applyStun(duration) {
         // Apply the longer stun duration
@@ -337,6 +342,16 @@ export class Enemy {
 
         if (this.isPhasing) {
             ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 50) * 0.2;
+        }
+
+        if (this.isHealingPulse) {
+            ctx.save();
+            const pulseProgress = 1 - (this.healTimer / 0.5); // 0.5s pulse duration
+            const radius = this.type.healRange * pulseProgress;
+            const opacity = 1 - pulseProgress;
+            ctx.fillStyle = `rgba(79, 195, 247, ${opacity * 0.3})`;
+            ctx.fill(new Path2D(`M ${this.x - radius} ${this.y} a ${radius} ${radius} 0 1 0 ${radius * 2} 0 a ${radius} ${radius} 0 1 0 -${radius * 2} 0`));
+            ctx.restore();
         }
 
         ctx.save();
@@ -401,7 +416,7 @@ export class Enemy {
         ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
         ctx.stroke();
     }
-    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime) {
+    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects) {
         if (this.hitTimer > 0) {
             this.hitTimer -= deltaTime;
         }
@@ -444,7 +459,7 @@ export class Enemy {
         if (this.health <= 0) {
             if (this.type.isFlying) { // Trigger death animation for flying units
                 this.isDying = true;
-                this.deathAnimationTimer = 0.5; // seconds
+                this.deathAnimationTimer = 0.5;
                 return true; // Keep the enemy for animation
             } else if (this.type.splitsOnDeath) {
                 for (let i = 0; i < this.type.splitCount; i++) {
@@ -454,7 +469,7 @@ export class Enemy {
                     splitEnemy.pathIndex = this.pathIndex;
                     allEnemies.push(splitEnemy);
                 }
-                onDeath(this);
+                onDeath(this, { isAnimatedDeath: false });
                 return false;
             } else {
                 onDeath(this);
@@ -473,7 +488,7 @@ export class Enemy {
                 allEnemies.push(hatched);
                 if (playCrackSound) playCrackSound();
                 // FIX: Register egg as "killed" so it appears in the library.
-                onDeath(this);
+                onDeath(this, { isAnimatedDeath: false });
                 return false; // Remove the egg
             }
         }
@@ -581,6 +596,37 @@ export class Enemy {
             }
         }
 
+        // --- Healer Logic ---
+        if (this.type.isHealer) {
+            this.healTimer -= deltaTime;
+            if (this.isHealingPulse) {
+                // In the middle of a pulse animation
+                if (this.healTimer <= 0) {
+                    this.isHealingPulse = false;
+                    this.healTimer = this.type.healInterval;
+                }
+            } else if (this.healTimer <= 0) {
+                // Time to trigger a new heal pulse
+                this.isHealingPulse = true;
+                this.healTimer = 0.5;
+                const healIcons = ['favorite', 'heart_plus', 'heart_check'];
+                effects.push(new Effect(this.x, this.y, healIcons, this.type.healRange, '#4fc3f7', 0.5));
+                for (const otherEnemy of allEnemies) {
+                    if (otherEnemy.id !== this.id && !otherEnemy.isDying && otherEnemy.health < otherEnemy.maxHealth) {
+                        if (Math.hypot(this.x - otherEnemy.x, this.y - otherEnemy.y) <= this.type.healRange) {
+                            otherEnemy.health = Math.min(otherEnemy.maxHealth, otherEnemy.health + otherEnemy.maxHealth * this.type.healPercent);
+                            // Add a small plus icon over the healed enemy
+                            effects.push(new Effect(
+                                otherEnemy.x + (Math.random() - 0.5) * 10,
+                                otherEnemy.y - otherEnemy.size,
+                                'add', 20, '#4ade80', 0.75
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
         // --- Movement Logic ---
         if (this.wiggleTimer > 0) {
             this.wiggleTimer -= deltaTime;
@@ -667,7 +713,7 @@ export class Enemy {
             finalDamage *= damageMultiplier;
         }
         this.health -= finalDamage;
-        this.hitTimer = 0.08; // seconds
+        this.hitTimer = 0.08;
         this.jostleTimer = 0.1;
         return this.health <= 0;
     }
@@ -1310,7 +1356,14 @@ export class Tower {
 
 export class Effect {
     constructor(x, y, icon, size, color, duration, extraData = {}) {
-        this.x = x; this.y = y; this.icon = icon; this.size = size; this.color = color; this.life = duration; this.maxLife = duration; this.extraData = extraData;
+        this.x = x; this.y = y; this.size = size; this.color = color; this.life = duration; this.maxLife = duration; this.extraData = extraData;
+
+        // If `icon` is an array, pick a random one. Otherwise, use it as is.
+        if (Array.isArray(icon)) {
+            this.icon = icon[Math.floor(Math.random() * icon.length)];
+        } else {
+            this.icon = icon;
+        }
     }
     update(deltaTime) {
         this.life -= deltaTime;
@@ -1339,15 +1392,33 @@ export class Effect {
         }
 
         let iconFamily = '';
-        if (['explosion', 'gps_fixed'].includes(this.icon) || this.icon === 'attach_money' || this.icon === 'lens') {
+        // Updated to handle the new health icons
+        if (['explosion', 'gps_fixed', 'attach_money', 'lens', 'add', 'healing', 'health_and_safety', 'volunteer_activism', 'ecg_heart', 'heart_plus', 'heart_check'].includes(this.icon)) {
             iconFamily = 'Material Symbols Outlined';
         } else {
+            if (this.icon === 'sparkles') {
+                iconFamily = 'Material Symbols Outlined';
+            }
             iconFamily = 'Material Icons';
         }
 
         if (this.icon === 'attach_money') {
             currentSize = this.size + (5 * progress);
             opacity = 1 - progress * 0.5;
+        }
+
+        if (Array.isArray(this.icon) || ['favorite', 'health_and_safety', 'volunteer_activism', 'healing', 'ecg_heart', 'heart_plus', 'heart_check'].includes(this.icon)) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.fillStyle = this.color;
+            ctx.font = `400 ${currentSize * 0.5}px 'Material Symbols Outlined'`;
+            const numSparkles = 8;
+            for (let i = 0; i < numSparkles; i++) {
+                const angle = (i / numSparkles) * Math.PI * 2 + (progress * Math.PI); // Rotate the aura
+                ctx.fillText(this.icon, this.x + Math.cos(angle) * (currentSize * 0.75), this.y + Math.sin(angle) * (currentSize * 0.75));
+            }
+            ctx.restore();
+            return;
         }
 
         ctx.font = `${currentSize}px '${iconFamily}'`;
