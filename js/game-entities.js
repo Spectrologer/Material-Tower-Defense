@@ -7,7 +7,15 @@ import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE } from './constants.js';
 const projectileBehaviors = {
     DEFAULT: {
         draw: (ctx, projectile) => {
-            ctx.fillStyle = projectile.owner.projectileColor;
+            const gradient = ctx.createRadialGradient(
+                projectile.x - 2, projectile.y - 2, 1, // Inner circle (light spot)
+                projectile.x, projectile.y, projectile.owner.projectileSize // Outer circle
+            );
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)'); // Lighter center
+            gradient.addColorStop(0.7, projectile.owner.projectileColor); // Main color
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)'); // Darker edge
+
+            ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.arc(projectile.x, projectile.y, projectile.owner.projectileSize, 0, Math.PI * 2);
             ctx.fill();
@@ -141,6 +149,20 @@ export class Projectile {
     }
     draw(ctx) {
         this.behavior.draw(ctx, this);
+
+        if (this.isMortar) {
+            // Draw shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.owner.projectileSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw projectile itself, offset by z-height
+            ctx.fillStyle = this.owner.projectileColor;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y - this.z, this.owner.projectileSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
     update(onHit, enemies, effects, deltaTime) {
         if (this.isEmerging) { // This property is set for ANTI_AIR projectiles
@@ -376,9 +398,9 @@ export class Enemy {
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 4;
-        ctx.shadowOffsetY = 4;
+        ctx.shadowBlur = 1;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
         const shadowIconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
         ctx.fillText(shadowIconToDraw, 0, 0);
         ctx.restore();

@@ -1,22 +1,16 @@
 {
-  "name": "Iconic Tower Defense",
-  "short_name": "Iconic TD",
-  "description": "A tower defense game using icons",
-  "start_url": "/Material-Tower-Defense",
-  "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#1a8050",
-  "orientation": "portrait",
-  "icons": [
-    {
-      "src": "images/rook-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "images/rook-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+    "name": "Iconic Tower Defense",
+    "short_name": "Iconic TD",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#1a1a1a",
+    "description": "A tower defense game using material icons.",
+    "icons": [
+        {
+            "src": "icons/support_large.svg",
+            "sizes": "192x192 512x512",
+            "type": "image/svg+xml"
+        }
+    ]
 }

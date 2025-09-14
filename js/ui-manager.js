@@ -987,8 +987,11 @@ function startGlitterAnimation() {
     // Stop any existing animation
     if (glitterInterval) clearInterval(glitterInterval);
 
-    panel.style.position = 'relative'; // Needed for the absolute positioning of the glitter
-    panel.style.overflow = 'hidden'; // Keep the glitter inside the panel bounds
+    /** @type {HTMLElement} */
+    const panelEl = /** @type {HTMLElement} */ (panel);
+
+    panelEl.style.position = 'relative'; // Needed for the absolute positioning of the glitter
+    panelEl.style.overflow = 'hidden'; // Keep the glitter inside the panel bounds
 
     glitterInterval = setInterval(() => {
         const glitter = document.createElement('div');
