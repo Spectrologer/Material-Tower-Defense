@@ -28,6 +28,7 @@ import { generatePath } from "./path-generator.js";
  * @property {Set} introducedEnemies - Set of enemy types the player has encountered.
  * @property {Set} killedEnemies - Set of enemy types the player has defeated.
  * @property {boolean} hasPlacedFirstSupport - Whether the player has placed their first Support tower.
+ * @property {boolean} hasBuiltCat - Whether the player has built a CAT tower.
  * @property {boolean} hasPerformedFirstMerge - Whether the player has performed their first tower merge.
  * @property {boolean} onboardingTipDismissed - Whether the onboarding tip has been dismissed.
  * @property {Set} discoveredMerges - Set of tower merge types the player has discovered.
@@ -154,6 +155,7 @@ function getInitialGameState() {
         announcements: [],
         announcementLog: [],
         introducedEnemies: new Set(),
+        hasBuiltCat: false,
         killedEnemies: new Set(),
         hasPlacedFirstSupport: false,
         hasPerformedFirstMerge: false,
@@ -187,6 +189,9 @@ export function addTower(tower) {
     if (tower.type !== 'PIN' && tower.type !== 'NINE_PIN') {
         gameState.onlyPinTowersUsed = false;
     }
+    if (tower.type === 'CAT') {
+        gameState.hasBuiltCat = true;
+    }
     gameState.towers.push(tower);
 }
 
@@ -203,6 +208,7 @@ function getSerializedGameState() {
         gold: gameState.gold,
         wave: gameState.wave,
         hasPlacedFirstSupport: gameState.hasPlacedFirstSupport,
+        hasBuiltCat: gameState.hasBuiltCat,
         hasPerformedFirstMerge: gameState.hasPerformedFirstMerge,
         onboardingTipDismissed: gameState.onboardingTipDismissed,
         waveInProgress: gameState.waveInProgress,
@@ -251,6 +257,7 @@ function deserializeGameState(serializedGameState) {
             unlockedTrophies: new Set(unlockedTrophies || []),
             hasDelete: basicData.hasDelete || false,
             usedPinHeartTower: basicData.usedPinHeartTower || false,
+            hasBuiltCat: basicData.hasBuiltCat || false,
             wave16PowerChosen: basicData.wave16PowerChosen || false,
             hasPermanentCloud: basicData.hasPermanentCloud || false,
             onlyPinTowersUsed: basicData.onlyPinTowersUsed === undefined ? true : basicData.onlyPinTowersUsed,

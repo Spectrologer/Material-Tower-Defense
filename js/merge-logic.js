@@ -423,6 +423,9 @@ export class MergeHandler {
             gameState.hasPerformedFirstMerge = true;
             gameState.discoveredMerges.add(key);
             gameState.discoveredTowerTypes.add(tower.type);
+            if (tower.type === 'CAT') {
+                gameState.hasBuiltCat = true;
+            }
             return true;
         }
 

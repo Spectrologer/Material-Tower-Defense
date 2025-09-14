@@ -32,7 +32,7 @@ const TROPHIES = {
     },
     'PIN_15': {
         name: "PIN 15",
-        description: "Reach wave 15 using only PIN towers.",
+        description: "Have at least 15 PIN towers on wave 15.",
         icon: 'location_pin',
         color: '#FFFFFF',
         filled: true,
@@ -45,6 +45,13 @@ const TROPHIES = {
         color: '#facc15',
         filled: true,
         iconClass: 'material-symbols-outlined',
+    },
+    'CAT_BY_6': {
+        name: "It Pays For Itself",
+        description: "Build a CAT tower by wave 6.",
+        icon: 'savings',
+        color: '#650bf5ff',
+        iconClass: 'material-icons',
     }
 };
 
@@ -151,15 +158,24 @@ function checkTrophies() {
     }
 
     // Trophy: PIN_15 (Reach wave 15 using only PIN towers)
-    if (gameState.wave === 15 && gameState.onlyPinTowersUsed && !gameState.unlockedTrophies.has('PIN_15')) {
+    const pinTowerCount = gameState.towers.filter(t => t.type === 'PIN').length;
+    if (gameState.wave === 15 && pinTowerCount >= 15 && !gameState.unlockedTrophies.has('PIN_15')) {
         gameState.unlockedTrophies.add('PIN_15');
-        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nPIN 15", canvasWidth / 2, canvasHeight / 2, 5, '#4CAF50', canvasWidth));
+        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nPIN 15", canvasWidth / 2, canvasHeight / 2, 5, '#FFFFFF', canvasWidth));
     }
 
     // Trophy: LIQUIDATION (Sold more than 4 towers and reached wave 15)
     if (gameState.towersSoldThisGame > 4 && gameState.wave === 15 && !gameState.unlockedTrophies.has('LIQUIDATION')) {
         const announcement = new TextAnnouncement("Trophy Unlocked!\nLiquidation", canvasWidth / 2, canvasHeight / 2, 5, '#facc15', canvasWidth);
         gameState.unlockedTrophies.add('LIQUIDATION');
+        gameState.announcements.push(announcement);
+        gameState.announcementLog.push(announcement);
+    }
+
+    // Trophy: CAT_BY_6 (Build a CAT tower by wave 6)
+    if (gameState.wave <= 6 && gameState.hasBuiltCat && !gameState.unlockedTrophies.has('CAT_BY_6')) {
+        const announcement = new TextAnnouncement("Trophy Unlocked!\nIt Pays For Itself", canvasWidth / 2, canvasHeight / 2, 5, '#f59e0b', canvasWidth);
+        gameState.unlockedTrophies.add('CAT_BY_6');
         gameState.announcements.push(announcement);
         gameState.announcementLog.push(announcement);
     }
