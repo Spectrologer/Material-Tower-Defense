@@ -446,6 +446,16 @@ export class Enemy {
                 this.isDying = true;
                 this.deathAnimationTimer = 0.5; // seconds
                 return true; // Keep the enemy for animation
+            } else if (this.type.splitsOnDeath) {
+                for (let i = 0; i < this.type.splitCount; i++) {
+                    const splitEnemy = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
+                    splitEnemy.x = this.x + (Math.random() - 0.5) * 15; // Spawn near parent
+                    splitEnemy.y = this.y + (Math.random() - 0.5) * 15;
+                    splitEnemy.pathIndex = this.pathIndex;
+                    allEnemies.push(splitEnemy);
+                }
+                onDeath(this);
+                return false;
             } else {
                 onDeath(this);
                 return false; // Remove this enemy immediately

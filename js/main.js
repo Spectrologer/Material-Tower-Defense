@@ -1702,6 +1702,21 @@ consoleCommands.spawnSummoner = (count = 1) => {
     }
 };
 
+consoleCommands.spawnSplitter = (count = 1) => {
+    if (gameState && gameState.path.length > 0) {
+        const numToSpawn = parseInt(count, 10);
+        if (isNaN(numToSpawn) || numToSpawn < 1) {
+            console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.spawnSplitter(3)");
+            return;
+        }
+        for (let i = 0; i < numToSpawn; i++) {
+            const splitter = new Enemy(ENEMY_TYPES.SPLITTER, gameState.path, 'SPLITTER');
+            gameState.enemies.push(splitter);
+        }
+        console.log(`Spawned ${numToSpawn} SPLITTER enemies!`);
+    }
+};
+
 consoleCommands.spawnHelicopter = () => {
     if (gameState && gameState.path.length > 0) {
         const helicopter = new Enemy(ENEMY_TYPES.FLYING, gameState.path, 'FLYING');

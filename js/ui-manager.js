@@ -786,6 +786,7 @@ function createEnemyCardHTML(type, isDiscovered) {
     if (stats.spawnsMinions) specialAbilities.push(`Spawns ${stats.spawnCount} ${stats.minionType}s`);
     if (stats.hatchTime) specialAbilities.push(`Hatches into ${stats.hatchesTo}`);
     if (stats.phaseInterval) specialAbilities.push('Phasing');
+    if (stats.splitsOnDeath) specialAbilities.push(`Splits into ${stats.splitCount} ${stats.splitInto}s`);
 
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(enemyStatDisplayConfig)

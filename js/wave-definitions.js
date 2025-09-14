@@ -113,24 +113,26 @@ export const waveDefinitions = [
     // Wave 15: The Final Boss
     {
         isBoss: true,
-        composition: [comp(ENEMY_TYPES.BOSS, 1)],
+        composition: [comp(ENEMY_TYPES.BOSS, 1)], // Flutterdash
+        endOfWaveAnnouncement: { text: "Warning:\nUnusual energy signatures detected!", color: '#4ade80' }
     },
-    // Wave 16: Introduce the Summoner.
+    // Wave 16: Introduce the Summoner, a slow but persistent threat.
     {
-        composition: [comp(ENEMY_TYPES.SUMMONER, 3), comp(ENEMY_TYPES.NORMAL, 10)],
+        composition: [comp(ENEMY_TYPES.SUMMONER, 4)],
         healthMultiplier: 2.5, healthBonus: 50,
-        detourRatio: 0.2,
+        endOfWaveAnnouncement: { text: "Warning:\nReality is becoming unstable!", color: '#9333ea' }
     },
-    // Wave 17: Introduce Phantoms alongside fast and stealthy enemies.
+    // Wave 17: Introduce Phantoms, testing tracking and burst damage.
     {
-        composition: [comp(ENEMY_TYPES.FAST, 10), comp(ENEMY_TYPES.STEALTH, 8), comp(ENEMY_TYPES.PHANTOM, 5)],
+        composition: [comp(ENEMY_TYPES.PHANTOM, 8), comp(ENEMY_TYPES.FAST, 10)],
         healthMultiplier: 2.8, healthBonus: 60,
         detourRatio: 0.6,
     },
-    // Wave 18: A heavy ground assault with flying support.
-    { // Boss Decay: The boss returns, but not as a final boss.
-        composition: [comp(ENEMY_TYPES.BOSS, 1), comp(ENEMY_TYPES.HEAVY, 8)],
-        healthMultiplier: 3.2, healthBonus: 75, // Health multiplier does not affect boss
+    // Wave 18: A tricky wave combining Phantoms that teleport and Summoners that create blockers.
+    {
+        composition: [comp(ENEMY_TYPES.SUMMONER, 2), comp(ENEMY_TYPES.PHANTOM, 6)],
+        healthMultiplier: 3.2, healthBonus: 75,
+        detourRatio: 0.5,
     },
     // Wave 19: A massive swarm wave to push splash damage towers to their limit.
     {
@@ -138,46 +140,43 @@ export const waveDefinitions = [
         composition: [comp(ENEMY_TYPES.SWARM, 50)],
         healthMultiplier: 3.0, healthBonus: 40,
         detourRatio: 1.0,
+        endOfWaveAnnouncement: { text: "Warning:\nCellular division detected!", color: '#84cc16' }
     },
-    // Wave 20: Economic challenge with a large group of Bitcoin enemies.
+    // Wave 20: Introduce the Splitter enemy.
     {
-        composition: [comp(ENEMY_TYPES.BITCOIN, 40)],
+        composition: [comp(ENEMY_TYPES.SPLITTER, 15)],
         healthMultiplier: 4.0, healthBonus: 100,
+        detourRatio: 0.33,
     },
-    // Wave 21: A tricky combination of fast detour enemies and heavy main path enemies.
+    // Wave 21: Splitters are now mixed with Heavies, creating a durable, high-density threat.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.FAST, 20)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.SPLITTER, 8)],
         healthMultiplier: 4.5, healthBonus: 120,
-        detourRatio: 1.0,
     },
-    // Wave 22: A test of detection and mixed damage with stealth and heavy units.
-    { // Boss Decay: The boss appears alongside stealth units, a tricky combination.
-        composition: [comp(ENEMY_TYPES.BOSS, 1), comp(ENEMY_TYPES.STEALTH, 12)],
-        healthMultiplier: 5.0, healthBonus: 150, // Health multiplier does not affect boss
+    // Wave 22: A test of detection and area damage with Stealth and Splitter units.
+    {
+        composition: [comp(ENEMY_TYPES.STEALTH, 12), comp(ENEMY_TYPES.SPLITTER, 6)],
+        healthMultiplier: 4.8, healthBonus: 130,
         detourRatio: 0.5,
     },
-    // Wave 23: A mixed wave of all ground types to test overall defense.
+    // Wave 23: A chaotic wave featuring all new enemy types together.
     {
-        composition: [
-            comp(ENEMY_TYPES.NORMAL, 15),
-            comp(ENEMY_TYPES.FAST, 10),
-            comp(ENEMY_TYPES.HEAVY, 5),
-            comp(ENEMY_TYPES.SWARM, 20)
-        ],
-        healthMultiplier: 5.5, healthBonus: 180,
-        detourRatio: 0.3,
+        composition: [comp(ENEMY_TYPES.SUMMONER, 2), comp(ENEMY_TYPES.PHANTOM, 5), comp(ENEMY_TYPES.SPLITTER, 5)],
+        healthMultiplier: 5.0, healthBonus: 150, // Health multiplier does not affect boss
+        detourRatio: 0.4,
     },
     // Wave 24: A challenging air and ground pincer attack.
     {
-        composition: [comp(ENEMY_TYPES.FLYING, 15), comp(ENEMY_TYPES.HEAVY, 10)],
-        healthMultiplier: 6.0, healthBonus: 220,
+        composition: [comp(ENEMY_TYPES.FLYING, 15), comp(ENEMY_TYPES.HEAVY, 8)],
+        healthMultiplier: 5.5, healthBonus: 180,
     },
     // Wave 25: A pre-infinite wave with a bit of everything, including stealth.
     {
         composition: [
-            comp(ENEMY_TYPES.BOSS, 2), // Two bosses at once!
-            comp(ENEMY_TYPES.FLYING, 8),
-            comp(ENEMY_TYPES.FAST, 10)
+            comp(ENEMY_TYPES.BOSS, 1),
+            comp(ENEMY_TYPES.SUMMONER, 2),
+            comp(ENEMY_TYPES.PHANTOM, 4),
+            comp(ENEMY_TYPES.SPLITTER, 4)
         ],
         healthMultiplier: 6.5, healthBonus: 250,
         detourRatio: 0.5,
