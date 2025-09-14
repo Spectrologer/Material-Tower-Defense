@@ -730,11 +730,21 @@ export class Enemy {
         return true; // Keep this enemy
     }
     takeDamage(damage, projectile = null) {
-        let armor = this.type.armor || 0;
-        let finalDamage = damage;
+        const armor = this.type.armor || 0;
+        let finalDamage;
 
         const isTrueDamage = projectile && projectile.isTrueDamage;
 
+        if (isTrueDamage) {
+            finalDamage = damage;
+        } else {
+            const armorMultiplier = 1 - (armor / (armor + 100));
+            finalDamage = damage * armorMultiplier;
+        }
+
+        this.health -= finalDamage;
+        this.hitTimer = 0.1; // Flash for 0.1 seconds
+        return this.health <= 0;
     }
 }
 

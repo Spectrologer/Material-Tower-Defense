@@ -186,6 +186,17 @@ async function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
 
+    // Lock cloud storage at the start of the wave
+    if (!gameState.hasPermanentCloud) {
+        gameState.isCloudUnlocked = false;
+    }
+    updateUI(gameState, gameSpeed);
+    uiElements.startWaveBtn.disabled = true;
+
+    checkTrophies();
+    gameState.waveInProgress = true;
+    gameState.spawningEnemies = true;
+
     const nextWave = gameState.wave;
 
     let waveDef;
@@ -796,9 +807,9 @@ function gameLoop(currentTime) {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-async function onEndWave() {
+export async function onEndWave() {
     // Check for Wave 16 Power-up choice (after wave 15 ends)
-    if (gameState.wave === 15 && !gameState.wave16PowerChosen) {
+    if (gameState.wave === 15 && !gameState.wave16PowerChosen) { // This was line 801
         gameState.wave16PowerChosen = true;
         persistGameState(0);
         await showWave16PowerChoice(); // Wait for the player to make a choice
@@ -1899,8 +1910,7 @@ window.toggleStealthRadius = (towerId) => {
 
 // Event Listeners
 uiElements.startWaveBtn.addEventListener('click', () => {
-    resumeAudioContext();
-    uiElements.cloudInventoryPanel.classList.add('hidden');
+    resumeAudioContext(); uiElements.cloudInventoryPanel.classList.add('hidden');
     spawnWave();
 });
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));

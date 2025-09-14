@@ -38,6 +38,7 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} usedPinHeartTower - Whether a PIN_HEART tower has been used in the current game.
  * @property {boolean} onlyPinTowersUsed - Whether only PIN towers have been used in the current game.
  * @property {boolean} waveInProgress - Whether a wave is currently in progress.
+ * @property {boolean} wave16PowerChosen - Whether the player has chosen their power-up after wave 15.
  * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
  * @property {boolean} gameOver - Whether the game is over.
  * @property {boolean} hasDelete - Whether the player has a delete charge available.
@@ -60,7 +61,7 @@ export let gameState;
 // Wipes the slate clean and starts a brand new game.
 // Can perform a "soft" reset (keeping library progress) or a "hard" reset (wiping everything).
 export function resetGameState(hardReset = false) {
-    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog, hasChosenPowerUp;
+    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog, hasChosenPowerUp, wave16PowerChosen;
 
     if (hardReset) {
         // For a hard reset, start with fresh, default persistent data.
@@ -71,6 +72,7 @@ export function resetGameState(hardReset = false) {
         unlockedTrophies = new Set();
         announcementLog = [];
         hasChosenPowerUp = false;
+        wave16PowerChosen = false;
     } else {
         // For a soft reset, load the last state from storage to preserve persistent data.
         const lastState = getGameStateFromStorage();
@@ -79,6 +81,7 @@ export function resetGameState(hardReset = false) {
         discoveredTowerTypes = lastState.discoveredTowerTypes;
         killedEnemies = lastState.killedEnemies;
         unlockedTrophies = lastState.unlockedTrophies;
+        wave16PowerChosen = lastState.wave16PowerChosen;
         hasChosenPowerUp = lastState.hasChosenPowerUp;
         // For a soft reset, we want to clear the log for the new game,
         // so we just initialize an empty array.
@@ -99,6 +102,7 @@ export function resetGameState(hardReset = false) {
     newGameState.unlockedTrophies = unlockedTrophies;
     newGameState.announcementLog = announcementLog;
     newGameState.hasChosenPowerUp = hasChosenPowerUp;
+    newGameState.wave16PowerChosen = wave16PowerChosen;
 
 
     // Set the module's gameState to the newly prepared state
@@ -169,6 +173,7 @@ function getInitialGameState() {
         waveInProgress: false,
         spawningEnemies: false,
         gameOver: false,
+        wave16PowerChosen: false,
         hasDelete: false,
         hasChosenPowerUp: false,
         isCloudUnlocked: false,
@@ -214,6 +219,7 @@ function getSerializedGameState() {
         waveInProgress: gameState.waveInProgress,
         spawningEnemies: gameState.spawningEnemies,
         gameOver: gameState.gameOver,
+        wave16PowerChosen: gameState.wave16PowerChosen,
         hasDelete: gameState.hasDelete,
         hasChosenPowerUp: gameState.hasChosenPowerUp,
         isCloudUnlocked: gameState.isCloudUnlocked,
@@ -258,6 +264,7 @@ function deserializeGameState(serializedGameState) {
             hasDelete: basicData.hasDelete || false,
             usedPinHeartTower: basicData.usedPinHeartTower || false,
             hasBuiltCat: basicData.hasBuiltCat || false, // This line seems to have a typo in the original, fixing it.
+            wave16PowerChosen: basicData.wave16PowerChosen || false,
             hasChosenPowerUp: basicData.hasChosenPowerUp || false,
             hasPermanentCloud: basicData.hasPermanentCloud || false,
             onlyPinTowersUsed: basicData.onlyPinTowersUsed === undefined ? true : basicData.onlyPinTowersUsed,
