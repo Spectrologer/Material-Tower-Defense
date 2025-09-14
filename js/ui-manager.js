@@ -16,6 +16,7 @@ export const uiElements = {
     goldEl: document.getElementById('gold'),
     waveEl: document.getElementById('wave'),
     startWaveBtn: getButton('start-wave'),
+    gameTitle: document.getElementById('game-title'),
     buyPinBtn: getButton('buy-pin'),
     buyCastleBtn: getButton('buy-castle'),
     buySupportBtn: getButton('buy-support'),

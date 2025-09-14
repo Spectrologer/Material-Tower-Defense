@@ -183,6 +183,14 @@ function checkTrophies() {
 
 
 async function spawnWave() {
+    // Check for Wave 16 Power-up choice
+    if (gameState.wave === 16 && !gameState.wave16PowerChosen) {
+        gameState.wave16PowerChosen = true;
+        persistGameState(0);
+        await showWave16PowerChoice(); // Wait for the player to make a choice
+        return; // Stop here and let the UI handler continue the wave
+    }
+
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
 
@@ -224,17 +232,16 @@ async function spawnWave() {
 
     let enemiesToSpawn = [];
     if (waveDef.interleave) {
-        // Interleave: Alternate between enemy types in a round-robin fashion.
-        const enemyCounts = waveDef.composition.map(comp => ({ type: comp.type, count: comp.count }));
-        let totalEnemies = enemyCounts.reduce((sum, comp) => sum + comp.count, 0);
-        let typeIndex = 0;
-
-        while (enemiesToSpawn.length < totalEnemies) {
-            if (enemyCounts[typeIndex].count > 0) {
-                enemiesToSpawn.push(enemyCounts[typeIndex].type);
-                enemyCounts[typeIndex].count--;
+        // Interleave: Create a flat list of all enemies and shuffle it.
+        waveDef.composition.forEach(comp => {
+            for (let i = 0; i < comp.count; i++) {
+                enemiesToSpawn.push(comp.type);
             }
-            typeIndex = (typeIndex + 1) % enemyCounts.length;
+        });
+        // Fisher-Yates shuffle algorithm
+        for (let i = enemiesToSpawn.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [enemiesToSpawn[i], enemiesToSpawn[j]] = [enemiesToSpawn[j], enemiesToSpawn[i]];
         }
     } else {
         // Default behavior: Spawn in blocks.
@@ -567,19 +574,12 @@ function gameLoop(currentTime) {
 
     updateStealthVisibility();
     applyAuraEffects();
-    const onEnemyDeath = async (enemy, payload = {}) => {
+    const onEnemyDeath = (enemy, payload = {}) => {
         if (selectedEnemy === enemy) {
             selectedEnemy = null;
         }
         if (enemy.typeName) {
             gameState.killedEnemies.add(enemy.typeName);
-            // Check if the first boss was just killed
-            if (enemy.typeName === 'BOSS' && !gameState.hasChosenPowerUp) {
-                gameState.hasChosenPowerUp = true;
-                persistGameState(0);
-                await showWave16PowerChoice(); // Wait for the player to make a choice
-                updateUI(gameState, gameSpeed); // Update UI after choice is made
-            }
         }
         if (enemy.gold > 0) {
             playMoneySound();
@@ -1898,8 +1898,6 @@ consoleCommands.debug = () => {
     if (gameState) {
         isInfiniteGold = true;
         gameState.lives = Infinity;
-        const announcement = new TextAnnouncement("DEBUG MODE\nACTIVATED", canvasWidth / 2, canvasHeight / 2, 3, '#00ff00', canvasWidth);
-        gameState.announcements.push(announcement);
         console.log("Debug mode enabled: Infinite gold and lives.");
     } else {
         console.error("Game not initialized.");
@@ -2403,29 +2401,6 @@ uiElements.logCloseBtn.addEventListener('click', () => {
     uiElements.logModal.classList.add('hidden');
 });
 
-// Debug mode activation by clicking/tapping the title 5 times
-let titleClickCount = 0;
-let titleClickTimer = null;
-
-const handleTitleInteraction = () => {
-    titleClickCount++;
-
-    if (titleClickTimer) {
-        clearTimeout(titleClickTimer);
-    }
-
-    titleClickTimer = setTimeout(() => {
-        titleClickCount = 0; // Reset after 1 second of inactivity
-    }, 1000);
-
-    if (titleClickCount === 5) {
-        consoleCommands.debug();
-        titleClickCount = 0;
-    }
-};
-
-uiElements.gameTitle.addEventListener('click', handleTitleInteraction);
-uiElements.gameTitle.addEventListener('touchend', handleTitleInteraction);
 
 window.addEventListener('resize', resizeCanvas);
 

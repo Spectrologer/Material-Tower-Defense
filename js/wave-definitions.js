@@ -14,32 +14,35 @@ const comp = (type, count) => ({ type, count });
 //                down the detour path. It only affects enemies with `prefersDetour: true`
 //                set in constants.js. For example, 0.5 means every 2nd eligible enemy
 //                will take the detour. 1.0 means all eligible enemies will.
+// - interleave: (boolean) If true, alternates spawning between enemy types in a round-robin fashion.
 // - endOfWaveAnnouncement: A message to show the player to warn them about the *next* wave.
 export const waveDefinitions = [
-    // Wave 1: A few NORMAL enemies to introduce the detour.
+    // Wave 1: A few NORMAL enemies, with a FAST one at the end to keep players on their toes.
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 10)],
+        composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 1)],
         healthMultiplier: 0.9, healthBonus: 0,
         detourRatio: 0,
     },
-    // Wave 2: More NORMAL enemies, testing basic tower placement without a detour.
+    // Wave 2: Introduce SWARM enemies early to hint at splash damage.
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 15)],
+        composition: [comp(ENEMY_TYPES.NORMAL, 12), comp(ENEMY_TYPES.SWARM, 5)],
         healthMultiplier: 1.15, healthBonus: 0,
         endOfWaveAnnouncement: { text: "Warning:\nFast enemies incoming!", color: '#ffb84d' }
     },
-    // Wave 3: Introduce FAST enemies and split the path.
+    // Wave 3: A bigger split wave to make the detour more significant.
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 8)],
+        interleave: true,
+        composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 12)],
         healthMultiplier: 1.0, healthBonus: 0,
         detourRatio: 0.5,
         endOfWaveAnnouncement: { text: "Warning:\nWe've encountered a bug!", color: '#00e6e6' }
 
     },
-    // Wave 4: Introduce SWARM, a light swarm to test splash damage.
+    // Wave 4: A mixed swarm to test splash and single-target prioritization.
     {
         isSwarm: true,
-        composition: [comp(ENEMY_TYPES.SWARM, 18)],
+        interleave: true,
+        composition: [comp(ENEMY_TYPES.NORMAL, 5), comp(ENEMY_TYPES.SWARM, 15)],
         healthMultiplier: 1.0, healthBonus: 0,
         detourRatio: 1.0,
         endOfWaveAnnouncement: { text: "Warning:\nBulky enemies inbound!", color: '#3446ceff' }
@@ -51,32 +54,35 @@ export const waveDefinitions = [
     },
     // Wave 6: Introduce HEALERs alongside HEAVY enemies to teach the importance of focus fire.
     {
+        interleave: true,
         composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 2)],
         healthMultiplier: 1.2, healthBonus: 10,
         detourRatio: 0,
         endOfWaveAnnouncement: { text: "They can heal each other now?!", color: '#4fc3f7' }
     },
-    // Wave 7: Introduce FLYING enemies, a pure anti-air check.
+    // Wave 7: A pure anti-air check with a tough ground-based surprise at the end.
     {
-        composition: [comp(ENEMY_TYPES.FLYING, 10)],
+        composition: [comp(ENEMY_TYPES.FLYING, 10), comp(ENEMY_TYPES.HEAVY, 1)],
         healthMultiplier: 1.3, healthBonus: 20,
     },
     // Wave 8: A mix of ground and air to test defense flexibility.
     {
+        interleave: true,
         composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.HEALER, 2), comp(ENEMY_TYPES.FLYING, 5)],
         healthMultiplier: 1.4, healthBonus: 25,
         endOfWaveAnnouncement: { text: "Unseen threats ahead!\nDetection required.", color: '#BDBDBD' }
     },
-    // Wave 9: Introduce STEALTH enemies, testing detection tower usage.
+    // Wave 9: Test detection and speed simultaneously.
     {
-        composition: [comp(ENEMY_TYPES.STEALTH, 8)],
+        interleave: true,
+        composition: [comp(ENEMY_TYPES.STEALTH, 8), comp(ENEMY_TYPES.FAST, 5)],
         healthMultiplier: 1.1, healthBonus: 10,
         detourRatio: 0.5,
     },
-    // Wave 10: A larger ground wave with mixed types to test overall defense.
+    // Wave 10: A capstone wave for the early game, testing a bit of everything.
     {
         isSwarm: true,
-        composition: [comp(ENEMY_TYPES.NORMAL, 12), comp(ENEMY_TYPES.SWARM, 15)],
+        composition: [comp(ENEMY_TYPES.NORMAL, 12), comp(ENEMY_TYPES.SWARM, 15), comp(ENEMY_TYPES.HEAVY, 1)],
         healthMultiplier: 1.6, healthBonus: 10,
         detourRatio: 0.25,
         endOfWaveAnnouncement: { text: "Warning:\nFinancial assets at risk!", color: '#f7e51aff' }
@@ -114,7 +120,6 @@ export const waveDefinitions = [
     {
         isBoss: true,
         composition: [comp(ENEMY_TYPES.BOSS, 1)], // Flutterdash
-        endOfWaveAnnouncement: { text: "Warning:\nUnusual energy signatures detected!", color: '#4ade80' }
     },
     // Wave 16: Introduce the Summoner, a slow but persistent threat.
     {

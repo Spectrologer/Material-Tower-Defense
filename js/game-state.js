@@ -41,7 +41,7 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
  * @property {boolean} gameOver - Whether the game is over.
  * @property {boolean} hasDelete - Whether the player has a delete charge available.
- * @property {boolean} wave16PowerChosen - Whether the player has made their wave 16 power choice.
+ * @property {boolean} hasChosenPowerUp - Whether the player has made their power choice.
  * @property {boolean} isCloudUnlocked - Whether the cloud inventory feature is unlocked.
  * @property {boolean} hasPermanentCloud - Whether the player has unlocked permanent cloud access.
  * @property {Array} cloudInventory - List of towers stored in the cloud inventory.
@@ -60,7 +60,7 @@ export let gameState;
 // Wipes the slate clean and starts a brand new game.
 // Can perform a "soft" reset (keeping library progress) or a "hard" reset (wiping everything).
 export function resetGameState(hardReset = false) {
-    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog, wave16PowerChosen;
+    let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog, hasChosenPowerUp;
 
     if (hardReset) {
         // For a hard reset, start with fresh, default persistent data.
@@ -70,7 +70,7 @@ export function resetGameState(hardReset = false) {
         killedEnemies = new Set();
         unlockedTrophies = new Set();
         announcementLog = [];
-        wave16PowerChosen = false;
+        hasChosenPowerUp = false;
     } else {
         // For a soft reset, load the last state from storage to preserve persistent data.
         const lastState = getGameStateFromStorage();
@@ -79,7 +79,7 @@ export function resetGameState(hardReset = false) {
         discoveredTowerTypes = lastState.discoveredTowerTypes;
         killedEnemies = lastState.killedEnemies;
         unlockedTrophies = lastState.unlockedTrophies;
-        wave16PowerChosen = lastState.wave16PowerChosen;
+        hasChosenPowerUp = lastState.hasChosenPowerUp;
         // For a soft reset, we want to clear the log for the new game,
         // so we just initialize an empty array.
         announcementLog = [];
@@ -98,7 +98,7 @@ export function resetGameState(hardReset = false) {
     newGameState.killedEnemies = killedEnemies;
     newGameState.unlockedTrophies = unlockedTrophies;
     newGameState.announcementLog = announcementLog;
-    newGameState.wave16PowerChosen = wave16PowerChosen;
+    newGameState.hasChosenPowerUp = hasChosenPowerUp;
 
 
     // Set the module's gameState to the newly prepared state
@@ -170,7 +170,7 @@ function getInitialGameState() {
         spawningEnemies: false,
         gameOver: false,
         hasDelete: false,
-        wave16PowerChosen: false,
+        hasChosenPowerUp: false,
         isCloudUnlocked: false,
         hasPermanentCloud: false,
         cloudInventory: [],
@@ -215,7 +215,7 @@ function getSerializedGameState() {
         spawningEnemies: gameState.spawningEnemies,
         gameOver: gameState.gameOver,
         hasDelete: gameState.hasDelete,
-        wave16PowerChosen: gameState.wave16PowerChosen,
+        hasChosenPowerUp: gameState.hasChosenPowerUp,
         isCloudUnlocked: gameState.isCloudUnlocked,
         hasPermanentCloud: gameState.hasPermanentCloud,
         isDetourOpen: gameState.isDetourOpen,
@@ -257,8 +257,8 @@ function deserializeGameState(serializedGameState) {
             unlockedTrophies: new Set(unlockedTrophies || []),
             hasDelete: basicData.hasDelete || false,
             usedPinHeartTower: basicData.usedPinHeartTower || false,
-            hasBuiltCat: basicData.hasBuiltCat || false,
-            wave16PowerChosen: basicData.wave16PowerChosen || false,
+            hasBuiltCat: basicData.hasBuiltCat || false, // This line seems to have a typo in the original, fixing it.
+            hasChosenPowerUp: basicData.hasChosenPowerUp || false,
             hasPermanentCloud: basicData.hasPermanentCloud || false,
             onlyPinTowersUsed: basicData.onlyPinTowersUsed === undefined ? true : basicData.onlyPinTowersUsed,
             towersSoldThisGame: basicData.towersSoldThisGame || 0,
