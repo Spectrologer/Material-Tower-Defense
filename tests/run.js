@@ -22,7 +22,7 @@ let testResults = {
 };
 
 // Global test function
-global.test = async function(description, testFn) {
+global.test = async function (description, testFn) {
     try {
         await testFn();
         testResults.passed++;
@@ -39,21 +39,21 @@ global.test = async function(description, testFn) {
 async function runTests() {
     const testDir = __dirname;
     const files = await fs.readdir(testDir);
-    const testFiles = files.filter(f => f.endsWith('.test.js'));
-    
+    const testFiles = files.filter(f => f.endsWith('.test.js') && f !== 'setup.js');
+
     console.log(`Running ${testFiles.length} test files...\n`);
-    
+
     for (const file of testFiles) {
         console.log(`${colors.yellow}${file}:${colors.reset}`);
         const filePath = path.join(testDir, file);
         await import(pathToFileURL(filePath).href);
         console.log('');
     }
-    
+
     // Print summary
     console.log('='.repeat(50));
     console.log(`Tests: ${colors.green}${testResults.passed} passed${colors.reset}, ${colors.red}${testResults.failed} failed${colors.reset}, ${testResults.passed + testResults.failed} total`);
-    
+
     // Exit with error code if tests failed
     if (testResults.failed > 0) {
         process.exit(1);

@@ -1065,7 +1065,7 @@ export function showEndlessChoice() {
 let glitterInterval = null;
 
 function startGlitterAnimation() {
-    const panel = uiElements.wave16PowerChoiceModal.querySelector('.game-over-modal');
+    const panel = uiElements.wave16PowerChoiceModal.querySelector('.game-over-modal'); // This returns Element
     if (!panel) return;
 
     // Stop any existing animation
@@ -1080,8 +1080,8 @@ function startGlitterAnimation() {
     glitterInterval = setInterval(() => {
         const glitter = document.createElement('div');
         glitter.className = 'absolute bg-white rounded-full';
-        glitter.style.width = '2px';
-        glitter.style.height = '2px';
+        glitter.style.width = '2px'; // This was a good idea, but it's not being used.
+        glitter.style.height = '2px'; // This was a good idea, but it's not being used.
         glitter.style.boxShadow = '0 0 6px 1px #ffffff';
         glitter.style.animation = `glitter-border ${2 + Math.random() * 2}s linear forwards`;
         glitter.style.left = `${Math.random() * 100}%`;
@@ -1099,15 +1099,15 @@ export function showWave16PowerChoice(continueCallback) {
         startGlitterAnimation();
 
         const createHandler = (handler) => (event) => {
-            handler(event); // Grant the power-up
+            handler(); // Grant the power-up
             hideWave16PowerChoice(); // Hide the modal
             resolve(); // Resolve the promise to let the game loop continue
         };
 
         // Use .once = true to automatically remove the listener after it's called.
-        uiElements.deletePowerBtn.addEventListener('click', createHandler(() => handleDeletePower(continueCallback)), { once: true });
-        uiElements.cloudPowerBtn.addEventListener('click', createHandler(() => handleCloudPower(continueCallback)), { once: true });
-        uiElements.livesPowerBtn.addEventListener('click', createHandler(() => handleLivesPower(continueCallback)), { once: true });
+        uiElements.deletePowerBtn.addEventListener('click', createHandler(handleDeletePower), { once: true });
+        uiElements.cloudPowerBtn.addEventListener('click', createHandler(handleCloudPower), { once: true });
+        uiElements.livesPowerBtn.addEventListener('click', createHandler(handleLivesPower), { once: true });
     });
 }
 
