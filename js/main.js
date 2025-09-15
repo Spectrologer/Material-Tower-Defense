@@ -719,10 +719,6 @@ function gameLoop(currentTime) {
         selectedEnemy.drawSelection(ctx);
         drawEnemyInfoPanel(ctx, selectedEnemy, canvasWidth);
     }
-    if (window.previewedEnemy) {
-        window.previewedEnemy.drawSelection(ctx);
-        drawEnemyInfoPanel(ctx, window.previewedEnemy, canvasWidth);
-    }
     if (settingAttackGroundForTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);

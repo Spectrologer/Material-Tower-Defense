@@ -1,6 +1,6 @@
 import { TOWER_TYPES, ENEMY_TYPES, CLOUD_STORAGE_COST } from './constants.js';
 import { getTowerIconInfo } from './drawing-function.js';
-import { gameState, Enemy } from './game-state.js';
+import { gameState } from './game-state.js';
 import { TextAnnouncement, Effect } from './game-entities.js';
 import { waveDefinitions } from './wave-definitions.js';
 

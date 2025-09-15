@@ -1,5 +1,14 @@
 export const changelog = [
     {
+        version: '0.2.1',
+        date: '2025-09-14',
+        changes: [
+            'Added a retractable bottom panel to provide more visibility of the game board.',
+            'Added an "Upcoming Wave" preview that appears when the bottom panel is retracted.',
+            'Fixed an issue where the "Upcoming Wave" preview would overlap with the tower selection panel.'
+        ]
+    },
+    {
         version: '0.2.0',
         date: '2025-09-13',
         changes: [
