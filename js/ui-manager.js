@@ -781,17 +781,17 @@ function createTowerCardHTML(type, isDiscovered) {
 
     return `
         <div class="tower-card absolute inset-0 p-2 flex flex-col items-center text-center">
-            <div class="flex-shrink-0">
+            <div class="flex-shrink-0 w-full">
                 ${iconHTML}
                 <h4 class="text-3xl mt-2 whitespace-normal" style="color: ${stats.color};">${name}</h4>
                 <p class="text-sm text-gray-400">(${type})</p>
             </div>
-            <div class="flex-grow overflow-y-auto w-full my-2">
+            <div class="flex-grow overflow-y-auto w-full my-2 min-h-0">
                 <div class="text-left text-base w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
                     ${statsGridHTML}
                 </div>
                 ${specialAbilities.length > 0 ? `
-                    <div class="text-left text-base w-full mt-4 px-2">
+                    <div class="text-left text-base w-full mt-2 px-2">
                         <h5 class="text-fuchsia-400">Abilities:</h5>
                         <ul class="list-disc list-inside text-sm">${specialAbilities.map(s => `<li>${s}</li>`).join('')}</ul>
                     </div>` : ''}
@@ -863,12 +863,12 @@ function createEnemyCardHTML(type, isDiscovered) {
 
     return `
         <div class="enemy-card absolute inset-0 p-2 flex flex-col items-center text-center">
-            <div class="flex-shrink-0">
+            <div class="flex-shrink-0 w-full">
                 ${iconHTML}
                 <h4 class="text-3xl mt-2 whitespace-normal" style="color: ${stats.color};">${name}</h4>
                 <p class="text-sm text-gray-400">(${type})</p>
             </div>
-            <div class="flex-grow overflow-y-auto w-full my-2">
+            <div class="flex-grow overflow-y-auto w-full my-2 min-h-0">
                 <div class="text-left text-base w-full grid grid-cols-2 gap-x-2 gap-y-1 px-2">
                     ${statsGridHTML}
                 </div>
