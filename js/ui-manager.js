@@ -215,17 +215,12 @@ export function updateNextWavePreview(currentWave) {
         uiElements.nextWavePreview.appendChild(groupEl);
     }
 
-    // Show the preview unless the sell panel is visible
-    const sellPanelVisible = !uiElements.sellPanel.classList.contains('hidden');
-    if (!sellPanelVisible) {
-        uiElements.nextWavePreview.classList.remove('hidden');
-    } else {
-        uiElements.nextWavePreview.classList.add('hidden');
-    }
+    uiElements.nextWavePreview.classList.remove('hidden');
 }
 
 export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
     const selectedTower = selectedTowers.length === 1 ? selectedTowers[0] : null;
+    const bottomPanel = document.getElementById('bottom-panel-container');
 
     // Always remove the icon first to handle deselection correctly.
     const existingIndicator = uiElements.sellPanel.querySelector('.detection-indicator-container');
@@ -236,6 +231,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
     if (uiElements.setGroundTargetBtn) uiElements.setGroundTargetBtn.classList.add('hidden');
 
     if (selectedTowers.length > 0) {
+        if (bottomPanel) bottomPanel.classList.remove('retracted');
         if (uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.add('hidden');
         if (uiElements.gameControls) uiElements.gameControls.classList.add('hidden');
 

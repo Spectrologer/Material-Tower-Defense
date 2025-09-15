@@ -1,5 +1,13 @@
 export const changelog = [
     {
+        version: '0.2.2',
+        date: '2025-09-15',
+        changes: [
+            'The "Upcoming Wave" preview is now always visible.',
+            'Fixed a bug where selecting a tower while the bottom panel was retracted would hide the selection menu.'
+        ]
+    },
+    {
         version: '0.2.1',
         date: '2025-09-14',
         changes: [
