@@ -1,8 +1,7 @@
 // This file handles all the data about the current game session,
 // like how much gold you have, what wave you're on, and where all the towers are.
 // It also takes care of saving and loading your progress to your browser's storage.
-
-import { Tower, } from "./game-entities.js";
+import { Tower, Enemy } from "./game-entities.js";
 import { generatePath } from "./path-generator.js";
 
 // This is a list of everything that makes up the game's state.
@@ -52,6 +51,8 @@ import { generatePath } from "./path-generator.js";
  * @property {Array} pathWithDetour - The combined path including the detour.
  * @property {Array} placementGrid - 2D array representing the game board for tower placement.
  */
+
+export { Enemy };
 
 /**
  * @type {GameState}

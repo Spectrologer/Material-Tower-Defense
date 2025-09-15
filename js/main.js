@@ -1,6 +1,6 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS, GRID_ROWS, CLOUD_STORAGE_COST } from './constants.js';
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
-import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice, populateMessageLog, showWave16PowerChoice } from './ui-manager.js';
+import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice, populateMessageLog, showWave16PowerChoice, updateNextWavePreview } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, addTower, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
@@ -719,6 +719,10 @@ function gameLoop(currentTime) {
         selectedEnemy.drawSelection(ctx);
         drawEnemyInfoPanel(ctx, selectedEnemy, canvasWidth);
     }
+    if (window.previewedEnemy) {
+        window.previewedEnemy.drawSelection(ctx);
+        drawEnemyInfoPanel(ctx, window.previewedEnemy, canvasWidth);
+    }
     if (settingAttackGroundForTower) {
         const gridX = Math.floor(mouse.x / TILE_SIZE);
         const gridY = Math.floor(mouse.y / TILE_SIZE);
@@ -1008,20 +1012,10 @@ function handleCanvasClick(e) {
     }
     lastClickTime = now;
 
-    // If the event target is not the canvas itself, it's a UI click, so ignore it.
-    // This is a more reliable way to distinguish UI interaction from game interaction.
-    // The `placingTower` check is removed because even when placing, the initial click
-    // might be on a UI button, which is handled by other logic. This listener should
-    // only care about clicks directly on the canvas.
-    if (e.target !== canvas) {
-        // It's a click on a UI element layered on top of the canvas, not the canvas itself.
-        return;
-    }
 
     const isShiftPressed = e.shiftKey;
     if (isDoubleClick) {
         isDoubleClick = false; // Reset for the next click
-        // If a double-click just occurred, ignore this single click event
         return;
     }
 
@@ -1035,7 +1029,7 @@ function handleCanvasClick(e) {
     let actionTaken = false;
     let isPlacingMode = placingTower || placingFromCloud;
 
-    // Handle setting mortar attack ground target
+
     if (settingAttackGroundForTower) {
         const distance = Math.hypot(snappedX - settingAttackGroundForTower.x, snappedY - settingAttackGroundForTower.y);
         if (distance <= settingAttackGroundForTower.range) {
@@ -2393,6 +2387,18 @@ uiElements.changelogBtn.addEventListener('click', () => {
     localStorage.setItem('lastSeenVersion', CHANGELOG_VERSION);
     uiElements.changelogIndicator.classList.add('hidden');
 });
+
+const bottomPanel = document.getElementById('bottom-panel-container'); if (bottomPanel) {
+    bottomPanel.addEventListener('click', (e) => {
+        // Only toggle if the click is on the panel itself, not its children (like buttons).
+        // This prevents clicks on buttons from also toggling the panel.
+        const target = /** @type {HTMLElement} */ (e.target);
+        if (target.id === 'bottom-panel-container' || target.id === 'towers-title') {
+            updateNextWavePreview(gameState.wave);
+            bottomPanel.classList.toggle('retracted');
+        }
+    });
+}
 
 uiElements.changelogCloseBtn.addEventListener('click', () => {
     uiElements.changelogModal.classList.add('hidden');

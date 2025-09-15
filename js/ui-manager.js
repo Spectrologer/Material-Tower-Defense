@@ -1,7 +1,8 @@
 import { TOWER_TYPES, ENEMY_TYPES, CLOUD_STORAGE_COST } from './constants.js';
 import { getTowerIconInfo } from './drawing-function.js';
-import { gameState } from './game-state.js';
+import { gameState, Enemy } from './game-state.js';
 import { TextAnnouncement, Effect } from './game-entities.js';
+import { waveDefinitions } from './wave-definitions.js';
 
 /**
  * @param {string} id
@@ -132,6 +133,7 @@ export const uiElements = {
     statDamageAmp: document.getElementById('stat-damage-amp'),
     towerKillCount: document.getElementById('tower-kill-count'),
     killCountValue: document.getElementById('kill-count-value'),
+    nextWavePreview: document.getElementById('next-wave-preview'),
 };
 
 export function updateUI(state, gameSpeed) {
@@ -163,6 +165,63 @@ export function updateUI(state, gameSpeed) {
 
     // Show or hide the nuke button
     uiElements.deleteActivateBtn.classList.toggle('hidden', !state.hasDelete);
+
+    updateNextWavePreview(state.wave);
+}
+
+export function updateNextWavePreview(currentWave) {
+    if (!uiElements.nextWavePreview) return;
+
+    const nextWaveIndex = currentWave - 1; // The wave that just ended or is about to start.
+    if (nextWaveIndex >= waveDefinitions.length) {
+        uiElements.nextWavePreview.classList.add('hidden');
+        return;
+    }
+
+    const nextWaveDef = waveDefinitions[nextWaveIndex];
+    if (!nextWaveDef || !nextWaveDef.composition) {
+        uiElements.nextWavePreview.classList.add('hidden');
+        return;
+    }
+
+    // Clear existing icons but keep the "UPCOMING:" text
+    // Find all direct children of the preview element except for the first one (which is the "UPCOMING:" span)
+    const elementsToRemove = Array.from(uiElements.nextWavePreview.children).slice(1);
+    elementsToRemove.forEach(el => el.remove());
+
+    const enemyCounts = new Map();
+    nextWaveDef.composition.forEach(comp => {
+        const typeName = Object.keys(ENEMY_TYPES).find(key => ENEMY_TYPES[key] === comp.type);
+        if (enemyCounts.has(typeName)) {
+            enemyCounts.set(typeName, enemyCounts.get(typeName) + comp.count);
+        } else {
+            enemyCounts.set(typeName, comp.count);
+        }
+    });
+
+    for (const [typeName, count] of enemyCounts.entries()) {
+        const enemyType = ENEMY_TYPES[typeName];
+        const groupEl = document.createElement('div');
+        // The button is no longer interactive, so we remove cursor-pointer and hover effects.
+        groupEl.className = 'flex items-center gap-1 p-1 rounded-md';
+        groupEl.title = `${typeName.replace('_', ' ')}`;
+
+        // The font-family needs to be set directly in the style attribute for it to apply correctly.
+        const iconStyle = `color: ${enemyType.color}; font-size: 24px; text-shadow: 1px 1px 3px #000; font-family: '${enemyType.iconFamily || 'Material Icons'}';`;
+        groupEl.innerHTML = `
+            <span style="${iconStyle}">${enemyType.icon}</span>
+            <span class="font-bold text-base">x${count}</span>
+        `;
+        uiElements.nextWavePreview.appendChild(groupEl);
+    }
+
+    // Show the preview unless the sell panel is visible
+    const sellPanelVisible = !uiElements.sellPanel.classList.contains('hidden');
+    if (!sellPanelVisible) {
+        uiElements.nextWavePreview.classList.remove('hidden');
+    } else {
+        uiElements.nextWavePreview.classList.add('hidden');
+    }
 }
 
 export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
