@@ -124,6 +124,8 @@ export const uiElements = {
     statJumps: document.getElementById('stat-jumps'),
     statStunP: document.getElementById('stat-stun-p'),
     statStun: document.getElementById('stat-stun'),
+    statJumpRangeP: document.getElementById('stat-jump-range-p'),
+    statJumpRange: document.getElementById('stat-jump-range'),
     statArmorPenP: document.getElementById('stat-armor-pen-p'),
     statArmorPen: document.getElementById('stat-armor-pen'),
     towerKillCount: document.getElementById('tower-kill-count'),
@@ -198,7 +200,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
             uiElements.statBoostP, uiElements.statSlowP, uiElements.statGoldP,
-            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP, uiElements.statRangeP, uiElements.statArmorPenP,
+            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP, uiElements.statRangeP, uiElements.statArmorPenP, uiElements.statJumpRangeP,
             uiElements.statFragsP, uiElements.statPinsP, uiElements.statJumpsP, uiElements.statStunP
         ].forEach(p => {
             if (p) p.classList.add('hidden');
@@ -590,11 +592,20 @@ function updateStatsDisplay(selectedTower) {
             }
             if (uiElements.statJumps) uiElements.statJumps.textContent = selectedTower.chainTargets;
 
+            if (selectedTower.chainRange > 0) {
+                if (uiElements.statJumpRangeP) {
+                    uiElements.statJumpRangeP.classList.remove('hidden');
+                    const icon = /** @type {HTMLElement | null} */ (uiElements.statJumpRangeP.querySelector('span'));
+                    if (icon) icon.style.color = '#fef08a';
+                }
+                if (uiElements.statJumpRange) uiElements.statJumpRange.textContent = selectedTower.chainRange;
+            }
+
             if (selectedTower.stunDuration > 0) {
                 if (uiElements.statStunP) uiElements.statStunP.classList.remove('hidden');
                 const icon = /** @type {HTMLElement | null} */ (uiElements.statStunP.querySelector('span'));
                 if (icon) icon.style.color = '#fef08a';
-                if (uiElements.statStun) uiElements.statStun.textContent = selectedTower.stunDuration;
+                uiElements.statStun.textContent = selectedTower.stunDuration.toFixed(1) + 's';
             }
         }
 
@@ -696,7 +707,7 @@ const statDisplayConfig = {
     goldBonus: { label: 'Gold Aura', icon: 'savings', family: 'material-icons', color: '#facc15', condition: (s) => s.goldBonus, formatter: (val) => `+${val}G` },
     armorPenetration: { label: 'AP', icon: 'shield_moon', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armorPenetration > 0, formatter: (val) => `${(val * 100).toFixed(0)}%` },
     burnDps: { label: 'Burn', icon: 'local_fire_department', family: 'material-symbols-outlined', color: '#f97316', condition: (s) => s.burnDps, formatter: (val, stats) => `${val}/s for ${stats.burnDuration}s` },
-    chainTargets: { label: 'Jumps', icon: 'electric_bolt', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.chainTargets > 0 },
+    chainTargets: { label: 'Jumps', icon: 'electric_bolt', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.chainTargets > 0, formatter: (val) => val },
     chainRange: { label: 'Jump Range', icon: 'social_distance', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.chainRange > 0 },
     stunDuration: { label: 'Stun', icon: 'bolt', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.stunDuration > 0, formatter: (val) => `${val}s` },
 };
@@ -1030,6 +1041,7 @@ export function showWave16PowerChoice() {
 function handleDeletePower() {
     // Grant the player a delete charge
     gameState.hasDelete = true;
+    gameState.wave16PowerChosen = true;
     const announcement = new TextAnnouncement("DELETE armed! Press the button to use it.", 400, 300, 3, '#ff0000', 800);
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);
@@ -1045,6 +1057,7 @@ function handleDeletePower() {
 function handleCloudPower() {
     gameState.hasPermanentCloud = true;
     gameState.isCloudUnlocked = true; // Also unlock it for the current pre-wave phase
+    gameState.wave16PowerChosen = true;
     const announcement = new TextAnnouncement("Cloud access permanently granted!", 400, 300, 3, '#00bfff', 800);
     // This is a persistent upgrade, so we should also update the UI to reflect it immediately.
     gameState.announcements.push(announcement);
@@ -1058,6 +1071,7 @@ function handleCloudPower() {
 
 function handleLivesPower() {
     gameState.lives += 20;
+    gameState.wave16PowerChosen = true;
     const announcement = new TextAnnouncement("+20 Lives!", 440 / 2, 720 / 2, 3, '#00ff00', 440);
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);

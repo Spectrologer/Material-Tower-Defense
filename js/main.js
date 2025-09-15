@@ -810,7 +810,6 @@ function gameLoop(currentTime) {
 export async function onEndWave() {
     // Check for Wave 16 Power-up choice (after wave 15 ends)
     if (gameState.wave === 15 && !gameState.wave16PowerChosen) { // This was line 801
-        gameState.wave16PowerChosen = true;
         persistGameState(0);
         await showWave16PowerChoice(); // Wait for the player to make a choice
         // The UI handler will call onEndWave again after a choice is made.

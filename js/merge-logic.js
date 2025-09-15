@@ -175,7 +175,8 @@ export class MergeHandler {
             apply: (tower) => {
                 tower.level++;
                 tower.chainTargets++;
-                tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.05; // 5% damage increase
+                tower.chainRange += 20; // Increase jump range
+                tower.damage += 1; // Increase base damage
                 tower.updateStats();
                 tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
             }
@@ -187,12 +188,12 @@ export class MergeHandler {
             canApply: (tower) => tower.level < 5,
             apply: (tower) => {
                 tower.level++;
-                if (tower.stunDuration > 0) {
-                    tower.stunDuration += 0.2; // Increase existing stun
+                if (tower.stunDuration >= 0) {
+                    tower.stunDuration += 0.1; // Increase existing stun
                 } else {
-                    tower.stunDuration = 0.2; // Add stun property
+                    tower.stunDuration = 0.1; // Add stun property
                 }
-                tower.damageMultiplierFromMerge = (tower.damageMultiplierFromMerge || 1) * 1.05; // 5% damage increase
+                tower.damage += 2; // Increase base damage by 2
                 tower.updateStats();
                 tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
             }

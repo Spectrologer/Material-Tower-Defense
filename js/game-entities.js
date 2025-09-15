@@ -784,10 +784,14 @@ class TowerStats {
 
         tower.cost = baseStats.cost * this.levelForCalc;
         tower.range = baseStats.range;
-        if (tower.type === 'FIREPLACE') {
-            tower.damage = baseStats.damage; // Keep base damage
+        if (tower.type === 'FIREPLACE' || tower.type === 'STUN_BOT') {
+            if (tower.type === 'STUN_BOT') {
+                // For STUN_BOT, damage is handled entirely by merge logic, so we don't reset it here.
+            } else if (tower.type === 'FIREPLACE') {
+                tower.damage = baseStats.damage; // Keep base damage for FIREPLACE
+            }
             // burnDps is now managed by merge-logic, so we don't reset it here
-            tower.burnDuration = baseStats.burnDuration;
+            if (tower.type === 'FIREPLACE') tower.burnDuration = baseStats.burnDuration;
         } else {
             tower.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (tower.damageMultiplierFromMerge || 1);
         }
