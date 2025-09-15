@@ -199,6 +199,19 @@ export function updateNextWavePreview(currentWave) {
         }
     });
 
+    // Special case for boss waves to hide the icon and show a question mark
+    if (nextWaveDef.isBoss) {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'flex items-center gap-1 p-1 rounded-md';
+        groupEl.title = `???`;
+
+        const iconStyle = `color: #f542e9ff; font-size: 24px; text-shadow: 1px 1px 3px #000; font-family: 'Material Symbols Outlined';`;
+        groupEl.innerHTML = `
+            <span style="${iconStyle}">question_mark</span>
+        `;
+        uiElements.nextWavePreview.appendChild(groupEl);
+        return; // Stop here for boss waves
+    }
     for (const [typeName, count] of enemyCounts.entries()) {
         const enemyType = ENEMY_TYPES[typeName];
         const groupEl = document.createElement('div');
