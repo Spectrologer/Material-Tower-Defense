@@ -30,7 +30,7 @@ export const TOWER_TYPES = {
     FIREPLACE: { cost: 135, range: 50, damage: 0.2, fireRate: 3, color: '#e11d48', projectileSpeed: 10, projectileSize: 8, projectileColor: '#ff6600', splashRadius: 45, burnDps: 1, burnDuration: 10, special: 'Lingering Burn', maxLevel: 5, comment: "It's not fun when it's too hot!" },
     NAT: { cost: 50, range: 300, damage: 12, fireRate: 120, color: '#DEB887', projectileSpeed: 12, projectileSize: 5, projectileColor: '#DEB887', splashRadius: 0, special: 'Sniper', armorPenetration: 0.90, comment: "Hiding its true IP: Intense Pain." },
     MIND: { cost: 120, range: 0, damage: 0, fireRate: 0, color: '#618effff', attackSpeedBoost: 0.75, damageBoost: 1.25, enemySlow: 0.6, stealthDetectionRange: 3, special: 'Aura: Boost/Slow', comment: "A weapon to surpass metal gear." },
-    ORBIT: { cost: 150, range: 0, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 1, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters', comment: "Weeeeeeeee!" },
+    ORBIT: { cost: 150, range: 0, damage: 5, fireRate: 0, color: '#0891b2', projectileSpeed: 0.5, projectileSize: 4, projectileColor: '#0891b2', splashRadius: 0, special: 'Orbiters', comment: "Weeeeeeeee!" },
 
     // All the stats for hybrid towers.
 

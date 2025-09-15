@@ -63,6 +63,35 @@ test('Tower should preserve visual properties', () => {
     assert.equal(restored.projectileSize, 10);
 });
 
+test('ORBIT tower should update orbiter positions', () => {
+    const tower = new Tower(100, 100, 'ORBIT');
+    tower.orbitMode = 'far'; // radius 40
+    tower.orbitDirection = 1; // CW
+    tower.projectileSpeed = 30; // To make calculations easier, 30/30 = 1 radian per update
+
+    const initialOrbiter = tower.orbiters[0];
+    const initialAngle = initialOrbiter.angle;
+    const initialX = initialOrbiter.x;
+    const initialY = initialOrbiter.y;
+
+    // Simulate one update tick
+    tower.update([], [], () => { }, DELTA_TIME, new Set(), [], [], () => { });
+
+    const updatedOrbiter = tower.orbiters[0];
+    const expectedAngle = initialAngle + (tower.orbitDirection * (tower.projectileSpeed / 30) * (DELTA_TIME * 60));
+
+    assert.strictEqual(updatedOrbiter.angle, expectedAngle, 'Orbiter angle should update based on speed and direction');
+    assert.notStrictEqual(updatedOrbiter.x, initialX, 'Orbiter X position should change');
+    assert.notStrictEqual(updatedOrbiter.y, initialY, 'Orbiter Y position should change');
+
+    const expectedX = tower.x + Math.cos(expectedAngle) * 40;
+    const expectedY = tower.y + Math.sin(expectedAngle) * 40;
+
+    // Use a tolerance for floating point comparisons
+    assert(Math.abs(updatedOrbiter.x - expectedX) < 1e-9, 'Orbiter X position is incorrect');
+    assert(Math.abs(updatedOrbiter.y - expectedY) < 1e-9, 'Orbiter Y position is incorrect');
+});
+
 test('ORBIT tower should be created with projectiles (orbiters)', () => {
     const tower = new Tower(100, 100, 'ORBIT');
 
@@ -86,6 +115,36 @@ test('ORBIT tower should recreate orbiters on deserialization', () => {
     assert.equal(restored.orbiters.length, 5, 'Should have 5 orbiters at level 4');
 });
 
+test('ORBIT tower should persist orbiters angles on serialization', () => {
+    const tower = new Tower(100, 100, 'ORBIT');
+    tower.level = 4; // 5 orbiters
+    tower.orbiters.forEach((orbiter, i) => orbiter.angle = i * 0.5); // Set custom angles
+
+    const json = tower.toJSON();
+    const restored = Tower.fromJSON(json);
+
+    assert.ok(restored.orbiters, "Restored tower should have orbiters");
+    assert.strictEqual(restored.orbiters[0].angle, 0, "First orbiter's angle should be restored");
+    assert.strictEqual(restored.orbiters[4].angle, 2.0, "Last orbiter's angle should be restored");
+    assert.equal(restored.orbiters.length, 5, 'Should have 5 orbiters at level 4');
+});
+
+test('STUN_BOT tower should preserve chain and stun properties', () => {
+    const tower = new Tower(100, 100, 'STUN_BOT');
+    tower.chainTargets = 7;
+    tower.chainRange = 120;
+    tower.stunDuration = 0.2;
+    tower.damage = 15; // Damage is managed by merges
+
+    const json = tower.toJSON();
+    const restored = Tower.fromJSON(json);
+
+    assert.strictEqual(restored.chainTargets, 7, 'Restored chainTargets should match');
+    assert.strictEqual(restored.chainRange, 120, 'Restored chainRange should match');
+    assert.strictEqual(restored.stunDuration, 0.2, 'Restored stunDuration should match');
+    assert.strictEqual(restored.damage, 15, 'Restored damage should match');
+});
+
 test('FIREPLACE tower should preserve burn properties', () => {
     const tower = new Tower(150, 150, 'FIREPLACE');
     tower.level = 2;
@@ -97,6 +156,17 @@ test('FIREPLACE tower should preserve burn properties', () => {
     assert.equal(restored.burnDps, tower.burnDps);
     assert.equal(restored.burnDuration, tower.burnDuration);
     assert.equal(restored.splashRadius, tower.splashRadius);
+});
+
+test('FORT tower should preserve ground target', () => {
+    const tower = new Tower(150, 150, 'FORT');
+    tower.targetingMode = 'ground';
+    tower.attackGroundTarget = { x: 200, y: 200 };
+
+    const json = tower.toJSON();
+    const restored = Tower.fromJSON(json);
+
+    assert.deepStrictEqual(restored.attackGroundTarget, { x: 200, y: 200 }, 'Restored ground target should match');
 });
 
 test('MIND tower should preserve aura properties', () => {

@@ -1357,13 +1357,11 @@ export class Tower {
     }
     recreateOrbiters() {
         if (this.type !== 'ORBIT') return;
-        const oldAngles = this.orbiters?.map(o => o.angle) || [];
+        const orbiterCount = 2 + (this.stats.levelForCalc - 1);
+        const angleStep = (2 * Math.PI) / Math.max(1, orbiterCount);
         this.orbiters = [];
-        const orbiterCount = 2 + (Number(this.level) - 1);
-        const angleStep = (2 * Math.PI) / orbiterCount;
         for (let i = 0; i < orbiterCount; i++) {
-            const initialAngle = oldAngles[i] !== undefined ? oldAngles[i] : i * angleStep;
-            this.orbiters.push(new Projectile(this, null, initialAngle));
+            this.orbiters.push(new Projectile(this, null, i * angleStep));
         }
     }
 
