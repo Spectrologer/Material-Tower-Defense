@@ -1165,19 +1165,26 @@ function hideWave16PowerChoice() {
 
 // Event listener for the actual nuke button
 uiElements.deleteActivateBtn.addEventListener('click', () => {
-    if (!gameState.hasDelete) return;
+    // This is a new variable from main.js, we need to import it.
+    import('../js/main.js').then(main => {
+        if (!gameState.hasDelete) return;
 
-    // Use the nuke
-    let goldFromNuke = 0;
-    gameState.enemies.forEach(enemy => {
-        goldFromNuke += enemy.gold;
-        gameState.effects.push(new Effect(enemy.x, enemy.y, 'delete', enemy.size * 4, '#ff4d4d', 0.5));
+        // Use the nuke
+        let goldFromNuke = 0;
+        gameState.enemies.forEach(enemy => {
+            goldFromNuke += enemy.gold;
+            gameState.effects.push(new Effect(enemy.x, enemy.y, 'delete', enemy.size * 4, '#ff4d4d', 0.5));
+        });
+
+        gameState.gold += goldFromNuke;
+        gameState.enemies = [];
+
+        // Only consume the charge if debug mode is NOT active
+        if (!main.isInfiniteGold) {
+            gameState.hasDelete = false;
+        }
+
+        // Update the UI to hide the button if the charge was consumed
+        updateUI(gameState, 1);
     });
-
-    gameState.gold += goldFromNuke;
-    gameState.enemies = [];
-    gameState.hasDelete = false; // It's a one-time use
-
-    // Update the UI to hide the button
-    updateUI(gameState, 1);
 });

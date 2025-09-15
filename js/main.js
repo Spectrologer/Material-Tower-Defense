@@ -18,8 +18,8 @@ export const CHANGELOG_VERSION = changelog[0]?.version || '1.0.0';
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
 const mergeHandler = new MergeHandler();
-let canvasWidth, canvasHeight;
-let isInfiniteGold = false;
+export let canvasWidth, canvasHeight;
+export let isInfiniteGold = false;
 let mazeColor = '#818181ff';
 let detourMazeColor = 'rgba(102, 102, 102, 0.2)'; // Slightly visible when inactive
 
@@ -1903,11 +1903,23 @@ consoleCommands.powerup = () => {
     }
 };
 
+consoleCommands.eraser = () => {
+    if (gameState) {
+        gameState.hasDelete = true;
+        updateUI(gameState, gameSpeed);
+        console.log("Eraser power-up granted.");
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
 consoleCommands.debug = () => {
     if (gameState) {
         isInfiniteGold = true;
         gameState.lives = Infinity;
-        console.log("Debug mode enabled: Infinite gold and lives.");
+        gameState.hasDelete = true;
+        updateUI(gameState, gameSpeed);
+        console.log("Debug mode enabled: Infinite gold, lives, and erasers.");
     } else {
         console.error("Game not initialized.");
     }
