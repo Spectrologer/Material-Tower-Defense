@@ -831,17 +831,17 @@ function gameLoop(currentTime) {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-export async function onEndWave() {
-    // Check for Wave 16 Power-up choice (after wave 15 ends)
-    if (gameState.wave === 15 && !gameState.wave16PowerChosen) { // This was line 801
-        persistGameState(0);
-        await showWave16PowerChoice(); // Wait for the player to make a choice
-        // The UI handler will call onEndWave again after a choice is made.
-    }
-
+export async function onEndWave() { // Make this function async
     if (gameState.wave === 25 && !gameState.waveInProgress) {
         showEndlessChoice();
         persistGameState(0);
+        return;
+    }
+
+    // After wave 15, show the power-up choice if it hasn't been chosen yet. Await the choice.
+    if (gameState.wave === 15) {
+        showWave16PowerChoice(continueToNextWave); // Pass a specific continuation function
+        // The game loop will be continued by the choice handler in ui-manager.js
         return;
     }
 
@@ -863,6 +863,11 @@ export async function onEndWave() {
     gameState.gold += waveBonus;
     updateUI(gameState, gameSpeed);
     persistGameState(0);
+}
+
+function continueToNextWave() {
+    gameState.wave++;
+    onEndWave(); // Now call onEndWave to apply interest and other end-of-wave logic for the new wave
 }
 
 function isValidNinePinPlacement(gridX, gridY) {
@@ -1896,7 +1901,7 @@ consoleCommands.showEndless = () => {
 
 consoleCommands.powerup = () => {
     if (gameState) {
-        showWave16PowerChoice();
+        showWave16PowerChoice(null); // Pass null as the callback for the debug command
         console.log("Showing Wave 16 power-up choice window.");
     } else {
         console.error("Game not initialized.");

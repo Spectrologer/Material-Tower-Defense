@@ -1093,20 +1093,21 @@ function startGlitterAnimation() {
     }, 100);
 }
 
-export function showWave16PowerChoice() {
+export function showWave16PowerChoice(continueCallback) {
     return new Promise(resolve => {
         if (uiElements.wave16PowerChoiceModal) uiElements.wave16PowerChoiceModal.classList.remove('hidden');
         startGlitterAnimation();
 
         const createHandler = (handler) => (event) => {
-            handler(event);
-            resolve(); // Resolve the promise when a choice is made
+            handler(event); // Grant the power-up
+            hideWave16PowerChoice(); // Hide the modal
+            resolve(); // Resolve the promise to let the game loop continue
         };
 
         // Use .once = true to automatically remove the listener after it's called.
-        uiElements.deletePowerBtn.addEventListener('click', createHandler(handleDeletePower), { once: true });
-        uiElements.cloudPowerBtn.addEventListener('click', createHandler(handleCloudPower), { once: true });
-        uiElements.livesPowerBtn.addEventListener('click', createHandler(handleLivesPower), { once: true });
+        uiElements.deletePowerBtn.addEventListener('click', createHandler(() => handleDeletePower(continueCallback)), { once: true });
+        uiElements.cloudPowerBtn.addEventListener('click', createHandler(() => handleCloudPower(continueCallback)), { once: true });
+        uiElements.livesPowerBtn.addEventListener('click', createHandler(() => handleLivesPower(continueCallback)), { once: true });
     });
 }
 
@@ -1117,13 +1118,6 @@ function handleDeletePower() {
     const announcement = new TextAnnouncement("DELETE armed! Press the button to use it.", 400, 300, 3, '#ff0000', 800);
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);
-    hideWave16PowerChoice();
-    // Manually trigger the next step in the game loop since we paused it.
-    // We need to import the function to call it.
-    import('../js/main.js').then(main => {
-        // This will increment the wave to 16 and prepare for the next wave.
-        main.onEndWave();
-    });
 }
 
 function handleCloudPower() {
@@ -1137,11 +1131,6 @@ function handleCloudPower() {
     gameState.announcements.push(cloudAnnouncement, goldAnnouncement);
     gameState.announcementLog.push(cloudAnnouncement);
     gameState.announcementLog.push(goldAnnouncement);
-    hideWave16PowerChoice();
-    import('../js/main.js').then(main => {
-        // This will increment the wave to 16 and prepare for the next wave.
-        main.onEndWave();
-    });
 }
 
 function handleLivesPower() {
@@ -1150,11 +1139,6 @@ function handleLivesPower() {
     const announcement = new TextAnnouncement("+20 Lives!", 440 / 2, 720 / 2, 3, '#00ff00', 440);
     gameState.announcements.push(announcement);
     gameState.announcementLog.push(announcement);
-    hideWave16PowerChoice();
-    import('../js/main.js').then(main => {
-        // This will increment the wave to 16 and prepare for the next wave.
-        main.onEndWave();
-    });
 }
 
 function hideWave16PowerChoice() {
