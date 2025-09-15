@@ -1355,6 +1355,7 @@ export class Tower {
             data.chainTargets = this.chainTargets;
             data.chainRange = this.chainRange;
             data.stunDuration = this.stunDuration;
+            data.damage = this.damage; // STUN_BOT damage is managed by merges
         }
         return data;
     }
@@ -1364,7 +1365,7 @@ export class Tower {
         const fields = [
             "id", "level", "damageLevel", "mode", "targetingMode", "attackGroundTarget",
             "damageMultiplier", "projectileCount", "damageMultiplierFromMerge", "fragmentBounces",
-            "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color",
+            "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color", "damage",
             "projectileSize", "burnDps", "burnDuration", "attackSpeedBoost", "damageBoost",
             "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount", "chainTargets", "stunDuration",
             "chainRange",

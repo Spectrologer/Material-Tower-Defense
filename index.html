@@ -682,21 +682,30 @@
             <h2 class="text-4xl mb-4 text-fuchsia-400">POWER UP!</h2>
             <p class="text-xl mb-6">You've reached Wave 16! Choose your power:</p>
             <div class="flex flex-row gap-4 w-full justify-center">
-                <button id="delete-power-btn"
-                    class="pixel-button text-lg bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c] flex flex-col items-center justify-center h-24 w-24">
-                    <span class="material-symbols-outlined !text-3xl">ink_eraser</span>
-                    <span class="text-sm">DELETE</span>
-                </button>
-                <button id="cloud-power-btn"
-                    class="pixel-button text-lg bg-blue-700 border-blue-500 shadow-[0_4px_0_#1e40af] flex flex-col items-center justify-center h-24 w-24">
-                    <span class="material-symbols-outlined !text-3xl">cloud_done</span>
-                    <span class="text-sm">CLOUD</span>
-                </button>
-                <button id="lives-power-btn"
-                    class="pixel-button text-lg bg-green-700 border-green-500 shadow-[0_4px_0_#15803d] flex flex-col items-center justify-center h-24 w-24">
-                    <span class="material-symbols-outlined !text-3xl">heart_plus</span>
-                    <span class="text-sm">+20 LIVES</span>
-                </button>
+                <div class="flex flex-col items-center text-center w-28">
+                    <button id="delete-power-btn"
+                        class="pixel-button text-lg bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c] flex flex-col items-center justify-center h-24 w-24">
+                        <span class="material-symbols-outlined !text-3xl">ink_eraser</span>
+                        <span class="text-sm">DELETE</span>
+                    </button>
+                    <p class="text-xs mt-2 leading-tight">Clear all enemies from the screen once.</p>
+                </div>
+                <div class="flex flex-col items-center text-center w-28">
+                    <button id="cloud-power-btn"
+                        class="pixel-button text-lg bg-blue-700 border-blue-500 shadow-[0_4px_0_#1e40af] flex flex-col items-center justify-center h-24 w-24">
+                        <span class="material-symbols-outlined !text-3xl">cloud_done</span>
+                        <span class="text-sm">CLOUD</span>
+                    </button>
+                    <p class="text-xs mt-2 leading-tight">Unlock permanent cloud storage & get 125G.</p>
+                </div>
+                <div class="flex flex-col items-center text-center w-28">
+                    <button id="lives-power-btn"
+                        class="pixel-button text-lg bg-green-700 border-green-500 shadow-[0_4px_0_#15803d] flex flex-col items-center justify-center h-24 w-24">
+                        <span class="material-symbols-outlined !text-3xl">heart_plus</span>
+                        <span class="text-sm">+20 LIVES</span>
+                    </button>
+                    <p class="text-xs mt-2 leading-tight">Instantly gain 20 lives.</p>
+                </div>
             </div>
         </div>
     </div>

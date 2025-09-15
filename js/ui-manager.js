@@ -1057,11 +1057,14 @@ function handleDeletePower() {
 function handleCloudPower() {
     gameState.hasPermanentCloud = true;
     gameState.isCloudUnlocked = true; // Also unlock it for the current pre-wave phase
+    gameState.gold += 125;
     gameState.wave16PowerChosen = true;
-    const announcement = new TextAnnouncement("Cloud access permanently granted!", 400, 300, 3, '#00bfff', 800);
+    const cloudAnnouncement = new TextAnnouncement("Cloud access permanently granted!", 400, 300, 3, '#00bfff', 800);
+    const goldAnnouncement = new TextAnnouncement("+125 Gold!", 400, 350, 3, '#facc15', 800);
     // This is a persistent upgrade, so we should also update the UI to reflect it immediately.
-    gameState.announcements.push(announcement);
-    gameState.announcementLog.push(announcement);
+    gameState.announcements.push(cloudAnnouncement, goldAnnouncement);
+    gameState.announcementLog.push(cloudAnnouncement);
+    gameState.announcementLog.push(goldAnnouncement);
     hideWave16PowerChoice();
     import('../js/main.js').then(main => {
         // This will increment the wave to 16 and prepare for the next wave.
