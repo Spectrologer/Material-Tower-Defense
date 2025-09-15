@@ -437,7 +437,7 @@ function applyAuraEffects() {
 }
 
 function handleProjectileHit(projectile, hitEnemy) {
-    const newlySpawnedEnemies = []; // Array to hold any new enemies from splits
+    const newlySpawnedEnemies = [];
     const targetEnemy = hitEnemy || projectile.target;
 
     // Create the explosion visual effect for Anti-Air rockets at the exact point of collision.
@@ -544,7 +544,7 @@ function handleProjectileHit(projectile, hitEnemy) {
     } else {
         if (targetEnemy && typeof targetEnemy.takeDamage === 'function') {
             projectile.isTrueDamage = true;
-            if (targetEnemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); }, newlySpawnedEnemies)) {
+            if (targetEnemy.takeDamage(finalDamage, projectile, (e) => { if (projectile.owner) { projectile.owner.killCount++; } awardGold(e); }, newlySpawnedEnemies)) {
                 // Death is now handled inside takeDamage
             }
             playHitSound();

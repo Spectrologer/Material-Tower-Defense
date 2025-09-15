@@ -43,7 +43,9 @@ const projectileBehaviors = {
             let iconFamily;
             let rotation = 0;
 
-            if (projectile.target) {
+            if (projectile.angle !== null) {
+                rotation = projectile.angle;
+            } else if (projectile.target) {
                 const dx = projectile.target.x - projectile.x;
                 const dy = projectile.target.y - projectile.y;
                 rotation = Math.atan2(dy, dx);
@@ -110,7 +112,7 @@ const projectileBehaviorMap = {
 };
 
 export class Projectile {
-    constructor(owner, target, startAngle = 0) {
+    constructor(owner, target, startAngle = null) {
         this.owner = owner;
         this.x = owner.x;
         this.y = owner.y;
@@ -120,8 +122,12 @@ export class Projectile {
         this.bounces = owner.fragmentBounces || 0;
         this.behavior = projectileBehaviors[projectileBehaviorMap[owner.type] || 'DEFAULT']; // This line was already present from the previous turn, but it's correct.
         this.damageMultiplier = 1;
+        this.angle = startAngle; // Can be null if a target is provided
 
-        if (this.owner.type === 'ORBIT') {
+        // If an angle is provided, calculate initial velocity components.
+        if (this.angle !== null) {
+            this.vx = Math.cos(this.angle);
+            this.vy = Math.sin(this.angle);
             this.angle = startAngle;
         }
         if (this.owner.type === 'FORT') {
@@ -210,7 +216,30 @@ export class Projectile {
             return true;
         }
 
-        if ((!this.target || this.target.health <= 0) && (this.owner.type === 'PIN_HEART' || this.owner.type === 'NAT' || this.owner.type === 'ANTI_AIR')) {
+        // If the projectile was fired with an angle (no initial target), it just moves straight. This is for multi-shot.
+        // We also need to handle collision detection for these "free" projectiles.
+        if (this.angle !== null && !this.target) {
+            const moveDistance = this.owner.projectileSpeed * dt_scaler;
+            this.x += this.vx * moveDistance;
+            this.y += this.vy * moveDistance;
+
+            // Check for collision with any enemy
+            for (const enemy of enemies) {
+                // Check if the enemy is valid to be hit
+                const canHit = (this.owner.type !== 'ANTI_AIR' || enemy.type.isFlying) &&
+                    (this.owner.type === 'ANTI_AIR' || !enemy.type.isFlying);
+
+                if (canHit && Math.hypot(this.x - enemy.x, this.y - enemy.y) < enemy.size) {
+                    onHit(this, enemy); // Pass the specific enemy that was hit
+                    return false; // Projectile is consumed on hit
+                }
+            }
+            // Remove projectile if it goes off-screen
+            if (this.x < 0 || this.x > 440 || this.y < 0 || this.y > 720) {
+                return false;
+            }
+            return true; // Keep updating
+        } else if ((!this.target || this.target.health <= 0) && ['PIN_HEART', 'NAT', 'ANTI_AIR'].includes(this.owner.type)) {
             let closestEnemy = null;
             let minDistance = Infinity;
             for (const enemy of enemies) {
@@ -898,12 +927,25 @@ class TowerController {
         const tower = this.tower;
         if (!tower.target && !((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.attackGroundTarget)) return;
 
-        const projectileCount = tower.projectileCount || 1;
-        for (let i = 0; i < projectileCount; i++) {
-            if ((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.attackGroundTarget) {
+        if ((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.attackGroundTarget) {
+            const projectileCount = tower.projectileCount || 1;
+            for (let i = 0; i < projectileCount; i++) {
                 projectiles.push(new Projectile(tower, tower.attackGroundTarget));
-            } else {
+            }
+        } else if (tower.target) {
+            const count = tower.projectileCount || 1;
+            if (count === 1) {
                 projectiles.push(new Projectile(tower, tower.target));
+            } else {
+                const baseAngle = Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x);
+                const spreadAngle = Math.PI / 18; // 10 degrees total spread
+                const angleStep = spreadAngle / (count - 1);
+                const startAngle = baseAngle - spreadAngle / 2;
+
+                for (let i = 0; i < count; i++) {
+                    const angle = startAngle + i * angleStep;
+                    projectiles.push(new Projectile(tower, null, angle));
+                }
             }
         }
     }

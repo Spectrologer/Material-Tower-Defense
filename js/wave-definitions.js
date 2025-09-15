@@ -142,20 +142,20 @@ export const waveDefinitions = [
     // Wave 19: A massive swarm wave to push splash damage towers to their limit.
     {
         isSwarm: true,
-        composition: [comp(ENEMY_TYPES.SWARM, 50)],
+        composition: [comp(ENEMY_TYPES.SWARM, 30), comp(ENEMY_TYPES.SPLITTER_MINI, 10)],
         healthMultiplier: 3.0, healthBonus: 40,
         detourRatio: 1.0,
         endOfWaveAnnouncement: { text: "Warning:\nCellular division detected!", color: '#84cc16' }
     },
     // Wave 20: Introduce the Splitter enemy.
     {
-        composition: [comp(ENEMY_TYPES.SPLITTER, 15)],
+        composition: [comp(ENEMY_TYPES.SPLITTER, 10)],
         healthMultiplier: 4.0, healthBonus: 100,
         detourRatio: 0.33,
     },
     // Wave 21: Splitters are now mixed with Heavies, creating a durable, high-density threat.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.HEALER, 4), comp(ENEMY_TYPES.SPLITTER, 8)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 3), comp(ENEMY_TYPES.SPLITTER, 6)],
         healthMultiplier: 4.5, healthBonus: 120,
     },
     // Wave 22: A test of detection and area damage with Stealth and Splitter units.
