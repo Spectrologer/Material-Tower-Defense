@@ -508,8 +508,9 @@ export class Enemy {
             if (burn.duration <= 0) this.burns.shift();
         }
         if (this.health <= 0 && !this.isDying) {
-            this.takeDamage(0, null, onDeath); // Trigger death logic
+            this.takeDamage(0, null, onDeath, newlySpawnedEnemies); // Trigger death logic
         }
+
 
         // --- Special Behaviors ---
         if (this.type.hatchTime) {
@@ -729,15 +730,15 @@ export class Enemy {
 
         return true; // Keep this enemy
     }
-    takeDamage(damage, projectile = null, onDeath) {
+    takeDamage(damage, projectile = null, onDeath, newlySpawnedEnemies = []) {
         const armor = this.type.armor || 0;
         let finalDamage;
 
         const isTrueDamage = projectile && projectile.isTrueDamage;
 
-        if (isTrueDamage) {
-            finalDamage = damage;
-        } else {
+        if (isTrueDamage || damage === 0) { // damage === 0 is for passive deaths like burns
+            finalDamage = damage; // No armor reduction for true damage or passive death triggers
+        } else { // Apply armor reduction for normal projectile damage
             const armorMultiplier = 1 - (armor / (armor + 100));
             finalDamage = damage * armorMultiplier;
         }
@@ -747,6 +748,18 @@ export class Enemy {
 
         if (this.health <= 0 && !this.isDying) {
             this.isDying = true; // Prevent multiple death triggers
+
+            // Handle splitting logic here, as it's a direct consequence of taking lethal damage.
+            if (this.type.splitsOnDeath) {
+                for (let i = 0; i < this.type.splitCount; i++) {
+                    const child = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
+                    child.x = this.x + (Math.random() - 0.5) * 15;
+                    child.y = this.y + (Math.random() - 0.5) * 15;
+                    child.pathIndex = this.pathIndex;
+                    newlySpawnedEnemies.push(child);
+                }
+            }
+
             if (onDeath) {
                 onDeath(this);
             }

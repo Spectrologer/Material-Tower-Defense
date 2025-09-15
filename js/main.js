@@ -437,6 +437,7 @@ function applyAuraEffects() {
 }
 
 function handleProjectileHit(projectile, hitEnemy) {
+    const newlySpawnedEnemies = []; // Array to hold any new enemies from splits
     const targetEnemy = hitEnemy || projectile.target;
 
     // Create the explosion visual effect for Anti-Air rockets at the exact point of collision.
@@ -514,7 +515,7 @@ function handleProjectileHit(projectile, hitEnemy) {
                 const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
                 if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
                     projectile.isTrueDamage = (enemy === targetEnemy);
-                    if (enemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); })) {
+                    if (enemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); }, newlySpawnedEnemies)) {
                         // Death is now handled inside takeDamage
                     }
                     playHitSound(); // This sound is now played inside takeDamage
@@ -533,7 +534,7 @@ function handleProjectileHit(projectile, hitEnemy) {
                 const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
                 if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
                     projectile.isTrueDamage = (enemy === targetEnemy);
-                    if (enemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); })) {
+                    if (enemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); }, newlySpawnedEnemies)) {
                         // Death is now handled inside takeDamage
                     }
                     playHitSound();
@@ -543,12 +544,13 @@ function handleProjectileHit(projectile, hitEnemy) {
     } else {
         if (targetEnemy && typeof targetEnemy.takeDamage === 'function') {
             projectile.isTrueDamage = true;
-            if (targetEnemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); })) {
+            if (targetEnemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); }, newlySpawnedEnemies)) {
                 // Death is now handled inside takeDamage
             }
             playHitSound();
         }
     }
+    gameState.enemies.push(...newlySpawnedEnemies); // Add any newly spawned enemies to the game
     updateUI(gameState, gameSpeed);
 }
 
@@ -585,6 +587,18 @@ function gameLoop(currentTime) {
         // Add to killed enemies for library tracking
         if (enemy.typeName) {
             gameState.killedEnemies.add(enemy.typeName);
+        }
+
+        // Handle splitting logic
+        if (enemy.type.splitsOnDeath) {
+            for (let i = 0; i < enemy.type.splitCount; i++) {
+                const child = new Enemy(ENEMY_TYPES[enemy.type.splitInto], enemy.path, enemy.type.splitInto);
+                child.x = enemy.x + (Math.random() - 0.5) * 15;
+                child.y = enemy.y + (Math.random() - 0.5) * 15;
+                child.pathIndex = enemy.pathIndex;
+                // Add to the main enemies list to be processed in the next frame
+                gameState.enemies.push(child);
+            }
         }
     };
 
