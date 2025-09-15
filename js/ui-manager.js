@@ -331,15 +331,10 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
             if (selectedTower.level === 'MAX LEVEL') {
                 levelText = maxLevelText;
             } else {
-                let visualLevel;
+                let visualLevel = selectedTower.stats.levelForCalc;
                 if (towerType === 'ORBIT') {
-                    visualLevel = (selectedTower.upgradeCount || 0) + 1;
-                    const ORBIT_MAX_UPGRADES = 4;
-                    if ((selectedTower.upgradeCount || 0) >= ORBIT_MAX_UPGRADES) {
-                        levelText = maxLevelText;
-                    } else {
-                        levelText = `LVL ${visualLevel}`;
-                    }
+                    visualLevel = (selectedTower.level - 1) + (selectedTower.damageLevel - 1) + 1;
+                    levelText = `LVL ${visualLevel}`;
                 } else if (towerType === 'FORT') {
                     visualLevel = selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1;
                     if (visualLevel >= maxLevel) {
@@ -348,7 +343,6 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                         levelText = `LVL ${visualLevel}`;
                     }
                 } else {
-                    visualLevel = selectedTower.stats.levelForCalc;
                     if (visualLevel >= maxLevel) {
                         levelText = maxLevelText;
                     } else if (visualLevel === 1 && (towerType === 'PIN' || towerType === 'CASTLE')) {

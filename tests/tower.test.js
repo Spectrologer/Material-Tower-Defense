@@ -75,7 +75,7 @@ test('ORBIT tower should be created with projectiles (orbiters)', () => {
 test('ORBIT tower should recreate orbiters on deserialization', () => {
     const tower = new Tower(100, 100, 'ORBIT');
     tower.orbitMode = 'near';
-    tower.upgradeCount = 2; // Should result in 4 orbiters (2 base + 2 upgrades)
+    tower.level = 4; // Should result in 5 orbiters (2 base + 3 from level)
 
     const json = tower.toJSON();
     const restored = Tower.fromJSON(json);
@@ -83,7 +83,7 @@ test('ORBIT tower should recreate orbiters on deserialization', () => {
     assert.equal(restored.type, 'ORBIT');
     assert.equal(restored.orbitMode, 'near');
     assert.ok(restored.orbiters);
-    assert.equal(restored.orbiters.length, 4, 'Should have 4 orbiters after upgrade');
+    assert.equal(restored.orbiters.length, 5, 'Should have 5 orbiters at level 4');
 });
 
 test('FIREPLACE tower should preserve burn properties', () => {
@@ -230,4 +230,17 @@ test('ANTI-AIR tower should only target flying enemies', () => {
 
     assert.ok(tower.target, 'ANTI-AIR tower should have a target');
     assert.equal(tower.target.type, ENEMY_TYPES.FLYING, 'ANTI-AIR tower should target the FLYING enemy');
+});
+
+test('NAT tower should fire multiple projectiles with spread', () => {
+    const tower = new Tower(100, 100, 'NAT');
+    tower.projectileCount = 3; // Set it to fire 3 projectiles
+    const enemy = new Enemy(ENEMY_TYPES.NORMAL, [{ x: 200, y: 100 }], 'NORMAL');
+    const projectiles = [];
+    tower.cooldown = 0; // Ready to fire
+
+    tower.update([enemy], projectiles, () => { }, DELTA_TIME, new Set());
+
+    assert.strictEqual(projectiles.length, 3, 'NAT tower should have fired three projectiles');
+    assert.ok(projectiles[0].angle !== null && projectiles[1].angle !== null && projectiles[2].angle !== null, 'All projectiles should have an angle for spread');
 });

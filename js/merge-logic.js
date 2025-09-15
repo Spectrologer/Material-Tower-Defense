@@ -102,7 +102,6 @@ export class MergeHandler {
                 tower.orbitMode = 'far';
                 tower.level = existingTowerLevel;
                 tower.damageLevel = existingTowerLevel;
-                tower.upgradeCount = 0;
                 tower.updateStats();
                 tower.splashRadius = TOWER_TYPES.ORBIT.splashRadius;
                 tower.color = TOWER_TYPES.ORBIT.color;
@@ -293,10 +292,12 @@ export class MergeHandler {
         this._addRecipe('ORBIT', 'PIN', {
             resultType: 'ORBIT', text: 'Upgrade',
             upgrade: { text: '+ Dmg', icon: 'bolt', family: 'material-icons' },
-            canApply: (tower) => tower.upgradeCount < ORBIT_MAX_UPGRADES,
+            canApply: (tower) => {
+                const totalUpgrades = (tower.level - 1) + (tower.damageLevel - 1); // level starts at 1, damageLevel starts at 1
+                return totalUpgrades < ORBIT_MAX_UPGRADES;
+            },
             apply: (tower) => {
                 tower.damageLevel++;
-                tower.upgradeCount++;
                 tower.updateStats();
                 tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
             }
@@ -305,10 +306,12 @@ export class MergeHandler {
         this._addRecipe('ORBIT', 'CASTLE', {
             resultType: 'ORBIT', text: 'Upgrade',
             upgrade: { text: '+ Orbiter', icon: 'satellite', family: 'material-symbols-outlined' },
-            canApply: (tower) => tower.upgradeCount < ORBIT_MAX_UPGRADES,
+            canApply: (tower) => {
+                const totalUpgrades = (tower.level - 1) + (tower.damageLevel - 1);
+                return totalUpgrades < ORBIT_MAX_UPGRADES;
+            },
             apply: (tower) => {
                 tower.level++;
-                tower.upgradeCount = (tower.upgradeCount || 0) + 1;
                 tower.recreateOrbiters();
                 tower.updateStats();
                 tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
@@ -413,11 +416,7 @@ export class MergeHandler {
             tower.cost = oldCost + costToAdd;
 
             const maxLevel = TOWER_TYPES[tower.type].maxLevel || 5;
-            if (tower.type === 'ORBIT') {
-                if (tower.upgradeCount === 4) {
-                    tower.level = 'MAX LEVEL';
-                }
-            } else if (tower.level >= maxLevel) {
+            if (tower.level >= maxLevel) {
                 tower.level = 'MAX LEVEL';
                 if (tower.damageLevel) tower.damageLevel = 'MAX LEVEL';
             }

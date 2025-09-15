@@ -152,6 +152,12 @@ export class Projectile {
             this.emergeDuration = 0.2;
             this.emergeTimer = this.emergeDuration;
         }
+        if (this.owner.type === 'ORBIT' && this.angle !== null) {
+            // Set initial position for orbit projectiles based on angle
+            const orbitRadius = this.owner.orbitMode === 'far' ? 40 : 60;
+            this.x = this.owner.x + Math.cos(this.angle) * orbitRadius;
+            this.y = this.owner.y + Math.sin(this.angle) * orbitRadius;
+        }
     }
     draw(ctx) {
         this.behavior.draw(ctx, this);
@@ -1337,7 +1343,6 @@ export class Tower {
         this.cooldown = 0;
         this.target = null;
         if (this.type === 'ORBIT' && !this.orbiters) {
-            this.upgradeCount = this.upgradeCount || 0;
             this.orbitMode = this.orbitMode || 'far';
             this.orbitDirection = this.orbitDirection || 1; // 1 for CW, -1 for CCW
             this.recreateOrbiters();
@@ -1352,11 +1357,13 @@ export class Tower {
     }
     recreateOrbiters() {
         if (this.type !== 'ORBIT') return;
+        const oldAngles = this.orbiters?.map(o => o.angle) || [];
         this.orbiters = [];
-        const orbiterCount = 2 + (this.upgradeCount || 0);
+        const orbiterCount = 2 + (Number(this.level) - 1);
         const angleStep = (2 * Math.PI) / orbiterCount;
         for (let i = 0; i < orbiterCount; i++) {
-            this.orbiters.push(new Projectile(this, null, i * angleStep));
+            const initialAngle = oldAngles[i] !== undefined ? oldAngles[i] : i * angleStep;
+            this.orbiters.push(new Projectile(this, null, initialAngle));
         }
     }
 
@@ -1365,18 +1372,13 @@ export class Tower {
     toJSON() {
         const data = {
             x: this.x,
-            y: this.y,
             type: this.type,
             id: this.id,
             level: this.level,
             damageLevel: this.damageLevel,
             mode: this.mode,
             targetingMode: this.targetingMode,
-            attackGroundTarget: this.attackGroundTarget,
-            damageMultiplier: this.damageMultiplier,
-            projectileCount: this.projectileCount,
-            damageMultiplierFromMerge: this.damageMultiplierFromMerge,
-            fragmentBounces: this.fragmentBounces,
+            // ... other properties
             bounceDamageFalloff: this.bounceDamageFalloff,
             hasFragmentingShot: this.hasFragmentingShot,
             goldBonus: this.goldBonus,
@@ -1385,6 +1387,12 @@ export class Tower {
             projectileSize: this.projectileSize,
             killCount: this.killCount,
             goldGenerated: this.goldGenerated,
+            y: this.y,
+            attackGroundTarget: this.attackGroundTarget,
+            damageMultiplier: this.damageMultiplier,
+            projectileCount: this.projectileCount,
+            damageMultiplierFromMerge: this.damageMultiplierFromMerge,
+            fragmentBounces: this.fragmentBounces,
             natCastleBonus: this.natCastleBonus,
         };
 
@@ -1398,13 +1406,12 @@ export class Tower {
 
         if (this.type === 'ORBIT') {
             data.orbitMode = this.orbitMode;
-            data.upgradeCount = this.upgradeCount;
             data.orbitDirection = this.orbitDirection;
+            data.orbitersAngles = this.orbiters.map(orbiter => orbiter.angle);
         }
         if (this.type === 'FIREPLACE') {
             data.burnDps = this.burnDps;
             data.burnDuration = this.burnDuration;
-            data.level = this.level;
             data.damage = this.damage;
             data.damageDebuff = this.damageDebuff;
         }
@@ -1430,28 +1437,32 @@ export class Tower {
 
     static fromJSON(data) {
         const tower = new Tower(data.x, data.y, data.type);
+        // A comprehensive list of all possible properties to restore.
         const fields = [
             "id", "level", "damageLevel", "mode", "targetingMode", "attackGroundTarget",
             "damageMultiplier", "projectileCount", "damageMultiplierFromMerge", "fragmentBounces",
             "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color", "damage",
             "projectileSize", "burnDps", "burnDuration", "damageDebuff", "attackSpeedBoost", "damageBoost",
-            "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount", "chainTargets", "stunDuration",
-            "chainRange",
+            "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "chainTargets", "stunDuration", "chainRange",
             "isMobile", "speed", "pathIndex", "progress", "rotation", "orbitDirection"
         ];
 
-
+        if (data.type === 'ORBIT') fields.push('orbitersAngles');
+        // Restore all saved data to the new tower instance first.
         for (const field of fields) {
             if (field in data) {
                 tower[field] = data[field];
             }
         }
 
-        if (data.type === 'ORBIT') {
-            tower.orbitDirection = data.orbitDirection || 1; // Ensure direction is set before updateStats
-        }
-
+        // Now that all properties are restored, call updateStats to recalculate derived values
+        // and trigger type-specific logic like recreating orbiters.
         tower.updateStats();
+
+        if (tower.type === 'ORBIT' && data.orbitersAngles) {
+            tower.recreateOrbiters(); // Re-create with the correct number first
+            tower.orbiters.forEach((orbiter, i) => orbiter.angle = data.orbitersAngles[i]);
+        }
         return tower;
     }
 }
