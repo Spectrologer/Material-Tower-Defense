@@ -128,6 +128,8 @@ export const uiElements = {
     statJumpRange: document.getElementById('stat-jump-range'),
     statArmorPenP: document.getElementById('stat-armor-pen-p'),
     statArmorPen: document.getElementById('stat-armor-pen'),
+    statDamageAmpP: document.getElementById('stat-damage-amp-p'),
+    statDamageAmp: document.getElementById('stat-damage-amp'),
     towerKillCount: document.getElementById('tower-kill-count'),
     killCountValue: document.getElementById('kill-count-value'),
 };
@@ -200,7 +202,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
             uiElements.statBoostP, uiElements.statSlowP, uiElements.statGoldP,
-            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP, uiElements.statRangeP, uiElements.statArmorPenP, uiElements.statJumpRangeP,
+            uiElements.statBurnP, uiElements.statSpecialP, uiElements.statProjectilesP, uiElements.statRangeP, uiElements.statArmorPenP, uiElements.statJumpRangeP, uiElements.statDamageAmpP,
             uiElements.statFragsP, uiElements.statPinsP, uiElements.statJumpsP, uiElements.statStunP
         ].forEach(p => {
             if (p) p.classList.add('hidden');
@@ -547,10 +549,9 @@ function updateStatsDisplay(selectedTower) {
             if (icon) icon.style.color = '#ef4444';
         }
         if (uiElements.statDamage) {
-            const finalDamage = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
-            uiElements.statDamage.textContent = finalDamage;
+            uiElements.statDamage.textContent = (selectedTower.damage * selectedTower.damageMultiplier).toFixed(1);
         }
-        if (uiElements.statSpeedP && selectedTower.type !== 'ORBIT') {
+        if (uiElements.statSpeedP && selectedTower.type !== 'ORBIT' && selectedTower.type !== 'FIREPLACE') {
             uiElements.statSpeedP.classList.remove('hidden');
             const icon = /** @type {HTMLElement | null} */ (uiElements.statSpeedP.querySelector('span'));
             if (icon) icon.style.color = '#4ade80';
@@ -558,21 +559,13 @@ function updateStatsDisplay(selectedTower) {
         if (uiElements.statSpeed && selectedTower.type !== 'ORBIT') {
             uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
         }
-        if (selectedTower.type !== 'ORBIT') {
+        if (selectedTower.type !== 'ORBIT' && selectedTower.type !== 'FIREPLACE') {
             if (uiElements.statRangeP) {
                 uiElements.statRangeP.classList.remove('hidden');
                 const icon = /** @type {HTMLElement | null} */ (uiElements.statRangeP.querySelector('span'));
                 if (icon) icon.style.color = '#60a5fa';
             }
             if (uiElements.statRange) uiElements.statRange.textContent = Math.round(selectedTower.range).toString();
-        }
-        if (selectedTower.type === 'FIREPLACE') {
-            if (uiElements.statBurnP) {
-                uiElements.statBurnP.classList.remove('hidden');
-                const icon = /** @type {HTMLElement | null} */ (uiElements.statBurnP.querySelector('span'));
-                if (icon) icon.style.color = '#f97316';
-            }
-            if (uiElements.statBurn) uiElements.statBurn.textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;
         }
         if (selectedTower.type === 'NAT' || selectedTower.type === 'ORBIT') {
             if (uiElements.statProjectilesP) {
@@ -616,6 +609,35 @@ function updateStatsDisplay(selectedTower) {
                 if (icon) icon.style.color = '#9e9e9e';
             }
             if (uiElements.statArmorPen) uiElements.statArmorPen.textContent = `${(baseStats.armorPenetration * 100).toFixed(0)}%`;
+        }
+    }
+
+    // FIREPLACE has a mix of stats, handle it separately at the end.
+    if (selectedTower.type === 'FIREPLACE') {
+        if (uiElements.statSpeedP) {
+            uiElements.statSpeedP.classList.remove('hidden');
+            const icon = /** @type {HTMLElement | null} */ (uiElements.statSpeedP.querySelector('span'));
+            if (icon) icon.style.color = '#4ade80';
+        }
+        if (uiElements.statSpeed) {
+            uiElements.statSpeed.textContent = (60 / selectedTower.fireRate).toFixed(2);
+        }
+
+        if (uiElements.statBurnP) {
+            uiElements.statBurnP.classList.remove('hidden');
+            const icon = /** @type {HTMLElement | null} */ (uiElements.statBurnP.querySelector('span'));
+            if (icon) icon.style.color = '#f97316';
+        }
+        if (uiElements.statBurn) uiElements.statBurn.textContent = `${selectedTower.burnDps.toFixed(1)}/s for ${selectedTower.burnDuration}s`;
+
+        if (selectedTower.damageDebuff > 0) {
+            if (uiElements.statDamageAmpP) {
+                uiElements.statDamageAmpP.classList.remove('hidden');
+                const icon = /** @type {HTMLElement | null} */ (uiElements.statDamageAmpP.querySelector('span'));
+                if (icon) icon.style.color = '#f43f5e'; // A reddish-pink color
+            }
+            if (uiElements.statDamageAmp) uiElements.statDamageAmp.textContent = `+${(selectedTower.damageDebuff * 100).toFixed(0)}%`;
+            if (uiElements.statDamageAmp) uiElements.statDamageAmp.textContent += ' for 10s';
         }
     }
 }
@@ -706,6 +728,7 @@ const statDisplayConfig = {
     enemySlow: { label: 'Slow Aura', icon: 'hourglass_empty', family: 'material-symbols-outlined', color: '#38bdf8', condition: (s) => s.enemySlow, formatter: (val) => `${((1 - val) * 100).toFixed(0)}%` },
     goldBonus: { label: 'Gold Aura', icon: 'savings', family: 'material-icons', color: '#facc15', condition: (s) => s.goldBonus, formatter: (val) => `+${val}G` },
     armorPenetration: { label: 'AP', icon: 'shield_moon', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armorPenetration > 0, formatter: (val) => `${(val * 100).toFixed(0)}%` },
+    damageDebuff: { label: 'Debuff', icon: 'trending_down', family: 'material-symbols-outlined', color: '#f43f5e', condition: (s) => s.damageDebuff > 0, formatter: (val) => `+${(val * 100).toFixed(0)}%` },
     burnDps: { label: 'Burn', icon: 'local_fire_department', family: 'material-symbols-outlined', color: '#f97316', condition: (s) => s.burnDps, formatter: (val, stats) => `${val}/s for ${stats.burnDuration}s` },
     chainTargets: { label: 'Jumps', icon: 'electric_bolt', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.chainTargets > 0, formatter: (val) => val },
     chainRange: { label: 'Jump Range', icon: 'social_distance', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.chainRange > 0 },

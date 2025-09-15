@@ -308,6 +308,8 @@ export class Enemy {
         this.burns = [];
         this.slowMultiplier = 1;
         this.isDying = false;
+        this.damageTakenMultiplier = 1;
+        this.damageDebuffTimer = 0;
         this.deathAnimationTimer = 0;
         this.rotation = 0;
         this.stunTimer = 0;
@@ -351,13 +353,19 @@ export class Enemy {
         // Apply the longer stun duration
         this.stunTimer = Math.max(this.stunTimer, duration);
     }
-    applyBurn(dps, durationInSeconds) {
+    applyBurn(dps, durationInSeconds, isDamageAmp = false) {
         const existingBurn = this.burns.find(b => b.dps >= dps);
         if (existingBurn) {
             existingBurn.duration = Math.max(existingBurn.duration, durationInSeconds);
+            existingBurn.isDamageAmp = existingBurn.isDamageAmp || isDamageAmp; // Keep purple if it was already
         } else {
-            this.burns.push({ dps, duration: durationInSeconds });
+            this.burns.push({ dps, duration: durationInSeconds, isDamageAmp });
         }
+    }
+    applyDamageDebuff(multiplier, duration) {
+        // Apply the strongest debuff
+        this.damageTakenMultiplier = Math.max(this.damageTakenMultiplier, multiplier);
+        this.damageDebuffTimer = Math.max(this.damageDebuffTimer, duration);
     }
     draw(ctx) {
         if (!this.isVisible) return;
@@ -435,8 +443,11 @@ export class Enemy {
 
         if (this.burns.length > 0) {
             ctx.globalAlpha = 0.5;
+            // Check if any burn has the damage amp flag, which makes it purple
+            const hasDamageAmpBurn = this.burns.some(b => b.isDamageAmp);
+            const burnColor = hasDamageAmpBurn ? '#c084fc' : `rgba(255, 100, 0, 1)`; // Solid orange for default burn
             ctx.font = `${this.size * 2.5}px 'Material Symbols Outlined'`;
-            ctx.fillStyle = `rgba(255, 100, 0, ${0.5 + Math.sin(Date.now() / 100) * 0.2})`;
+            ctx.fillStyle = burnColor;
             ctx.fillText('local_fire_department', this.x, this.y);
             ctx.globalAlpha = 1.0;
         }
@@ -469,6 +480,12 @@ export class Enemy {
             return true; // Skip all other updates while stunned
         }
 
+        // Reset debuff if timer runs out
+        this.damageDebuffTimer -= deltaTime;
+        if (this.damageDebuffTimer <= 0) {
+            this.damageTakenMultiplier = 1;
+        }
+
         // --- Death Animation ---
         if (this.isDying) {
             this.deathAnimationTimer -= deltaTime;
@@ -490,25 +507,8 @@ export class Enemy {
             burn.duration -= deltaTime;
             if (burn.duration <= 0) this.burns.shift();
         }
-        if (this.health <= 0) {
-            if (this.type.isFlying) { // Trigger death animation for flying units
-                this.isDying = true;
-                this.deathAnimationTimer = 0.5;
-                return true; // Keep the enemy for animation
-            } else if (this.type.splitsOnDeath) {
-                for (let i = 0; i < this.type.splitCount; i++) {
-                    const splitEnemy = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
-                    splitEnemy.x = this.x + (Math.random() - 0.5) * 15; // Spawn near parent
-                    splitEnemy.y = this.y + (Math.random() - 0.5) * 15;
-                    splitEnemy.pathIndex = this.pathIndex;
-                    newlySpawnedEnemies.push(splitEnemy);
-                }
-                onDeath(this, { isAnimatedDeath: false });
-                return false;
-            } else {
-                onDeath(this);
-                return false; // Remove this enemy immediately
-            }
+        if (this.health <= 0 && !this.isDying) {
+            this.takeDamage(0, null, onDeath); // Trigger death logic
         }
 
         // --- Special Behaviors ---
@@ -729,7 +729,7 @@ export class Enemy {
 
         return true; // Keep this enemy
     }
-    takeDamage(damage, projectile = null) {
+    takeDamage(damage, projectile = null, onDeath) {
         const armor = this.type.armor || 0;
         let finalDamage;
 
@@ -742,9 +742,17 @@ export class Enemy {
             finalDamage = damage * armorMultiplier;
         }
 
-        this.health -= finalDamage;
+        this.health -= finalDamage * this.damageTakenMultiplier;
         this.hitTimer = 0.1; // Flash for 0.1 seconds
-        return this.health <= 0;
+
+        if (this.health <= 0 && !this.isDying) {
+            this.isDying = true; // Prevent multiple death triggers
+            if (onDeath) {
+                onDeath(this);
+            }
+            return true; // Signal that the enemy is defeated
+        }
+        return false;
     }
 }
 
@@ -784,15 +792,13 @@ class TowerStats {
 
         tower.cost = baseStats.cost * this.levelForCalc;
         tower.range = baseStats.range;
-        if (tower.type === 'FIREPLACE' || tower.type === 'STUN_BOT') {
-            if (tower.type === 'STUN_BOT') {
-                // For STUN_BOT, damage is handled entirely by merge logic, so we don't reset it here.
-            } else if (tower.type === 'FIREPLACE') {
-                tower.damage = baseStats.damage; // Keep base damage for FIREPLACE
-            }
-            // burnDps is now managed by merge-logic, so we don't reset it here
+        if (tower.type === 'STUN_BOT') {
+            // For STUN_BOT, damage is handled entirely by merge logic, so we don't reset it here.
+        } else if (tower.type === 'FIREPLACE') {
+            // For FIREPLACE, damage and burnDps are managed by merge-logic, so we don't reset them here.
             if (tower.type === 'FIREPLACE') tower.burnDuration = baseStats.burnDuration;
         } else {
+            // For all other towers, calculate damage based on level and multipliers.
             tower.damage = baseStats.damage * (1 + (this.damageLevelForCalc - 1) * 0.5) * (tower.damageMultiplierFromMerge || 1);
         }
 
@@ -809,7 +815,11 @@ class TowerStats {
         if (!tower.projectileSize) {
             tower.projectileSize = baseStats.projectileSize;
         }
-        tower.projectileColor = baseStats.projectileColor;
+        if (tower.type === 'FIREPLACE' && tower.damageDebuff > 0) {
+            tower.projectileColor = '#c084fc'; // Purple for damage amp
+        } else {
+            tower.projectileColor = baseStats.projectileColor;
+        }
         if (tower.type === 'SUPPORT') {
             tower.attackSpeedBoost = baseStats.attackSpeedBoost * Math.pow(0.95, this.levelForCalc - 1);
         }
@@ -1209,6 +1219,7 @@ export class Tower {
         this.burnDps = 0;
         this.burnDuration = 0;
         this.attackSpeedBoost = 1;
+        this.damageDebuff = 0;
         this.damageBoost = 1;
         this.enemySlow = 1;
         this.chainTargets = 0;
@@ -1339,6 +1350,8 @@ export class Tower {
             data.burnDps = this.burnDps;
             data.burnDuration = this.burnDuration;
             data.level = this.level;
+            data.damage = this.damage;
+            data.damageDebuff = this.damageDebuff;
         }
         if (this.type === 'MIND' || this.type === 'CAT') {
             data.attackSpeedBoost = this.attackSpeedBoost;
@@ -1366,7 +1379,7 @@ export class Tower {
             "id", "level", "damageLevel", "mode", "targetingMode", "attackGroundTarget",
             "damageMultiplier", "projectileCount", "damageMultiplierFromMerge", "fragmentBounces",
             "bounceDamageFalloff", "hasFragmentingShot", "goldBonus", "splashRadius", "color", "damage",
-            "projectileSize", "burnDps", "burnDuration", "attackSpeedBoost", "damageBoost",
+            "projectileSize", "burnDps", "burnDuration", "damageDebuff", "attackSpeedBoost", "damageBoost",
             "enemySlow", "orbitMode", "killCount", "goldGenerated", "natCastleBonus", "upgradeCount", "chainTargets", "stunDuration",
             "chainRange",
             "isMobile", "speed", "pathIndex", "progress", "rotation", "orbitDirection"

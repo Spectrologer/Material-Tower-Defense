@@ -319,22 +319,30 @@ export class MergeHandler {
             resultType: 'FIREPLACE', text: 'Upgrade',
             upgrade: { text: '+ Splash', icon: 'bubble_chart', family: 'material-icons' },
             canApply: (tower) => tower.level < 5,
-            apply: (tower, { originalTowerColor, mergingTowerType }) => {
-                tower.splashRadius += 10;
+            apply: (tower) => { // Increase splash radius by 10 * the new level
+                tower.splashRadius += 10 * (tower.level + 1);
                 tower.level++;
-                tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+                tower.burnDps = tower.level; // 1->2->3->4->5
+                tower.color = blendColors(tower.color, TOWER_TYPES.CASTLE.color);
                 tower.updateStats();
             }
         });
 
         this._addRecipe('FIREPLACE', 'PIN', {
             resultType: 'FIREPLACE', text: 'Upgrade',
-            upgrade: { text: '+ Burn', icon: 'local_fire_department', family: 'material-symbols-outlined' },
+            upgrade: { text: '+ Dmg/Debuff', icon: 'local_fire_department', family: 'material-symbols-outlined' },
             canApply: (tower) => tower.level < 5,
-            apply: (tower, { originalTowerColor, mergingTowerType }) => {
-                tower.burnDps += 2;
+            apply: (tower) => {
                 tower.level++;
-                tower.color = blendColors(originalTowerColor, TOWER_TYPES[mergingTowerType].color);
+                tower.damage = 0.2 * tower.level; // Progression: 0.2 -> 0.4 -> 0.6 -> 0.8 -> 1.0
+                // Initialize or increment the debuff.
+                // Progression: 10% -> 15% -> 20% -> 25% -> 30%
+                if (!tower.damageDebuff) {
+                    tower.damageDebuff = 0.10;
+                } else {
+                    tower.damageDebuff = Math.min(0.30, tower.damageDebuff + 0.05);
+                }
+                tower.color = blendColors(tower.color, TOWER_TYPES.PIN.color);
                 tower.updateStats();
             }
         });

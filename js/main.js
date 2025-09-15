@@ -460,6 +460,7 @@ function handleProjectileHit(projectile, hitEnemy) {
                 }
             }
             gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 0.5));
+            enemy.goldAwarded = true;
         }
     };
 
@@ -512,13 +513,15 @@ function handleProjectileHit(projectile, hitEnemy) {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
                 if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
-                    projectile.isTrueDamage = (enemy === targetEnemy); // Set flag for main target
-                    if (enemy.takeDamage(finalDamage, projectile)) {
-                        projectile.owner.killCount++;
-                        awardGold(enemy);
+                    projectile.isTrueDamage = (enemy === targetEnemy);
+                    if (enemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); })) {
+                        // Death is now handled inside takeDamage
                     }
-                    playHitSound();
-                    enemy.applyBurn(projectile.owner.burnDps, projectile.owner.burnDuration);
+                    playHitSound(); // This sound is now played inside takeDamage
+                    enemy.applyBurn(projectile.owner.burnDps, projectile.owner.burnDuration, projectile.owner.damageDebuff > 0);
+                    if (projectile.owner.damageDebuff > 0) {
+                        enemy.applyDamageDebuff(1 + projectile.owner.damageDebuff, 10); // Apply debuff for 10 seconds
+                    }
                 }
             }
         });
@@ -529,10 +532,9 @@ function handleProjectileHit(projectile, hitEnemy) {
             if (Math.hypot(splashCenter.x - enemy.x, splashCenter.y - enemy.y) <= projectile.owner.splashRadius) {
                 const canHit = (projectile.owner.hasShrapnel && enemy.type.isFlying) || !enemy.type.isFlying;
                 if ((enemy === targetEnemy || !enemy.type.splashImmune) && canHit) {
-                    projectile.isTrueDamage = (enemy === targetEnemy); // Set flag for main target
-                    if (enemy.takeDamage(finalDamage, projectile)) {
-                        projectile.owner.killCount++;
-                        awardGold(enemy);
+                    projectile.isTrueDamage = (enemy === targetEnemy);
+                    if (enemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); })) {
+                        // Death is now handled inside takeDamage
                     }
                     playHitSound();
                 }
@@ -540,10 +542,9 @@ function handleProjectileHit(projectile, hitEnemy) {
         });
     } else {
         if (targetEnemy && typeof targetEnemy.takeDamage === 'function') {
-            projectile.isTrueDamage = true; // Direct hits are always true damage
-            if (targetEnemy.takeDamage(finalDamage, projectile)) {
-                projectile.owner.killCount++;
-                awardGold(targetEnemy);
+            projectile.isTrueDamage = true;
+            if (targetEnemy.takeDamage(finalDamage, projectile, (e) => { projectile.owner.killCount++; awardGold(e); })) {
+                // Death is now handled inside takeDamage
             }
             playHitSound();
         }
@@ -569,12 +570,21 @@ function gameLoop(currentTime) {
     updateStealthVisibility();
     applyAuraEffects();
     const onEnemyDeath = (enemy, payload = {}) => {
-        if (enemy.gold > 0) {
+        // This function is now the single source of truth for what happens when an enemy dies.
+        if (enemy.gold > 0 && !enemy.goldAwarded && enemy.type.icon !== ENEMY_TYPES.BITCOIN.icon) {
             playMoneySound();
+            gameState.gold += enemy.gold;
+            gameState.effects.push(new Effect(enemy.x, enemy.y, 'attach_money', enemy.gold * 5 + 10, '#FFD700', 0.5));
         }
         if (payload.isAnimatedDeath) {
             gameState.effects.push(new Effect(enemy.x, enemy.y, 'explosion', enemy.size * 4, '#ff9900', 0.5));
             playExplosionSound();
+        }
+        // Remove the enemy from the game state
+        gameState.enemies = gameState.enemies.filter(e => e.id !== enemy.id);
+        // Add to killed enemies for library tracking
+        if (enemy.typeName) {
+            gameState.killedEnemies.add(enemy.typeName);
         }
     };
 
@@ -607,7 +617,7 @@ function gameLoop(currentTime) {
                 }
             }
         },
-        onEnemyDeath,
+        (e) => onEnemyDeath(e), // Pass the consolidated onEnemyDeath handler
         gameState.enemies, // Pass the full list of enemies for abilities like healing
         playWiggleSound,
         playCrackSound,

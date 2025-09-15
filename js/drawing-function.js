@@ -225,6 +225,11 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
 
     if (enemyType.armor > 0) stats.push({ icon: 'security', text: `${enemyType.armor}`, color: '#9e9e9e' });
 
+    // Add damage amp stat if the enemy is debuffed
+    if (enemy.damageTakenMultiplier > 1) {
+        stats.push({ icon: 'trending_down', text: `+${((enemy.damageTakenMultiplier - 1) * 100).toFixed(0)}%`, color: '#f43f5e' });
+    }
+
     const padding = 8;
     const lineHeight = 18;
     const iconSize = 12;
