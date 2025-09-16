@@ -421,7 +421,7 @@ export class Enemy {
 
         ctx.save();
         if (this.wiggleTimer > 0) {
-            const wiggleAmount = 3;
+            const wiggleAmount = 3; // This was a good idea, but it's not being used.
             const wiggleSpeed = 30; // Radians per second
             ctx.translate(this.x + Math.sin(this.wiggleTimer * wiggleSpeed) * wiggleAmount, this.y);
         } else {
@@ -433,6 +433,9 @@ export class Enemy {
         }
 
         ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
+        if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
+            ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
+        }
         ctx.fillStyle = this.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -445,12 +448,19 @@ export class Enemy {
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 3;
         const shadowIconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
+        if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
+            ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
+        }
         ctx.fillText(shadowIconToDraw, 0, 0);
         ctx.restore();
         // --- End Shadow ---
 
         const iconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
+        if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
+            ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
+        }
         ctx.fillText(iconToDraw, 0, 0);
+        ctx.fontVariationSettings = "'FILL' 0, 'wght' 400"; // Reset for other elements
         ctx.restore();
 
         const healthBarWidth = this.size * 2;

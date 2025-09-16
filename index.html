@@ -132,13 +132,15 @@
 
         /* What buttons look like when you hover over them */
         .pixel-button:hover:not(:disabled) {
-            background-color: rgba(255, 255, 255, 0.15);
             transform: translateY(-2px);
             box-shadow:
                 inset 0 1px 0 rgba(255, 255, 255, 0.15),
                 0 6px 0 rgba(0, 0, 0, 0.4),
                 0 8px 16px rgba(0, 0, 0, 0.4);
             border-color: rgba(255, 255, 255, 0.25);
+            background-size: 200% 100%;
+            background-image: linear-gradient(to right, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
+            animation: hover-shine 0.5s forwards;
         }
 
         .pixel-button:hover:not(:disabled)::before {
@@ -193,6 +195,12 @@
             box-shadow: 0 4px 0px 0px #8b5cf6, 0 0 12px #c084fc;
             /* Changed glow to purple */
             transform: translateY(0);
+        }
+
+        @keyframes hover-shine {
+            to {
+                background-position: -100% 0;
+            }
         }
 
         /* Specific styles for the tower buttons to give them color-coded tints */
@@ -432,6 +440,27 @@
             /* Adjust this value to control how much is visible */
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
+
+        /* Custom texture overrides for specific buttons */
+        .target-weakest-btn {
+            background-image:
+                linear-gradient(30deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+                linear-gradient(150deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+                linear-gradient(30deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+                linear-gradient(150deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+                linear-gradient(60deg, rgba(0, 0, 0, 0.07) 25%, transparent 25.5%, transparent 75%, rgba(0, 0, 0, 0.07) 75%, rgba(0, 0, 0, 0.07)),
+                linear-gradient(60deg, rgba(0, 0, 0, 0.07) 25%, transparent 25.5%, transparent 75%, rgba(0, 0, 0, 0.07) 75%, rgba(0, 0, 0, 0.07));
+        }
+
+        .sell-cloud-btn {
+            background-image:
+                linear-gradient(30deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+                linear-gradient(150deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+                linear-gradient(30deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+                linear-gradient(150deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+                linear-gradient(60deg, rgba(255, 255, 255, 0.03) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.03) 75%, rgba(255, 255, 255, 0.03)),
+                linear-gradient(60deg, rgba(255, 255, 255, 0.03) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.03) 75%, rgba(255, 255, 255, 0.03));
+        }
     </style>
 
 </head>
@@ -443,8 +472,8 @@
 
         <!-- This is the stats bar at the top (Lives, Gold, Wave) and options button -->
         <div class="game-stats-panel py-1 px-2 flex-shrink-0 w-full flex flex-col gap-y-1">
-            <h1 id="game-title" class="text-2xl sm:text-3xl font-extrabold text-fuchsia-400 text-center cursor-pointer">
-                ICONIC DEFENSE</h1>
+            <h1 id="game-title" class="text-3xl sm:text-4xl font-extrabold text-fuchsia-400 text-center cursor-pointer"
+                style="text-shadow: 0 0 12px rgba(217, 70, 239, 0.5), 0 2px 4px rgba(0,0,0,0.7);">ICONIC DEFENSE</h1>
             <div class="grid grid-cols-[auto_1fr_auto] items-center">
                 <div class="justify-self-start">
                     <button id="options-btn" class="pixel-button !p-0 w-10 h-10 flex items-center justify-center">
@@ -453,11 +482,13 @@
                 </div>
                 <div class="grid grid-cols-3 gap-x-2 md:gap-x-4 place-items-center text-sm md:text-base">
                     <p class="flex items-center gap-1.5"><span
-                            class="material-symbols-outlined text-red-500 text-lg md:text-xl">favorite</span> <span
-                            id="lives" class="text-red-500">20</span></p>
+                            class="material-symbols-outlined text-red-500 text-xl md:text-2xl"
+                            style="font-variation-settings: 'FILL' 1;">favorite</span> <span id="lives"
+                            class="text-red-500">20</span></p>
                     <p class="flex items-center gap-1.5"><span
-                            class="material-symbols-outlined text-yellow-400 text-lg md:text-xl">paid</span> <span
-                            id="gold" class="text-yellow-400">100</span></p>
+                            class="material-symbols-outlined text-yellow-400 text-xl md:text-2xl"
+                            style="font-variation-settings: 'FILL' 1;">paid</span> <span id="gold"
+                            class="text-yellow-400">100</span></p>
                     <p class="flex items-center gap-1 text-cyan-400">WAVE: <span id="wave"
                             class="text-cyan-400">0</span></p>
                 </div>
@@ -480,19 +511,23 @@
             <button id="library-btn"
                 class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 mt-2 shadow-[0_4px_0_#4b5563] border-gray-400">
                 <span class="material-symbols-outlined !text-lg justify-self-center"
-                    style="color: #81d4fa;">menu_book</span>
+                    style="color: #81d4fa; font-variation-settings: 'FILL' 1;">
+                    menu_book
+                </span>
                 <span class="text-left">LIBRARY</span>
             </button>
             <button id="trophies-btn"
                 class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 shadow-[0_4px_0_#4b5563] border-gray-400">
                 <span class="material-symbols-outlined !text-lg justify-self-center"
-                    style="color: #ffd700;">emoji_events</span>
+                    style="color: #ffd700; font-variation-settings: 'FILL' 1;">
+                    emoji_events
+                </span>
                 <span class="text-left">TROPHIES</span>
             </button>
             <button id="log-btn"
                 class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 shadow-[0_4px_0_#4b5563] border-gray-400">
                 <span class="material-symbols-outlined !text-lg justify-self-center"
-                    style="color: #a5d6a7;">history_edu</span>
+                    style="color: #a5d6a7; font-variation-settings: 'FILL' 1;">history_edu</span>
                 <span class="text-left">MESSAGE LOG</span>
             </button>
             <button id="toggle-merge-confirm-btn" class="pixel-button text-sm py-2 text-center mt-2">CONFIRM MERGES:
@@ -657,18 +692,14 @@
                             title="Special Ability">star</span><span id="stat-special">None</span></p>
                 </div>
                 <div class="flex flex-col gap-2 mt-2">
-                    <button id="toggle-mode"
-                        class="pixel-button bg-purple-800 text-yellow-300 border-yellow-300 hidden">MODE:
-                    </button>
-                    <button id="toggle-orbit-direction-btn"
-                        class="pixel-button bg-green-800 text-lime-300 border-lime-300 hidden">DIR:
-                        CW</button>
+                    <button id="toggle-mode" class="pixel-button hidden">MODE:</button>
+                    <button id="toggle-orbit-direction-btn" class="pixel-button hidden">DIR: CW</button>
                     <button id="toggle-targeting" class="pixel-button hidden">TARGET:</button>
                 </div>
                 <div id="selected-tower-actions" class="grid grid-cols-2 gap-2 mt-2">
                     <!-- Button to sell the selected tower -->
                     <button id="sell-tower-btn"
-                        class="pixel-button bg-red-700 text-yellow-300 border-yellow-400 shadow-[0_4px_0_#9a3412] py-2">SELL</button>
+                        class="pixel-button bg-red-700 text-yellow-300 border-red-900 shadow-[0_4px_0_#9a3412] py-2 sell-cloud-btn">SELL</button>
                     <!-- Button to move the selected tower to the cloud -->
                     <button id="move-to-cloud-btn"
                         class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] py-2 hidden items-center justify-center gap-1 sm:flex">

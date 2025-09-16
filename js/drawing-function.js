@@ -56,7 +56,8 @@ function createPixelatedPattern(ctx, color) {
     patternCtx.fillRect(6, 2, 1, 1);
 
     return ctx.createPattern(patternCanvas, 'repeat');
-}
+}        // Apply fill to specific icons
+
 
 // Draws the path that enemies will follow.
 export function drawPath(ctx, canvasWidth, path, mazeColor) {

@@ -220,7 +220,7 @@ export function updateNextWavePreview(currentWave) {
         groupEl.title = `${typeName.replace('_', ' ')}`;
 
         let iconStyle = `color: ${enemyType.color}; font-size: 24px; text-shadow: 1px 1px 3px #000; font-family: '${enemyType.iconFamily || 'Material Icons'}';`;
-        if (enemyType.iconFamily === 'Material Symbols Outlined' && enemyType.filled) {
+        if (enemyType.iconFamily === 'Material Symbols Outlined' && enemyType.icon === 'digital_wellbeing') {
             iconStyle += ` font-variation-settings: 'FILL' 1;`;
         }
         groupEl.innerHTML = `
@@ -812,8 +812,8 @@ const statDisplayConfig = {
     splashRadius: { label: 'Spl', icon: 'bubble_chart', family: 'material-icons', color: '#c084fc', condition: (s) => s.splashRadius > 0 },
     attackSpeedBoost: { label: 'Spd Aura', icon: 'electric_bolt', family: 'material-icons', color: '#f59e0b', condition: (s) => s.attackSpeedBoost, formatter: (val) => `+${((1 - val) * 100).toFixed(0)}%` },
     damageBoost: { label: 'Dmg Aura', icon: 'electric_bolt', family: 'material-icons', color: '#f59e0b', condition: (s) => s.damageBoost, formatter: (val) => `+${((val - 1) * 100).toFixed(0)}%` },
-    enemySlow: { label: 'Slow Aura', icon: 'hourglass_bottom', family: 'material-symbols-outlined', color: '#38bdf8', condition: (s) => s.enemySlow, formatter: (val) => `${((1 - val) * 100).toFixed(0)}%` },
-    goldBonus: { label: 'Gold Aura', icon: 'savings', family: 'material-icons', color: '#facc15', condition: (s) => s.goldBonus, formatter: (val) => `+${val}G`, filled: true },
+    enemySlow: { label: 'Slow Aura', icon: 'hourglass_empty', family: 'material-symbols-outlined', color: '#38bdf8', condition: (s) => s.enemySlow, formatter: (val) => `${((1 - val) * 100).toFixed(0)}%` },
+    goldBonus: { label: 'Gold Aura', icon: 'savings', family: 'material-icons', color: '#facc15', condition: (s) => s.goldBonus, formatter: (val) => `+${val}G` },
     armorPenetration: { label: 'AP', icon: 'shield_moon', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armorPenetration > 0, formatter: (val) => `${(val * 100).toFixed(0)}%` },
     damageDebuff: { label: 'Debuff', icon: 'trending_down', family: 'material-symbols-outlined', color: '#f43f5e', condition: (s) => s.damageDebuff > 0, formatter: (val) => `+${(val * 100).toFixed(0)}%` },
     burnDps: { label: 'Burn', icon: 'local_fire_department', family: 'material-symbols-outlined', color: '#f97316', condition: (s) => s.burnDps, formatter: (val, stats) => `${val}/s for ${stats.burnDuration}s` },
@@ -823,9 +823,9 @@ const statDisplayConfig = {
 };
 
 const enemyStatDisplayConfig = {
-    health: { label: 'Health', icon: 'favorite', family: 'material-symbols-outlined', color: '#ef4444', condition: (s) => s.health > 0, filled: true },
+    health: { label: 'Health', icon: 'favorite', family: 'material-symbols-outlined', color: '#ef4444', condition: (s) => s.health > 0 },
     speed: { label: 'Speed', icon: 'speed', family: 'material-symbols-outlined', color: '#4ade80', condition: (s) => s.speed > 0 },
-    gold: { label: 'Gold', icon: 'paid', family: 'material-symbols-outlined', color: '#facc15', condition: (s) => s.gold >= 0, filled: true },
+    gold: { label: 'Gold', icon: 'paid', family: 'material-symbols-outlined', color: '#facc15', condition: (s) => s.gold >= 0 },
     armor: { label: 'Armor', icon: 'security', family: 'material-symbols-outlined', color: '#9e9e9e', condition: (s) => s.armor > 0 },
     healInterval: { label: 'Heal Cooldown', icon: 'timer', family: 'material-symbols-outlined', color: '#4fc3f7', condition: (s) => s.isHealer, formatter: (val) => `${val}s` },
     healRange: { label: 'Heal Range', icon: 'social_distance', family: 'material-symbols-outlined', color: '#4fc3f7', condition: (s) => s.isHealer },
@@ -858,7 +858,7 @@ function createTowerCardHTML(type, isDiscovered) {
     } else {
         let style = iconStyle;
         if (iconInfo.className.includes('material-symbols')) {
-            style += ` font-variation-settings: 'FILL' 1;`;
+            style += ` font-variation-settings: 'FILL' 0;`;
         }
         iconHTML = `<span class="${iconInfo.className}" style="${style}">${iconInfo.icon}</span>`;
     }
@@ -877,8 +877,7 @@ function createTowerCardHTML(type, isDiscovered) {
                 const formattedValue = config.formatter ? config.formatter(statValue || 0, stats) : (statValue || 0);
                 const pClass = `flex items-center gap-1 ${!statValue && isStunBotStun ? 'text-gray-500' : ''}`;
                 const iconFamily = config.family || 'material-icons';
-                const iconStyle = config.filled ? `font-variation-settings: 'FILL' 1;` : '';
-                return `<p class="${pClass}"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color}; ${iconStyle}">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+                return `<p class="${pClass}"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
             }
             return ''; // Don't render the stat if the condition isn't met
         })
@@ -938,7 +937,7 @@ function createEnemyCardHTML(type, isDiscovered) {
         iconHTML = `<i class="fa-solid fa-${stats.icon}" style="${iconStyle}"></i>`;
     } else {
         let style = iconStyle;
-        if (stats.iconFamily === 'Material Symbols Outlined' && stats.filled) {
+        if (stats.iconFamily === 'Material Symbols Outlined' && (stats.icon === 'digital_wellbeing' || stats.icon === 'helicopter')) {
             style += ` font-variation-settings: 'FILL' 1;`;
         }
         iconHTML = `<span class="${stats.iconFamily === 'Material Symbols Outlined' ? 'material-symbols-outlined' : 'material-icons'}" style="${style}">${stats.icon}</span>`;
@@ -966,8 +965,7 @@ function createEnemyCardHTML(type, isDiscovered) {
                 const statValue = stats[key];
                 const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
                 const iconFamily = config.family || 'material-symbols-outlined';
-                const iconStyle = config.filled ? `font-variation-settings: 'FILL' 1;` : '';
-                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color}; ${iconStyle}">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color};">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
             }
             return '';
         })
