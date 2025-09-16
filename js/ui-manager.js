@@ -5,13 +5,15 @@ import { TextAnnouncement, Effect } from './game-entities.js';
 import { waveDefinitions } from './wave-definitions.js';
 
 /**
+ * Just a little helper to grab a button from the HTML.
  * @param {string} id
  * @returns {HTMLButtonElement}
  */
-function getButton(id) { // This is a good helper function!
+function getButton(id) {
     return /** @type {HTMLButtonElement} */ (document.getElementById(id));
 }
 
+// A big ol' object to hold all the HTML elements we need to mess with.
 export const uiElements = {
     livesEl: document.getElementById('lives'),
     goldEl: document.getElementById('gold'),
@@ -162,13 +164,13 @@ export function updateUI(state, gameSpeed) {
 
     uiElements.startWaveBtn.classList.toggle('depressed', state.waveInProgress);
     uiElements.speedToggleBtn.classList.toggle('depressed', gameSpeed > 1);
-
-    // Show or hide the nuke button
+    // Show or hide the big red "delete" button.
     uiElements.deleteActivateBtn.classList.toggle('hidden', !state.hasDelete);
 
     updateNextWavePreview(state.wave);
 }
 
+// Shows the little icons for what enemies are coming in the next wave.
 export function updateNextWavePreview(currentWave) {
     if (!uiElements.nextWavePreview) return;
 
@@ -184,8 +186,7 @@ export function updateNextWavePreview(currentWave) {
         return;
     }
 
-    // Clear existing icons but keep the "UPCOMING:" text
-    // Find all direct children of the preview element except for the first one (which is the "UPCOMING:" span)
+    // Clear out the old icons, but keep the "UPCOMING:" text.
     const elementsToRemove = Array.from(uiElements.nextWavePreview.children).slice(1);
     elementsToRemove.forEach(el => el.remove());
 
@@ -199,7 +200,7 @@ export function updateNextWavePreview(currentWave) {
         }
     });
 
-    // Special case for boss waves to hide the icon and show a question mark
+    // For boss waves, we just show a big question mark to be mysterious.
     if (nextWaveDef.isBoss) {
         const groupEl = document.createElement('div');
         groupEl.className = 'flex items-center gap-1 p-1 rounded-md';
@@ -215,7 +216,6 @@ export function updateNextWavePreview(currentWave) {
     for (const [typeName, count] of enemyCounts.entries()) {
         const enemyType = ENEMY_TYPES[typeName];
         const groupEl = document.createElement('div');
-        // The button is no longer interactive, so we remove cursor-pointer and hover effects.
         groupEl.className = 'flex items-center gap-1 p-1 rounded-md';
         groupEl.title = `${typeName.replace('_', ' ')}`;
 
@@ -233,11 +233,12 @@ export function updateNextWavePreview(currentWave) {
     uiElements.nextWavePreview.classList.remove('hidden');
 }
 
+// This function is a beast. It handles showing and hiding the entire bottom panel when you select towers.
 export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower = null) {
     const selectedTower = selectedTowers.length === 1 ? selectedTowers[0] : null;
     const bottomPanel = document.getElementById('bottom-panel-container');
 
-    // Always remove the icon first to handle deselection correctly.
+    // Always remove the stealth detection icon first, just in case.
     const existingIndicator = uiElements.sellPanel.querySelector('.detection-indicator-container');
     if (existingIndicator) {
         existingIndicator.remove();
@@ -259,7 +260,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         let totalSellValue = 0;
         selectedTowers.forEach(t => totalSellValue += Math.floor(t.cost * 0.5));
 
-        // Hide move to cloud if more than one tower selected
+        // You can only move one tower to the cloud at a time.
         const canMoveToCloud = isCloudUnlocked && selectedTowers.length === 1;
         if (canMoveToCloud) {
             if (uiElements.moveToCloudBtn) uiElements.moveToCloudBtn.style.display = 'flex';
@@ -269,6 +270,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
             if (uiElements.sellTowerBtn) uiElements.sellTowerBtn.classList.add('col-span-2');
         }
 
+        // Hide all the stat paragraphs by default, we'll show them one by one.
         [
             uiElements.statDamageP, uiElements.statSpeedP, uiElements.statSplashP,
             uiElements.statBoostP, uiElements.statSlowP, uiElements.statGoldP,
@@ -291,8 +293,9 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
         if (uiElements.toggleOrbitDirectionBtn) uiElements.toggleOrbitDirectionBtn.classList.add('hidden');
         if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.add('hidden');
 
+        // If just one tower is selected, show all its juicy details.
         if (selectedTower) {
-            // SINGLE TOWER SELECTED
+            // For aura towers, show their stealth detection range.
             if (['SUPPORT', 'MIND', 'CAT'].includes(selectedTower.type)) {
                 const indicatorContainer = document.createElement('div');
                 indicatorContainer.className = 'detection-indicator-container absolute top-2 left-2 flex items-center text-white';
@@ -319,6 +322,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                 uiElements.sellPanel.prepend(indicatorContainer);
             }
 
+            // Show the kill count (or gold generated for CAT).
             const killCountIcon = /** @type {HTMLElement | null} */ (uiElements.towerKillCount.querySelector('span.material-symbols-outlined'));
             if (selectedTower.type === 'CAT') {
                 uiElements.towerKillCount.classList.remove('hidden');
@@ -338,6 +342,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                 uiElements.killCountValue.textContent = selectedTower.killCount || 0;
             }
 
+            // Figure out what to display for the tower's level.
             let levelText;
             const maxLevelText = `<span class="material-icons text-yellow-400 align-bottom !text-base">star</span> MAX LEVEL`;
             const towerType = selectedTower.type;
@@ -398,6 +403,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                 }
             }
 
+            // Show the "set ground target" button for FORT and NINE_PIN.
             if (selectedTower.type === 'FORT' || selectedTower.type === 'NINE_PIN') {
                 if (uiElements.setGroundTargetBtn) {
                     uiElements.setGroundTargetBtn.classList.remove('hidden');
@@ -448,8 +454,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                 }
             }
 
-            // Logic for toggleTargetingBtn for multiple towers
-            // Get all possible targeting modes for each selected tower
+            // Figure out which targeting modes are common to all selected towers.
             const allAvailableModes = selectedTowers.map(tower => {
                 if (tower.type === 'FORT' || tower.type === 'NINE_PIN') {
                     return ['furthest', 'strongest', 'weakest']; // Exclude 'ground' from cycling
@@ -459,7 +464,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                 return []; // PIN_HEART has no toggleable modes
             });
 
-            // Find common modes among all selected towers
+            // Find the intersection of all available modes.
             let commonModes = [];
             if (allAvailableModes.length > 0) {
                 commonModes = allAvailableModes[0].filter(mode =>
@@ -470,21 +475,21 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
             if (commonModes.length > 0) {
                 if (uiElements.toggleTargetingBtn) uiElements.toggleTargetingBtn.classList.remove('hidden');
 
-                // Determine the current common mode (if all towers share one)
+                // If they all share the same targeting mode, show it.
                 let currentCommonMode = null;
                 const firstTowerMode = selectedTowers[0].targetingMode;
                 if (commonModes.includes(firstTowerMode) && selectedTowers.every(t => t.targetingMode === firstTowerMode)) {
                     currentCommonMode = firstTowerMode;
                 }
 
-                // If there's no single common mode, display "MIXED".
-                // Otherwise, show the common mode.
+                // Otherwise, just show "MIXED".
                 const displayMode = currentCommonMode || 'mixed';
 
                 updateTargetingButton(displayMode, selectedTowers[0].type); // Use the type of the first tower for styling
             }
         }
     } else {
+        // If no towers are selected, hide the sell panel and show the buy buttons.
         if (settingAttackGroundForTower) {
             if (uiElements.towerButtonsGroup) uiElements.towerButtonsGroup.classList.add('hidden');
         } else {
@@ -498,10 +503,10 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
 }
 
 
+// Updates the text and color of the targeting mode button.
 function updateTargetingButton(targetingMode, towerType) {
     if (!uiElements.toggleTargetingBtn) return;
-    // If the targeting mode is 'mixed', we want to display it as "MIXED".
-    // Otherwise, we show the mode in uppercase as before.
+    // Show "MIXED" if towers have different modes, otherwise show the mode.
     let targetingText = targetingMode === 'mixed'
         ? 'MIXED'
         : targetingMode.toUpperCase();
@@ -541,8 +546,8 @@ function updateTargetingButton(targetingMode, towerType) {
     }
 }
 
+// Shows all the stats for a single selected tower.
 function updateStatsDisplay(selectedTower) {
-    // This function now only handles displaying stats for a single tower.
     const baseStats = TOWER_TYPES[selectedTower.type];
     if (baseStats.special) {
         let specialText = baseStats.special;
@@ -629,7 +634,7 @@ function updateStatsDisplay(selectedTower) {
                 uiElements.statBoost.textContent = `${boostPercent}%`;
             }
         }
-    } else { // Attacking towers
+    } else { // This is for all the regular attacking towers.
         if (uiElements.statDamageP) {
             uiElements.statDamageP.classList.remove('hidden');
             const icon = /** @type {HTMLElement | null} */ (uiElements.statDamageP.querySelector('span'));
@@ -730,6 +735,7 @@ function updateStatsDisplay(selectedTower) {
 }
 
 
+// A little helper to create and add a tower icon to a container.
 function createAndAppendIcon(container, type) {
     const iconInfo = getTowerIconInfo(type);
     let iconEl;
@@ -758,6 +764,7 @@ export function showMergeConfirmation(mergeState) {
     if (uiElements.mergeToTowerIconContainer) createAndAppendIcon(uiElements.mergeToTowerIconContainer, mergeState.placingTowerType);
     if (uiElements.mergeToTowerName) uiElements.mergeToTowerName.textContent = mergeState.placingTowerType.replace('_', ' ');
 
+    // If the player hasn't discovered this merge yet, show "???"
     if (isDiscovered) {
         if (uiElements.mergeResultTowerIconContainer) createAndAppendIcon(uiElements.mergeResultTowerIconContainer, mergeState.mergeInfo.resultType);
         let resultName = mergeState.mergeInfo.text.replace('LVL ', 'LVL-').replace('_', ' ');
@@ -784,6 +791,7 @@ export function showMergeConfirmation(mergeState) {
     if (uiElements.mergeConfirmModal) uiElements.mergeConfirmModal.classList.remove('hidden');
 }
 
+// Shows the "Game Over" or "You Win" screen.
 export function triggerGameOver(isWin, wave) {
     if (uiElements.gameOverModal) uiElements.gameOverModal.classList.remove('hidden');
     if (isWin) {
@@ -822,6 +830,7 @@ const statDisplayConfig = {
     stunDuration: { label: 'Stun', icon: 'bolt', family: 'material-symbols-outlined', color: '#fef08a', condition: (s) => s.stunDuration > 0, formatter: (val) => `${val}s` },
 };
 
+// Same deal as above, but for enemy stats.
 const enemyStatDisplayConfig = {
     health: { label: 'Health', icon: 'favorite', family: 'material-symbols-outlined', color: '#ef4444', condition: (s) => s.health > 0, filled: true },
     speed: { label: 'Speed', icon: 'speed', family: 'material-symbols-outlined', color: '#4ade80', condition: (s) => s.speed > 0 },
@@ -833,12 +842,13 @@ const enemyStatDisplayConfig = {
 };
 
 
+// Creates the HTML for a single tower card in the library.
 function createTowerCardHTML(type, isDiscovered) {
     const stats = TOWER_TYPES[type];
     if (!stats) return '';
 
     const iconInfo = getTowerIconInfo(type);
-
+    // If the player hasn't discovered this tower, just show a big question mark.
     if (!isDiscovered) {
         return `
             <div class="tower-card absolute inset-0 p-2 flex flex-col items-center justify-center text-center">
@@ -880,7 +890,7 @@ function createTowerCardHTML(type, isDiscovered) {
                 const iconStyle = config.filled ? `font-variation-settings: 'FILL' 1;` : '';
                 return `<p class="${pClass}"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color}; ${iconStyle}">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
             }
-            return ''; // Don't render the stat if the condition isn't met
+            return ''; // Don't show the stat if the condition isn't met.
         })
         .join('');
 
@@ -914,10 +924,12 @@ function createTowerCardHTML(type, isDiscovered) {
     `;
 }
 
+// Creates the HTML for a single enemy card in the library.
 function createEnemyCardHTML(type, isDiscovered) {
     const stats = ENEMY_TYPES[type];
     if (!stats) return '';
 
+    // If the player hasn't killed this enemy yet, show a question mark.
     if (!isDiscovered) {
         return `
             <div class="enemy-card absolute inset-0 p-2 flex flex-col items-center justify-center text-center">
@@ -997,7 +1009,7 @@ function createEnemyCardHTML(type, isDiscovered) {
     `;
 }
 
-
+// Fills the tower library with all the tower cards.
 function populateTowerLibrary(gameState) {
     const allTowerTypes = Object.keys(TOWER_TYPES);
     uiElements.towerLibraryRolodex.innerHTML = '';
@@ -1056,6 +1068,7 @@ export function populateTrophies(gameState, trophiesData) {
     }
 }
 
+// Fills the changelog modal with all the version history.
 export function populateChangelog(changelogData) {
     if (!uiElements.changelogList) return;
     uiElements.changelogList.innerHTML = '';
@@ -1128,12 +1141,13 @@ function startGlitterAnimation() {
         glitter.style.top = `${Math.random() * 100}%`;
         panel.appendChild(glitter);
 
-        // Clean up the glitter element after animation
+        // Clean up the glitter element after its animation is done.
         setTimeout(() => glitter.remove(), 4000);
     }, 100);
 }
 
 export function showWave16PowerChoice(continueCallback) {
+    // Show the power-up choice modal and start the glitter.
     if (uiElements.wave16PowerChoiceModal) uiElements.wave16PowerChoiceModal.classList.remove('hidden');
     startGlitterAnimation();
 
@@ -1159,13 +1173,13 @@ function handleDeletePower() {
 }
 
 function handleCloudPower() {
+    // Give the player permanent cloud access and some bonus gold.
     gameState.hasPermanentCloud = true;
     gameState.isCloudUnlocked = true; // Also unlock it for the current pre-wave phase
     gameState.gold += 125;
     gameState.wave16PowerChosen = true;
     const cloudAnnouncement = new TextAnnouncement("Cloud access permanently granted!", 400, 300, 3, '#00bfff', 800);
     const goldAnnouncement = new TextAnnouncement("+125 Gold!", 400, 350, 3, '#facc15', 800);
-    // This is a persistent upgrade, so we should also update the UI to reflect it immediately.
     gameState.announcements.push(cloudAnnouncement, goldAnnouncement);
     gameState.announcementLog.push(cloudAnnouncement);
     gameState.announcementLog.push(goldAnnouncement);

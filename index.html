@@ -2,30 +2,30 @@
 <html lang="en">
 
 <head>
-    <!-- Basic setup for the webpage -->
+    <!-- The usual head stuff -->
     <meta charset="UTF-8">
-    <!-- This makes sure the game looks good on mobile devices -->
+    <!-- Make it look good on phones -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Iconic Tower Defense</title>
 
-    <!-- This adds a favicon to the webpage, using a Google Material Icon -->
+    <!-- The little icon in the browser tab -->
     <link rel="icon" href="images/icons/support.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 
-    <!-- This script brings in TailwindCSS for easy styling -->
+    <!-- TailwindCSS for styling without writing a ton of CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- These lines are for loading custom fonts from Google Fonts -->
+    <!-- Gotta have our custom fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- This is the main font used for the game's text -->
+    <!-- The main font for the game -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-    <!-- These are for the icons used throughout the game (like for towers and buttons) -->
+    <!-- All the cool icons we use for towers and buttons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <!-- Adding Font Awesome for the new Cat Tower icon -->
+    <!-- And Font Awesome for the CAT tower icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -33,7 +33,7 @@
 
     <!-- This is where we define the game's custom styles -->
     <style>
-        /* General look and feel for the whole page */
+        /* Basic look for the whole page */
         body,
         html {
             font-family: 'Montserrat', sans-serif;
@@ -49,12 +49,12 @@
             -ms-user-select: none;
         }
 
-        /* New rule to change cursor when dragging */
+        /* Change the cursor when you're dragging something */
         body.is-dragging {
             cursor: grabbing !important;
         }
 
-        /* Style for the game's drawing area (the canvas) */
+        /* The game's main drawing area */
         canvas {
             background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
             box-shadow:
@@ -66,7 +66,7 @@
             cursor: grab;
         }
 
-        /* Style for all the UI panels (stats, towers, game over screen) */
+        /* The glassy look for all our UI panels */
         .game-ui-panel,
         .game-over-modal,
         .game-stats-panel {
@@ -80,7 +80,7 @@
                 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
-        /* Style for the clickable buttons */
+        /* Our standard button style */
         .pixel-button {
             background-color: rgba(0, 0, 0, 0.3);
             color: #f5f5f5;
@@ -104,7 +104,7 @@
             overflow: hidden;
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
-            /* More Subtle Crystal Glass Effect */
+            /* A subtle crystal glass texture */
             background-image:
                 linear-gradient(30deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
                 linear-gradient(150deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
@@ -130,7 +130,7 @@
             transition: left 0.5s ease;
         }
 
-        /* What buttons look like when you hover over them */
+        /* Make buttons pop a bit on hover */
         .pixel-button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow:
@@ -147,7 +147,7 @@
             left: 100%;
         }
 
-        /* What buttons look like when you're clicking them */
+        /* The "pressed down" look for buttons */
         .pixel-button:active:not(:disabled) {
             transform: translateY(2px);
             /* Move down a bit more */
@@ -172,7 +172,7 @@
             background-color: rgba(0, 0, 0, 0.1);
         }
 
-        /* Style for buttons you can't afford or use yet */
+        /* Grayed-out style for disabled buttons */
         .pixel-button:disabled {
             background-color: rgba(255, 255, 255, 0.05);
             color: #888;
@@ -203,7 +203,7 @@
             }
         }
 
-        /* Specific styles for the tower buttons to give them color-coded tints */
+        /* Give the main tower buttons a color-coded shadow */
         #buy-pin {
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
                 0 6px 0 #b3b3b3, 0 8px 16px rgba(0, 0, 0, 0.3);
@@ -263,7 +263,7 @@
             box-shadow: 0 4px 0 #b45309;
         }
 
-        /* FIX: Explicitly set font-family for icon classes to override global font and fix tooltips. */
+        /* Make sure our icons actually use the icon fonts, not the main game font. */
         .material-icons {
             font-family: 'Material Icons';
         }
@@ -278,7 +278,7 @@
             font-weight: 900;
         }
 
-        /* Custom styles for the new debug button */
+        /* Special style for the debug button */
         #infinite-gold {
             background-color: rgba(220, 38, 38, 0.7);
             /* Red with transparency */
@@ -299,7 +299,7 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        /* Custom tooltip styling */
+        /* The little pop-up tooltips */
         .tooltip {
             position: absolute;
             background-color: rgba(0, 0, 0, 0.7);
@@ -319,6 +319,7 @@
         }
 
         .bottom-controls {
+            /* This style isn't used anymore, but we'll keep it just in case. */
             background-color: rgba(255, 255, 255, 0.15);
             /* Lighter, more translucent background */
             backdrop-filter: blur(10px);
@@ -333,7 +334,7 @@
             /* Softer corners */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             /* Subtle shadow for depth */
-            /* More Subtle Crystal Glass Effect */
+            /* A subtle crystal glass texture */
             background-image:
                 linear-gradient(30deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
                 linear-gradient(150deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
@@ -361,13 +362,13 @@
             display: none;
         }
 
-        /* A visual indicator for the selected maze color button */
+        /* Highlight the selected maze color button */
         .color-option.selected {
             border-color: #00ff88;
             box-shadow: 0 0 8px #00ff88;
         }
 
-        /* Toggle Switch Styles */
+        /* The little on/off toggle switches */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -418,19 +419,19 @@
             opacity: 0.3;
         }
 
-        /* FIX: Prevents icons inside buttons from capturing click events. */
+        /* Stop icons inside buttons from stealing clicks. */
         .pixel-button span,
         .pixel-button i {
             pointer-events: none;
         }
 
-        /* Remove texture from specific buttons */
+        /* Some buttons in the options menu don't need the crystal texture. */
         #toggle-merge-confirm-btn,
         #reset-game-btn {
             background-image: none;
         }
 
-        /* Retracting Bottom Panel Styles */
+        /* Styles for the bottom panel that can be retracted */
         #bottom-panel-container {
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
         }
@@ -441,7 +442,7 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
-        /* Custom texture overrides for specific buttons */
+        /* A darker texture for the "weakest" targeting button */
         .target-weakest-btn {
             background-image:
                 linear-gradient(30deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
@@ -452,6 +453,7 @@
                 linear-gradient(60deg, rgba(0, 0, 0, 0.07) 25%, transparent 25.5%, transparent 75%, rgba(0, 0, 0, 0.07) 75%, rgba(0, 0, 0, 0.07));
         }
 
+        /* A lighter texture for the sell and cloud buttons */
         .sell-cloud-btn {
             background-image:
                 linear-gradient(30deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
@@ -467,10 +469,10 @@
 
 <body class="flex items-center justify-center">
 
-    <!-- This is the main container for the entire game interface. -->
+    <!-- The main container for the whole game UI -->
     <div class="flex flex-col h-full w-full items-center p-2 sm:p-4 gap-2">
 
-        <!-- This is the stats bar at the top (Lives, Gold, Wave) and options button -->
+        <!-- The top bar with stats and the options button -->
         <div class="game-stats-panel py-1 px-2 flex-shrink-0 w-full flex flex-col gap-y-1">
             <h1 id="game-title" class="text-3xl sm:text-4xl font-extrabold text-fuchsia-400 text-center cursor-pointer"
                 style="text-shadow: 0 0 12px rgba(217, 70, 239, 0.5), 0 2px 4px rgba(0,0,0,0.7);">ICONIC DEFENSE</h1>
@@ -493,7 +495,7 @@
                             class="text-cyan-400">0</span></p>
                 </div>
                 <div class="flex justify-self-end">
-                    <!-- Container for the sound toggle button -->
+                    <!-- Sound and music toggles -->
                     <button id="music-toggle-btn" class="text-xs px-2 py-1 toggle-btn">
                         <span id="music-icon" class="material-icons">music_off</span>
                     </button>
@@ -505,7 +507,8 @@
         </div>
 
         <!-- Options Menu -->
-        <div id="options-menu-overlay" class="hidden fixed inset-0 z-25 bg-black/50"></div> <!-- New overlay -->
+        <div id="options-menu-overlay" class="hidden fixed inset-0 z-25 bg-black/50"></div>
+        <!-- A dark overlay for when the menu is open -->
         <div id="options-menu" class="options-menu game-ui-panel hidden">
             <h3 class="text-lg text-fuchsia-400 mb-2">OPTIONS</h3>
             <button id="library-btn"
@@ -569,7 +572,7 @@
             </div>
         </div>
 
-        <!-- This is the control panel at the bottom of the screen -->
+        <!-- The main control panel at the bottom -->
         <div id="bottom-panel-container"
             class="game-ui-panel p-2 sm:p-4 w-full max-w-[440px] flex-shrink-0 flex flex-col gap-4 relative cursor-pointer">
 
@@ -591,7 +594,7 @@
 
             <div id="tower-buttons-group" class="relative">
                 <h2 id="towers-title" class="text-lg sm:text-xl text-fuchsia-400 text-center">TOWERS</h2>
-                <!-- Buttons to buy the different towers -->
+                <!-- Buttons to buy the basic towers -->
                 <div id="tower-buttons" class="grid grid-cols-3 gap-4 mt-2">
                     <button id="buy-pin"
                         class="pixel-button tower-button text-sm sm:text-lg flex items-center justify-center text-center h-12 sm:h-auto px-2">PIN
@@ -606,7 +609,7 @@
                 </div>
             </div>
 
-            <!-- This panel appears when you select a tower you've already placed -->
+            <!-- This panel shows up when you select a tower -->
             <div id="sell-panel" class="hidden flex flex-col gap-2">
                 <div class="grid grid-cols-3 items-center pt-2">
                     <div class="flex justify-start">
@@ -626,7 +629,7 @@
                     </div>
                 </div>
                 <h4 id="selected-tower-info" class="text-center text-yellow-400 text-lg sm:text-xl min-h-[1rem]"></h4>
-                <!-- Shows the stats of the selected tower -->
+                <!-- All the stats for the selected tower -->
                 <div id="tower-stats-panel"
                     class="flex flex-wrap justify-center gap-x-4 sm:gap-x-5 gap-y-2 text-sm sm:text-lg mb-2">
                     <p id="stat-damage-p" class="flex items-center gap-1"><span
@@ -697,10 +700,10 @@
                     <button id="toggle-targeting" class="pixel-button hidden">TARGET:</button>
                 </div>
                 <div id="selected-tower-actions" class="grid grid-cols-2 gap-2 mt-2">
-                    <!-- Button to sell the selected tower -->
+                    <!-- Sell the selected tower -->
                     <button id="sell-tower-btn"
                         class="pixel-button bg-red-700 text-yellow-300 border-red-900 shadow-[0_4px_0_#9a3412] py-2 sell-cloud-btn">SELL</button>
-                    <!-- Button to move the selected tower to the cloud -->
+                    <!-- Move the selected tower to the cloud -->
                     <button id="move-to-cloud-btn"
                         class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] py-2 hidden items-center justify-center gap-1 sm:flex">
                         <span class="material-symbols-outlined !text-base">cloud_upload</span>
@@ -709,7 +712,7 @@
                 </div>
             </div>
 
-            <!-- Buttons for starting the next wave, changing game speed, and the new debug button -->
+            <!-- The main game controls: start wave, speed, and cloud -->
             <div id="game-controls" class="flex gap-4">
                 <button id="start-wave"
                     class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center">START
@@ -726,7 +729,7 @@
 
     </div>
 
-    <!-- This is the "Game Over" screen. It's hidden until you lose. -->
+    <!-- The "Game Over" screen, hidden by default -->
     <div id="game-over-modal"
         class="hidden absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
         <div class="game-over-modal text-center p-8">
@@ -788,7 +791,7 @@
     </div>
 
 
-    <!-- New Merge Confirmation Modal -->
+    <!-- The pop-up to confirm a tower merge -->
     <div id="merge-confirm-modal"
         class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-30">
         <div class="game-ui-panel text-center p-6 w-11/12 max-w-sm">
@@ -825,7 +828,7 @@
     <div id="library-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-lg h-[85%] flex flex-col">
             <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-2 text-center">LIBRARY</h3>
-            <!-- Tabs -->
+            <!-- Tabs to switch between towers and enemies -->
             <div class="flex border-b-2 border-gray-600 mb-2">
                 <button id="library-towers-tab"
                     class="pixel-button flex-1 !rounded-b-none border-b-0 bg-gray-600 text-sm py-2">TOWERS</button>
@@ -833,7 +836,7 @@
                     class="pixel-button flex-1 !rounded-b-none border-b-0 text-sm py-2">ENEMIES</button>
             </div>
 
-            <!-- Rolodex Container -->
+            <!-- The main view for the library cards -->
             <div class="flex-grow relative bg-black/20 p-2 border border-gray-600 overflow-hidden min-h-0">
                 <div id="tower-library-rolodex" class="w-full h-full">
                     <!-- Tower Cards will be generated here -->
@@ -858,7 +861,7 @@
         <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
             <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">TROPHIES</h3>
             <div id="trophies-list" class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto">
-                <!-- Trophy items will be generated here -->
+                <!-- Trophies will be listed here -->
             </div>
             <button id="trophies-close-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
@@ -871,7 +874,7 @@
             <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">CHANGELOG</h3>
             <div id="changelog-list"
                 class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto flex flex-col gap-4">
-                <!-- Changelog items will be generated here -->
+                <!-- Changelog entries go here -->
             </div>
             <button id="changelog-close-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4 flex items-center justify-center">CLOSE</button>
@@ -884,13 +887,14 @@
             <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">MESSAGE LOG</h3>
             <div id="log-list"
                 class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto flex flex-col-reverse gap-2">
-                <!-- Log items will be generated here -->
+                <!-- Past announcements will be listed here -->
             </div>
             <button id="log-close-btn"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
         </div>
     </div>
 
+    <!-- The main script that runs the game -->
     <script type="module" src="js/main.js"></script>
 
 </body>

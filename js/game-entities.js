@@ -1,11 +1,12 @@
 import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE } from './constants.js';
 
 /**
- * Defines behavior for different projectile types.
- * This helps break up the massive switch statements in the Projectile class.
+ * This is where we define how different projectiles should look and act.
+ * It keeps the main Projectile class from becoming a giant mess of `if` statements.
  */
 const projectileBehaviors = {
     DEFAULT: {
+        // The standard-issue, glowing orb projectile.
         draw: (ctx, projectile) => {
             const gradient = ctx.createRadialGradient(
                 projectile.x - 2, projectile.y - 2, 1, // Inner circle (light spot)
@@ -22,6 +23,7 @@ const projectileBehaviors = {
         }
     },
     ORBIT: {
+        // A special look for the ORBIT tower's projectiles.
         draw: (ctx, projectile) => {
             const gradient = ctx.createRadialGradient(
                 projectile.x - 2, projectile.y - 2, 0,
@@ -38,6 +40,7 @@ const projectileBehaviors = {
         }
     },
     ICON_BASED: {
+        // For projectiles that are actually just icons, like arrows and hearts.
         draw: (ctx, projectile) => {
             let icon;
             let iconFamily;
@@ -51,6 +54,7 @@ const projectileBehaviors = {
                 rotation = Math.atan2(dy, dx);
             }
 
+            // Pick the right icon based on the tower that shot it.
             switch (projectile.owner.type) {
                 case 'PIN':
                 case 'NINE_PIN':
@@ -74,6 +78,7 @@ const projectileBehaviors = {
                     break;
             }
 
+            // Some icons need to be bigger or smaller than others.
             let fontSize = 24;
             if (projectile.owner.type === 'NINE_PIN') {
                 fontSize = 40;
@@ -82,6 +87,7 @@ const projectileBehaviors = {
             } else if (projectile.owner.type === 'ANTI_AIR') {
                 const baseFontSize = 32;
                 if (projectile.isEmerging) {
+                    // Make the rocket grow as it "emerges" from the tower.
                     const emergeProgress = Math.max(0, 1 - (projectile.emergeTimer / projectile.emergeDuration));
                     fontSize = baseFontSize * emergeProgress;
                 } else {
@@ -89,6 +95,7 @@ const projectileBehaviors = {
                 }
             }
 
+            // And now, we draw the icon, rotated to face its target.
             ctx.font = `${fontSize}px ${iconFamily}`;
             ctx.fillStyle = projectile.owner.projectileColor;
             ctx.textAlign = 'center';
@@ -102,6 +109,7 @@ const projectileBehaviors = {
     }
 };
 
+// A quick lookup to see which tower types use which projectile behavior.
 const projectileBehaviorMap = {
     'PIN': 'ICON_BASED',
     'NINE_PIN': 'ICON_BASED',
@@ -111,6 +119,7 @@ const projectileBehaviorMap = {
     'ORBIT': 'ORBIT',
 };
 
+// The blueprint for every bullet, rocket, and fireball in the game.
 export class Projectile {
     constructor(owner, target, startAngle = null) {
         this.owner = owner;
@@ -120,16 +129,18 @@ export class Projectile {
         this.hitEnemies = new Set();
         this.hitCooldown = 0;
         this.bounces = owner.fragmentBounces || 0;
-        this.behavior = projectileBehaviors[projectileBehaviorMap[owner.type] || 'DEFAULT']; // This line was already present from the previous turn, but it's correct.
+        this.behavior = projectileBehaviors[projectileBehaviorMap[owner.type] || 'DEFAULT']; // Grab the right drawing logic.
         this.damageMultiplier = 1;
-        this.angle = startAngle; // Can be null if a target is provided
+        this.angle = startAngle; // Can be null if we have a target, or an angle for "free-fire".
 
-        // If an angle is provided, calculate initial velocity components.
+        // If we're just given an angle, figure out where to go.
         if (this.angle !== null) {
             this.vx = Math.cos(this.angle);
             this.vy = Math.sin(this.angle);
             this.angle = startAngle;
         }
+
+        // Special setup for FORT mortars.
         if (this.owner.type === 'FORT') {
             this.isMortar = true;
             this.startX = this.owner.x;
@@ -142,6 +153,8 @@ export class Projectile {
             this.peakHeight = this.totalDist / 2;
             this.z = 0;
         }
+
+        // Special setup for ANTI_AIR rockets.
         if (this.owner.type === 'ANTI_AIR') {
             this.isRocket = true;
             this.currentSpeed = this.owner.projectileSpeed;
@@ -152,8 +165,10 @@ export class Projectile {
             this.emergeDuration = 0.2;
             this.emergeTimer = this.emergeDuration;
         }
+
+        // Special setup for ORBIT projectiles.
         if (this.owner.type === 'ORBIT' && this.angle !== null) {
-            // Set initial position for orbit projectiles based on angle
+            // Put the orbiter in its starting position around the tower.
             const orbitRadius = this.owner.orbitMode === 'far' ? 40 : 60;
             this.x = this.owner.x + Math.cos(this.angle) * orbitRadius;
             this.y = this.owner.y + Math.sin(this.angle) * orbitRadius;
@@ -163,13 +178,13 @@ export class Projectile {
         this.behavior.draw(ctx, this);
 
         if (this.isMortar) {
-            // Draw shadow
+            // Draw the mortar's shadow on the ground.
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.owner.projectileSize / 2, 0, Math.PI * 2);
             ctx.fill();
 
-            // Draw projectile itself, offset by z-height
+            // Draw the mortar shell itself, lifted up by its "z" height to look like it's flying.
             ctx.fillStyle = this.owner.projectileColor;
             ctx.beginPath();
             ctx.arc(this.x, this.y - this.z, this.owner.projectileSize, 0, Math.PI * 2);
@@ -177,17 +192,20 @@ export class Projectile {
         }
     }
     update(onHit, enemies, effects, deltaTime) {
-        if (this.isEmerging) { // This property is set for ANTI_AIR projectiles
+        // For ANTI_AIR rockets, wait until they've "emerged" from the tower.
+        if (this.isEmerging) {
             this.emergeTimer -= deltaTime;
             if (this.emergeTimer <= 0) {
                 this.isEmerging = false;
             }
-            return true; // Wait until fully emerged to do anything else
+            return true; // Don't do anything else until it's fully out.
         }
 
+        // This helps keep movement consistent even if the frame rate changes.
         const dt_scaler = deltaTime * 60;
 
-        if (this.isRocket) { // This property is set for ANTI_AIR projectiles
+        // Leave a smoke trail for rockets.
+        if (this.isRocket) {
             this.smokeTrailTimer -= deltaTime;
             if (this.smokeTrailTimer <= 0) {
                 effects.push(new Effect(this.x, this.y, 'lens', 10, '#808080', 0.5));
@@ -195,20 +213,24 @@ export class Projectile {
             }
         }
 
-        if (this.isMortar) { // This property is set for FORT projectiles
+        // Handle the arc-like movement of mortar shells.
+        if (this.isMortar) {
             this.life -= deltaTime;
             if (this.life <= 0) {
-                // Mortar explosion occurs when it lands
+                // Boom! Mortar lands.
                 effects.push(new Effect(this.x, this.y, 'explosion', 30, '#FFA500', 0.2));
                 onHit(this);
                 return false;
             }
+            // Move it along its pre-calculated path.
             const progress = 1 - (this.life / this.travelTime);
             this.x = this.startX + (this.targetX - this.startX) * progress;
             this.y = this.startY + (this.targetY - this.startY) * progress;
+            // The "z" height follows a sine wave to make a nice arc.
             this.z = Math.sin(progress * Math.PI) * this.peakHeight;
             return true;
         }
+        // Handle the circular movement of orbiters.
         if (this.owner.type === 'ORBIT') {
             this.angle += this.owner.orbitDirection * (this.owner.projectileSpeed / 30) * dt_scaler;
             this.orbitRadius = this.owner.orbitMode === 'far' ? 40 : 60;
@@ -222,30 +244,30 @@ export class Projectile {
             return true;
         }
 
-        // If the projectile was fired with an angle (no initial target), it just moves straight. This is for multi-shot.
-        // We also need to handle collision detection for these "free" projectiles.
+        // If a projectile was fired with an angle (like from a multi-shot tower), it just flies straight.
         if (this.angle !== null && !this.target) {
             const moveDistance = this.owner.projectileSpeed * dt_scaler;
             this.x += this.vx * moveDistance;
             this.y += this.vy * moveDistance;
 
-            // Check for collision with any enemy
+            // Check if this free-flying projectile hits anything.
             for (const enemy of enemies) {
-                // Check if the enemy is valid to be hit
+                // Can this projectile even hit this type of enemy? (e.g., anti-air vs ground)
                 const canHit = (this.owner.type !== 'ANTI_AIR' || enemy.type.isFlying) &&
                     (this.owner.type === 'ANTI_AIR' || !enemy.type.isFlying);
 
                 if (canHit && Math.hypot(this.x - enemy.x, this.y - enemy.y) < enemy.size) {
-                    onHit(this, enemy); // Pass the specific enemy that was hit
-                    return false; // Projectile is consumed on hit
+                    onHit(this, enemy); // Tell the game we hit something.
+                    return false; // Projectile's done.
                 }
             }
-            // Remove projectile if it goes off-screen
+            // If it flies off the screen, it's gone.
             if (this.x < 0 || this.x > 440 || this.y < 0 || this.y > 720) {
                 return false;
             }
-            return true; // Keep updating
+            return true; // Keep on truckin'.
         } else if ((!this.target || this.target.health <= 0) && ['PIN_HEART', 'NAT', 'ANTI_AIR'].includes(this.owner.type)) {
+            // If our target is gone, find a new one. This is for homing projectiles.
             let closestEnemy = null;
             let minDistance = Infinity;
             for (const enemy of enemies) {
@@ -259,12 +281,15 @@ export class Projectile {
             }
             this.target = closestEnemy;
         }
+        // If there's no target, this projectile is a dud.
         if (!this.target || this.target.health <= 0) return false;
 
+        // Standard "move towards the target" logic.
         const dx = this.target.x - this.x;
         const dy = this.target.y - this.y;
         const distance = Math.hypot(dx, dy);
 
+        // Rockets get faster over time.
         let moveDistance;
         if (this.isRocket) {
             moveDistance = this.currentSpeed * dt_scaler;
@@ -273,6 +298,7 @@ export class Projectile {
             moveDistance = this.owner.projectileSpeed * dt_scaler;
         }
 
+        // NINE_PIN projectiles are special; they can hit multiple enemies as they fly.
         if (this.owner.type === 'NINE_PIN') {
             for (const enemy of enemies) {
                 if (!this.hitEnemies.has(enemy)) {
@@ -283,17 +309,19 @@ export class Projectile {
                 }
             }
         }
+
+        // Did we hit our target?
         const hitCondition = distance < moveDistance || Math.hypot(this.x - this.target.x, this.y - this.target.y) < this.target.size;
 
         if (hitCondition) {
-            // Check if it is a rocket BEFORE onHit and removal
+            // Rockets go boom on impact.
             if (this.isRocket) {
-                // Use a smaller size for the rocket explosion
                 effects.push(new Effect(this.x, this.y, 'explosion', 15, '#FFA500', 0.2));
             }
             onHit(this);
             this.hitEnemies.add(this.target);
 
+            // Some projectiles can bounce to another enemy.
             if (this.owner.hasFragmentingShot && this.bounces > 0) {
                 let nextTarget = null;
                 let minDistance = Infinity;
@@ -307,6 +335,7 @@ export class Projectile {
                     }
                 }
                 if (nextTarget) {
+                    // Found a new target! Let's go!
                     this.target = nextTarget;
                     this.bounces--;
                     this.damageMultiplier *= this.owner.bounceDamageFalloff;
@@ -316,6 +345,7 @@ export class Projectile {
             }
             return false;
         } else {
+            // Keep moving towards the target.
             this.x += (dx / distance) * moveDistance;
             this.y += (dy / distance) * moveDistance;
         }
@@ -323,9 +353,10 @@ export class Projectile {
     }
 }
 
+// The blueprint for every baddie that walks, flies, or splits on the path.
 export class Enemy {
     constructor(type, path, typeName) {
-        this.id = crypto.randomUUID(); // FIX: Give each enemy a unique ID
+        this.id = crypto.randomUUID(); // Give each enemy a unique ID so we can track them.
         this.path = path;
         this.pathIndex = 0;
         this.direction = 1;
@@ -355,6 +386,7 @@ export class Enemy {
         this.isVisible = !this.type.isInvisible;
         this.isPhasing = false;
 
+        // Special setup for the BOSS.
         if (this.type.laysEggs) {
             this.timeUntilLay = this.type.layEggInterval;
             this.isLayingEgg = false;
@@ -362,15 +394,18 @@ export class Enemy {
             this.wiggleTimer = 0;
         }
 
+        // Special setup for EGGs.
         if (this.type.hatchTime) {
             this.hatchTimer = this.type.hatchTime;
         }
 
+        // Special setup for PHANTOMs.
         if (this.type.phaseInterval) {
             this.phaseTimer = this.type.phaseInterval;
             this.phaseDurationTimer = 0;
         }
 
+        // Special setup for SUMMONERs.
         if (this.type.spawnsMinions) {
             this.spawnTimer = this.type.spawnInterval;
             this.spinSpeed = 0.5; // Radians per second
@@ -379,13 +414,15 @@ export class Enemy {
             this.wiggleTimer = 0;
         }
 
+        // Special setup for HEALERs.
         if (this.type.isHealer) {
             this.healTimer = this.type.healInterval;
             this.isHealingPulse = false;
         }
     }
+    // Zap! This enemy is stunned for a bit.
     applyStun(duration) {
-        // Apply the longer stun duration
+        // If it's already stunned, we'll just take the longer stun duration.
         this.stunTimer = Math.max(this.stunTimer, duration);
     }
     applyBurn(dps, durationInSeconds, isDamageAmp = false) {
@@ -397,6 +434,7 @@ export class Enemy {
             this.burns.push({ dps, duration: durationInSeconds, isDamageAmp });
         }
     }
+    // Make this enemy take more damage for a short time.
     applyDamageDebuff(multiplier, duration) {
         // Apply the strongest debuff
         this.damageTakenMultiplier = Math.max(this.damageTakenMultiplier, multiplier);
@@ -409,6 +447,7 @@ export class Enemy {
             ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 50) * 0.2;
         }
 
+        // Show the healing pulse effect.
         if (this.isHealingPulse) {
             ctx.save();
             const pulseProgress = 1 - (this.healTimer / 0.5); // 0.5s pulse duration
@@ -419,6 +458,7 @@ export class Enemy {
             ctx.restore();
         }
 
+        // Wiggle the enemy when it's doing something special, like laying an egg.
         ctx.save();
         if (this.wiggleTimer > 0) {
             const wiggleAmount = 3; // This was a good idea, but it's not being used.
@@ -432,6 +472,7 @@ export class Enemy {
             ctx.rotate(this.rotation);
         }
 
+        // Set up the font to draw the icon.
         ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
         if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
             ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
@@ -440,7 +481,7 @@ export class Enemy {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // --- Shadow ---
+        // Draw a shadow to give the icon some depth.
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
@@ -453,8 +494,8 @@ export class Enemy {
         }
         ctx.fillText(shadowIconToDraw, 0, 0);
         ctx.restore();
-        // --- End Shadow ---
 
+        // Draw the main icon.
         const iconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
         if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
             ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
@@ -463,6 +504,7 @@ export class Enemy {
         ctx.fontVariationSettings = "'FILL' 0, 'wght' 400"; // Reset for other elements
         ctx.restore();
 
+        // Draw the health bar above the enemy.
         const healthBarWidth = this.size * 2;
         const healthBarHeight = 5;
         const healthPercentage = this.health / this.maxHealth;
@@ -470,6 +512,8 @@ export class Enemy {
         ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth, healthBarHeight);
         ctx.fillStyle = 'green';
         ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth * healthPercentage, healthBarHeight);
+
+        // Flash the enemy white when it gets hit.
         if (this.hitTimer > 0) {
             ctx.save();
             ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
@@ -480,12 +524,15 @@ export class Enemy {
             ctx.fillText(iconToDraw, this.x, this.y);
             ctx.restore();
         }
+
+        // Show a little bolt icon when the enemy is stunned.
         if (this.stunTimer > 0) {
             ctx.font = `${this.size * 1.5}px 'Material Symbols Outlined'`;
             ctx.fillStyle = `rgba(254, 240, 138, ${0.5 + Math.sin(Date.now() / 100) * 0.2})`;
             ctx.fillText('bolt', this.x, this.y - this.size);
         }
 
+        // Show a fire icon if the enemy is burning.
         if (this.burns.length > 0) {
             ctx.globalAlpha = 0.5;
             // Check if any burn has the damage amp flag, which makes it purple
@@ -499,6 +546,7 @@ export class Enemy {
 
         ctx.globalAlpha = 1.0; // Reset alpha after drawing
     }
+    // Draw a circle around the enemy when it's selected.
     drawSelection(ctx) {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.lineWidth = 2;
@@ -506,6 +554,7 @@ export class Enemy {
         ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
         ctx.stroke();
     }
+    // This is the main update function for the enemy, called every frame.
     update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects, newlySpawnedEnemies) {
         if (this.hitTimer > 0) {
             this.hitTimer -= deltaTime;
@@ -520,18 +569,19 @@ export class Enemy {
             this.jostleY = 0;
         }
 
+        // If stunned, just sit there and take it.
         if (this.stunTimer > 0) {
             this.stunTimer -= deltaTime;
             return true; // Skip all other updates while stunned
         }
 
-        // Reset debuff if timer runs out
+        // If the damage debuff wears off, reset it.
         this.damageDebuffTimer -= deltaTime;
         if (this.damageDebuffTimer <= 0) {
             this.damageTakenMultiplier = 1;
         }
 
-        // --- Death Animation ---
+        // If the enemy is dying, play a little animation.
         if (this.isDying) {
             this.deathAnimationTimer -= deltaTime;
             if (this.type.isFlying) {
@@ -545,7 +595,7 @@ export class Enemy {
             return true;
         }
 
-        // --- Health & Burn Damage ---
+        // Apply damage over time from burns.
         if (this.burns.length > 0) {
             const burn = this.burns[0];
             this.health -= burn.dps * deltaTime;
@@ -557,7 +607,7 @@ export class Enemy {
         }
 
 
-        // --- Special Behaviors ---
+        // If it's an egg, tick down the hatch timer.
         if (this.type.hatchTime) {
             this.hatchTimer -= deltaTime;
             if (this.hatchTimer <= 0) {
@@ -573,20 +623,21 @@ export class Enemy {
             }
         }
 
-        // Handle continuous spinning for summoner
+        // Summoners just spin around all the time.
         if (this.type.spawnsMinions) {
             this.rotation += this.spinSpeed * deltaTime;
         }
 
+        // Stationary enemies (like eggs) don't move.
         if (this.type.isStationary) {
-            // FIX: Calculate progress for stationary enemies so they can be targeted correctly.
+            // But we still need to calculate their "progress" so towers can target them.
             if (this.path && this.path.length > 1) {
                 this.progress = this.pathIndex / (this.path.length - 1);
             }
             return true; // Don't move
         }
 
-        // --- Phasing Logic ---
+        // Phantoms disappear and reappear further down the path.
         if (this.type.phaseInterval) {
             if (this.isPhasing) {
                 this.phaseDurationTimer -= deltaTime;
@@ -602,7 +653,7 @@ export class Enemy {
                     this.isVisible = false; // Become untargetable
                     this.phaseDurationTimer = this.type.phaseDuration;
 
-                    // Teleport forward
+                    // Jump forward a bit.
                     const targetIndex = this.pathIndex + this.direction;
                     if (this.path[targetIndex]) {
                         const target = this.path[targetIndex];
@@ -617,7 +668,7 @@ export class Enemy {
             }
         }
 
-        // --- Minion Spawning Logic ---
+        // Summoners spawn little minions every so often.
         if (this.type.spawnsMinions) {
             // Check if it's time to start a new spawn cycle
             if (this.minionsToSpawn <= 0) {
@@ -645,7 +696,7 @@ export class Enemy {
             }
         }
 
-        // --- Healer Logic ---
+        // Healers, well, they heal other enemies.
         if (this.type.isHealer) {
             this.healTimer -= deltaTime;
             if (this.isHealingPulse) {
@@ -676,7 +727,7 @@ export class Enemy {
             }
         }
 
-        // --- Egg Laying Logic (for BOSS) ---
+        // The BOSS lays eggs that hatch into more enemies.
         if (this.type.laysEggs) {
             if (this.isLayingEgg) {
                 // We are currently in the egg-laying state
@@ -709,10 +760,11 @@ export class Enemy {
             }
         }
 
-        // --- Movement Logic ---
+        // Time to move!
         let atEnd = this.pathIndex >= this.path.length - 1;
         let atStart = this.pathIndex <= 0;
 
+        // The boss just moves back and forth.
         if (this.typeName === 'BOSS') {
             if (atEnd && this.direction === 1) this.direction = -1;
             if (atStart && this.direction === -1) this.direction = 1;
@@ -723,7 +775,7 @@ export class Enemy {
             }
         }
 
-        // Only update movement if we are NOT laying an egg.
+        // Don't move if we're busy laying an egg or phasing.
         if (!this.isLayingEgg && !this.isPhasing) {
             const targetIndex = this.pathIndex + this.direction;
             if (targetIndex < 0 || targetIndex >= this.path.length) {
@@ -745,6 +797,7 @@ export class Enemy {
             }
         }
 
+        // Calculate how far along the total path this enemy is.
         if (this.path && this.path.length > 1) {
             if (this.direction === 1 && this.pathIndex >= this.path.length - 1) {
                 this.progress = 1;
@@ -776,11 +829,12 @@ export class Enemy {
         return true; // Keep this enemy
     }
     takeDamage(damage, projectile = null, onDeath, newlySpawnedEnemies = []) {
+        // Calculate damage after armor reduction.
         const armor = this.type.armor || 0;
         let finalDamage;
 
         const isTrueDamage = projectile && projectile.isTrueDamage;
-
+        // "True damage" ignores armor. We also use it for passive damage like burns.
         if (isTrueDamage || damage === 0) { // damage === 0 is for passive deaths like burns
             finalDamage = damage; // No armor reduction for true damage or passive death triggers
         } else { // Apply armor reduction for normal projectile damage
@@ -792,9 +846,9 @@ export class Enemy {
         this.hitTimer = 0.1; // Flash for 0.1 seconds
 
         if (this.health <= 0 && !this.isDying) {
-            this.isDying = true; // Prevent multiple death triggers
+            this.isDying = true; // Don't trigger death more than once.
 
-            // Handle splitting logic here, as it's a direct consequence of taking lethal damage.
+            // If this enemy splits on death, create the little ones.
             if (this.type.splitsOnDeath) {
                 for (let i = 0; i < this.type.splitCount; i++) {
                     const child = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
@@ -808,13 +862,14 @@ export class Enemy {
             if (onDeath) {
                 onDeath(this);
             }
-            return true; // Signal that the enemy is defeated
+            return true; // Yep, it's defeated.
         }
         return false;
     }
 }
 
 class TowerStats {
+    // This class is a helper to manage all the stat calculations for a tower.
     constructor(tower) {
         this.tower = tower;
     }
@@ -831,10 +886,12 @@ class TowerStats {
         return this.tower.damageLevel === 'MAX LEVEL' ? this.maxLevel : this.tower.damageLevel;
     }
 
+    // This gets called to update all of a tower's stats based on its level, merges, etc.
     update() {
         const tower = this.tower;
         const baseStats = TOWER_TYPES[tower.type];
 
+        // Aura towers are simple, they don't have levels in the same way.
         if (tower.type === 'MIND' || tower.type === 'CAT') {
             tower.level = 'MAX LEVEL';
             tower.cost = baseStats.cost;
@@ -848,6 +905,7 @@ class TowerStats {
             return;
         }
 
+        // Most towers get more expensive as they level up.
         tower.cost = baseStats.cost * this.levelForCalc;
         tower.range = baseStats.range;
         if (tower.type === 'STUN_BOT') {
@@ -866,6 +924,7 @@ class TowerStats {
             tower.splashRadius = baseStats.splashRadius || 0;
         }
 
+        // Fire rate gets better with each level.
         tower.permFireRate = baseStats.fireRate * Math.pow(0.9, this.levelForCalc - 1);
         tower.fireRate = tower.permFireRate;
         tower.color = tower.color || baseStats.color;
@@ -874,6 +933,7 @@ class TowerStats {
             tower.projectileSize = baseStats.projectileSize;
         }
         if (tower.type === 'FIREPLACE' && tower.damageDebuff > 0) {
+            // If a FIREPLACE has the damage debuff upgrade, its projectiles turn purple.
             tower.projectileColor = '#c084fc'; // Purple for damage amp
         } else {
             tower.projectileColor = baseStats.projectileColor;
@@ -884,12 +944,14 @@ class TowerStats {
     }
 }
 
+// This class handles the "brains" of the tower: finding targets and shooting.
 class TowerController {
     constructor(tower) {
         this.tower = tower;
     }
 
     findTarget(enemies, frameTargetedEnemies) {
+        // Find all enemies that are in range and not already dead.
         const tower = this.tower;
         tower.target = null;
         let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible && !enemy.isPhasing);
@@ -898,6 +960,7 @@ class TowerController {
             potentialTargets = potentialTargets.filter(enemy => !frameTargetedEnemies.has(enemy.id));
         }
 
+        // Filter targets based on tower type (e.g., anti-air).
         if (tower.type === 'ANTI_AIR') {
             potentialTargets = potentialTargets.filter(enemy => enemy.type.isFlying);
         } else {
@@ -915,6 +978,7 @@ class TowerController {
             }
         };
 
+        // Pick the best target based on the tower's targeting mode.
         switch (tower.targetingMode) {
             case 'strongest':
                 tower.target = potentialTargets.reduce((a, b) => (a.health > b.health ? a : b), potentialTargets[0]);
@@ -930,6 +994,7 @@ class TowerController {
                 break;
         }
 
+        // If this tower is under a "diversify" aura, mark its target so other towers don't pick it.
         if (tower.target && tower.isUnderDiversifyAura) {
             frameTargetedEnemies.add(tower.target.id);
         }
@@ -940,9 +1005,11 @@ class TowerController {
     }
 
     shoot(projectiles) {
+        // Time to fire!
         const tower = this.tower;
         if (!tower.target && !((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.attackGroundTarget)) return;
 
+        // Some towers can target a specific spot on the ground.
         if ((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.attackGroundTarget) {
             const projectileCount = tower.projectileCount || 1;
             for (let i = 0; i < projectileCount; i++) {
@@ -950,9 +1017,11 @@ class TowerController {
             }
         } else if (tower.target) {
             const count = tower.projectileCount || 1;
+            // If it's a single-shot tower, just fire one.
             if (count === 1) {
                 projectiles.push(new Projectile(tower, tower.target));
             } else {
+                // If it's a multi-shot tower, create a spread of projectiles.
                 const baseAngle = Math.atan2(tower.target.y - tower.y, tower.target.x - tower.x);
                 const spreadAngle = Math.PI / 18; // 10 degrees total spread
                 const angleStep = spreadAngle / (count - 1);
@@ -966,6 +1035,7 @@ class TowerController {
         }
     }
 
+    // The special attack for the STUN_BOT.
     chainLightning(effects, enemies, onEnemyDeath, playBzztSound) {
         const tower = this.tower;
         if (!tower.target) return;
@@ -974,6 +1044,7 @@ class TowerController {
         const hitEnemies = new Set([currentTarget]);
         const chainPositions = [{ x: tower.x, y: tower.y }];
 
+        // Jump from one enemy to the next.
         for (let i = 0; i < tower.chainTargets; i++) {
             if (!currentTarget) break;
 
@@ -992,14 +1063,16 @@ class TowerController {
             currentTarget = nextTarget;
         }
 
-        // Create a visual effect for the chain
+        // Draw the lightning bolt effect.
         effects.push(new Effect(0, 0, 'chain', 0, tower.projectileColor, 0.3, { chain: chainPositions }));
     }
 
+    // The main update loop for the tower's controller.
     update(enemies, projectiles, onEnemyDeath, deltaTime, frameTargetedEnemies, path, effects, playBzztSound) {
         const tower = this.tower;
 
         if (tower.isMobile && path && path.length > tower.pathIndex + 1) {
+            // This logic is for mobile towers, but it's not currently used.
             if (tower.pathIndex >= path.length - 1) {
                 // Stop at end
             } else {
@@ -1023,10 +1096,12 @@ class TowerController {
         }
 
 
+        // Aura towers don't shoot, so we're done here.
         if (tower.type === 'SUPPORT' || tower.type === 'MIND' || tower.type === 'CAT') {
             return;
         }
         if (tower.type === 'ORBIT') {
+            // For ORBIT towers, we just update their orbiters and check for collisions.
             tower.orbiters.forEach(orbiter => {
                 orbiter.update(null, null, null, deltaTime);
                 enemies.forEach(enemy => {
@@ -1048,8 +1123,10 @@ class TowerController {
             return;
         }
 
+        // Tick down the cooldown.
         if (tower.cooldown > 0) tower.cooldown -= deltaTime;
 
+        // If we're targeting the ground, and we're ready to fire, shoot!
         if ((tower.type === 'FORT' || tower.type === 'NINE_PIN') && tower.targetingMode === 'ground' && tower.attackGroundTarget) {
             tower.target = null; // Ensure no enemy is targeted
             if (tower.cooldown <= 0) {
@@ -1057,20 +1134,23 @@ class TowerController {
                 tower.cooldown = tower.fireRate / 60;
             }
         } else {
+            // Otherwise, find an enemy to target.
             this.findTarget(enemies, frameTargetedEnemies);
             if (tower.type === 'STUN_BOT' && tower.target && tower.cooldown <= 0) {
                 this.chainLightning(effects, enemies, onEnemyDeath, playBzztSound);
                 tower.cooldown = tower.fireRate / 60;
                 return;
             }
+            // If we have a target and we're ready to fire, shoot!
             if (tower.target && tower.cooldown <= 0) {
                 this.shoot(projectiles);
-                tower.cooldown = tower.fireRate / 60; // Cooldown in seconds
+                tower.cooldown = tower.fireRate / 60; // Reset cooldown.
             }
         }
     }
 }
 
+// This class handles drawing the tower itself.
 class TowerRenderer {
     constructor(tower) {
         this.tower = tower;
@@ -1083,6 +1163,7 @@ class TowerRenderer {
         ctx.shadowBlur = 0;
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 4;
+        // The NINE_PIN is a big ol' arrow, so it gets special drawing logic.
         if (tower.type === 'NINE_PIN') {
             let targetPoint = tower.target;
             if (tower.targetingMode === 'ground' && tower.attackGroundTarget) {
@@ -1100,6 +1181,8 @@ class TowerRenderer {
             ctx.restore(); // Restore from the initial save() in this method
             return;
         }
+
+        // Most towers just get bigger as they level up.
         const visualLevel = tower.stats.levelForCalc;
         let iconSize = 28 + (visualLevel * 2);
         ctx.fillStyle = tower.color;
@@ -1108,6 +1191,8 @@ class TowerRenderer {
         let icon;
         let iconFamily = 'Material Icons';
         let fontWeight = '400';
+
+        // Pick the right icon for the tower type.
         switch (tower.type) {
             case 'PIN': icon = 'location_pin'; break;
             case 'CASTLE': icon = 'castle'; break;
@@ -1167,6 +1252,7 @@ class TowerRenderer {
         ctx.save();
         ctx.translate(tower.x, tower.y);
 
+        // Some towers quiver right before they shoot.
         if (tower.type === 'NAT' || tower.type === 'ANTI_AIR') {
             if (tower.target && tower.cooldown > 0 && tower.cooldown < 0.33) {
                 const quiverAmount = tower.stats.levelForCalc > 5 ? 2.5 : 1.5;
@@ -1174,6 +1260,7 @@ class TowerRenderer {
             }
         }
 
+        // Rotate the tower to face its target.
         if (tower.isMobile) {
             ctx.rotate(tower.rotation);
         } else if (tower.type === 'NAT') {
@@ -1187,14 +1274,15 @@ class TowerRenderer {
         ctx.fillText(icon, 0, 0);
         ctx.restore();
 
-        // The orbiters draw themselves in a separate block to avoid inheritance of transforms
+        // Orbiters draw themselves so they don't get rotated with the main tower.
         if (tower.type === 'ORBIT') {
             tower.orbiters.forEach(orbiter => orbiter.draw(ctx));
         }
 
-        ctx.restore(); // Restore from the initial save() in this method
+        ctx.restore();
     }
 
+    // Draw the circle that shows the tower's range.
     drawRange(ctx) {
         const tower = this.tower;
         if (tower.type === 'ORBIT' || tower.type === 'SUPPORT' || tower.type === 'MIND' || tower.type === 'CAT') return;
@@ -1205,6 +1293,7 @@ class TowerRenderer {
         ctx.stroke();
     }
 
+    // Draw the square aura effect for buff towers.
     drawBuffEffect(ctx) {
         const tower = this.tower;
         const auraColor = (tower.type === 'MIND' && tower.mode === 'slow') ? '#0891b2' : ((tower.type === 'CAT' && tower.mode === 'slow') ? '#0891b2' : tower.color);
@@ -1230,6 +1319,7 @@ class TowerRenderer {
         ctx.restore();
     }
 
+    // Draw the square that shows a tower's stealth detection range.
     drawStealthRange(ctx) {
         const tower = this.tower;
         const detectionRange = TOWER_TYPES[tower.type].stealthDetectionRange;
@@ -1248,6 +1338,7 @@ class TowerRenderer {
     }
 }
 
+// A little helper to find the next target for a chain lightning attack.
 function findNextChainTarget(currentEnemy, allEnemies, hitEnemies, chainRange) {
     let closestEnemy = null;
     let minDistance = Infinity;
@@ -1267,6 +1358,7 @@ function findNextChainTarget(currentEnemy, allEnemies, hitEnemies, chainRange) {
     return closestEnemy;
 }
 
+// The main blueprint for all towers. It brings together the stats, controller, and renderer.
 export class Tower {
     constructor(x, y, type) {
         this.x = x;
@@ -1298,7 +1390,7 @@ export class Tower {
         this.stunDuration = 0;
         this.rotation = 0;
 
-        // Explicitly set default targeting modes
+        // Set some sensible default targeting modes.
         if (type === 'CASTLE' || type === 'FORT') {
             this.targetingMode = 'strongest';
         } else if (type === 'PIN' || type === 'PIN_HEART') {
@@ -1318,7 +1410,7 @@ export class Tower {
         }
 
 
-        // Properties to be populated by updateStats
+        // These properties will be filled in by the TowerStats class.
         this.cost = 0;
         this.range = 0;
         this.damage = 0;
@@ -1346,7 +1438,7 @@ export class Tower {
         }
     }
 
-    // --- DELEGATED METHODS ---
+    // These methods just pass the work off to their respective helper classes.
     updateStats() {
         this.stats.update();
         // Post-stats initialization
@@ -1376,7 +1468,7 @@ export class Tower {
     }
 
 
-    // --- SERIALIZATION ---
+    // This is for saving and loading the game.
     toJSON() {
         const data = {
             x: this.x,
@@ -1445,7 +1537,7 @@ export class Tower {
 
     static fromJSON(data) {
         const tower = new Tower(data.x, data.y, data.type);
-        // A comprehensive list of all possible properties to restore.
+        // Here's a list of all the properties we need to restore from the saved data.
         const fields = [
             "id", "level", "damageLevel", "mode", "targetingMode", "attackGroundTarget",
             "damageMultiplier", "projectileCount", "damageMultiplierFromMerge", "fragmentBounces",
@@ -1456,15 +1548,15 @@ export class Tower {
         ];
 
         if (data.type === 'ORBIT') fields.push('orbitersAngles');
-        // Restore all saved data to the new tower instance first.
+        // Go through the list and copy all the saved data to the new tower.
         for (const field of fields) {
             if (field in data) {
                 tower[field] = data[field];
             }
         }
 
-        // Now that all properties are restored, call updateStats to recalculate derived values
-        // and trigger type-specific logic like recreating orbiters.
+        // Now that all the properties are back, we need to recalculate all the derived stats
+        // and do any special setup, like recreating orbiters.
         tower.updateStats();
 
         if (tower.type === 'ORBIT' && data.orbitersAngles) {
@@ -1475,11 +1567,12 @@ export class Tower {
     }
 }
 
+// The blueprint for all the little visual effects, like explosions and money signs.
 export class Effect {
     constructor(x, y, icon, size, color, duration, extraData = {}) {
         this.x = x; this.y = y; this.size = size; this.color = color; this.life = duration; this.maxLife = duration; this.extraData = extraData;
 
-        // If `icon` is an array, pick a random one. Otherwise, use it as is.
+        // If we're given a list of icons, pick one at random.
         if (Array.isArray(icon)) {
             this.icon = icon[Math.floor(Math.random() * icon.length)];
         } else {
@@ -1495,6 +1588,7 @@ export class Effect {
         let currentSize = this.size * progress;
         let opacity = 1 - progress;
 
+        // Special drawing logic for the chain lightning effect.
         if (this.icon === 'chain' && this.extraData.chain) {
             ctx.save();
             ctx.strokeStyle = this.color;
@@ -1528,6 +1622,7 @@ export class Effect {
             opacity = 1 - progress * 0.5;
         }
 
+        // Some effects are a ring of icons, like the healer's pulse.
         if (Array.isArray(this.icon) || ['favorite', 'health_and_safety', 'volunteer_activism', 'healing', 'ecg_heart', 'heart_plus', 'heart_check'].includes(this.icon)) {
             ctx.save();
             ctx.globalAlpha = opacity;
@@ -1542,6 +1637,7 @@ export class Effect {
             return;
         }
 
+        // Draw the single icon, fading it out and growing it as it ages.
         ctx.font = `${currentSize}px '${iconFamily}'`;
         ctx.fillStyle = this.color;
         ctx.globalAlpha = opacity;
@@ -1552,6 +1648,7 @@ export class Effect {
     }
 }
 
+// For the big text announcements that pop up in the middle of the screen.
 export class TextAnnouncement {
     constructor(text = '', x, y, duration, color = '#00ff88', maxWidth = Infinity) {
         this.text = text;
@@ -1587,7 +1684,7 @@ export class TextAnnouncement {
         return this.life > 0;
     }
     draw(ctx) {
-        const fadeStartTime = this.maxLife * 0.25; // Start fading in the last 25% of its life
+        const fadeStartTime = this.maxLife * 0.25; // Start fading out in the last 25% of its life.
         let opacity = 1.0;
         if (this.life < fadeStartTime) {
             opacity = this.life / fadeStartTime;
@@ -1615,7 +1712,7 @@ export class TextAnnouncement {
         const lineHeight = fontSize * 1.25;
         const startY = this.y - ((lines.length - 1) * lineHeight) / 2;
 
-        // --- Outline ---
+        // Draw a black outline to make the text pop.
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 4; // Adjust outline thickness
         ctx.lineJoin = 'round'; // Makes corners look smoother
@@ -1624,7 +1721,7 @@ export class TextAnnouncement {
             ctx.strokeText(line, this.x, yPos);
         });
 
-        // --- Main Text ---
+        // Draw the main colored text.
         ctx.fillStyle = this.color;
         lines.forEach((line, index) => {
             const yPos = startY + (index * lineHeight);

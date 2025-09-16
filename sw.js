@@ -1,15 +1,17 @@
+// This is the service worker file. It helps the game work offline.
+/// <reference lib="webworker" />
 const CACHE_NAME = 'material-tower-defense-v1';
 
 async function cacheEssentials() {
     const cache = await caches.open(CACHE_NAME);
-    // Cache essential files
+    // These are the absolute must-have files for the game to start.
     const urls = [
         '/',
         '/index.html',
         '/manifest.json',
     ];
 
-    // Cache each URL individually to handle failures gracefully
+    // Try to cache each file. If one fails, we'll just log it and move on.
     for (const url of urls) {
         try {
             await cache.add(url);
@@ -37,12 +39,13 @@ function shouldCache(request) {
         'https://cdnjs.cloudflare.com'
     ];
 
-    // Check if the request is from an allowed domain
+    // Is the request from one of our approved domains?
     return allowedDomains.some(domain =>
         url.origin === domain || url.href.startsWith(domain)
     );
 }
 
+// If a response is cacheable, stick it in the cache.
 async function cacheResponse(request, response) {
     if (shouldCache(request)) {
         const cache = await caches.open(CACHE_NAME);
@@ -50,6 +53,7 @@ async function cacheResponse(request, response) {
     }
 }
 
+// Tries to get a response from the cache.
 async function getCachedResponse(request) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
@@ -62,8 +66,10 @@ async function getCachedResponse(request) {
     });
 }
 
+// This is the main fetch handler. It tries the network first, then the cache.
 async function handleFetch(request) {
     try {
+        // Try to get the file from the network.
         const response = await fetch(request);
         if (response.ok) {
             cacheResponse(request, response.clone());
@@ -74,10 +80,16 @@ async function handleFetch(request) {
     }
 }
 
+/**
+ * @param {Event} event
+ */
 self.addEventListener('install', event => {
-    event.waitUntil(cacheEssentials());
+    /** @type {ExtendableEvent} */ (event).waitUntil(cacheEssentials());
 });
 
+/**
+ * @param {Event} event
+ */
 self.addEventListener('fetch', event => {
-    event.respondWith(handleFetch(event.request));
+    /** @type {FetchEvent} */ (event).respondWith(handleFetch(/** @type {FetchEvent} */(event).request));
 });

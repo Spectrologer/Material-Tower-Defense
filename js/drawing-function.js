@@ -1,14 +1,14 @@
-// This file contains functions for drawing things onto the game canvas.
+// This file is all about making things pretty on the canvas.
 
 import { TILE_SIZE, GRID_EMPTY, TOWER_TYPES } from './constants.js';
 
-// Draws the grid lines on the board to show where you can place towers.
+// Draws the green grid that shows you where you can build.
 export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid, mouse) {
     const cols = Math.floor(canvasWidth / TILE_SIZE);
     const rows = Math.floor(canvasHeight / TILE_SIZE);
     ctx.save();
 
-    // Loop through every square on the grid.
+    // Slap a faint green square on all the empty spots.
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
             const gridType = placementGrid[y][x];
@@ -25,7 +25,7 @@ export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid,
         }
     }
 
-    // Highlight the square your mouse is currently hovering over.
+    // Make the square under the mouse glow a bit brighter.
     const mouseGridX = Math.floor(mouse.x / TILE_SIZE);
     const mouseGridY = Math.floor(mouse.y / TILE_SIZE);
 
@@ -39,7 +39,7 @@ export function drawPlacementGrid(ctx, canvasWidth, canvasHeight, placementGrid,
     ctx.restore();
 }
 
-// Helper to create a pixelated pattern
+// Little helper to make a cool pixel-y texture for the path.
 function createPixelatedPattern(ctx, color) {
     const patternCanvas = document.createElement('canvas');
     patternCanvas.width = 8;
@@ -59,7 +59,7 @@ function createPixelatedPattern(ctx, color) {
 }        // Apply fill to specific icons
 
 
-// Draws the path that enemies will follow.
+// Draws the main road the enemies cruise down.
 export function drawPath(ctx, canvasWidth, path, mazeColor) {
     ctx.strokeStyle = createPixelatedPattern(ctx, mazeColor);
     ctx.lineWidth = TILE_SIZE; // Use full tile size for the textured path
@@ -77,7 +77,7 @@ export function drawPath(ctx, canvasWidth, path, mazeColor) {
     ctx.stroke();
 }
 
-// New function to draw a temporary path.
+// Draws the little dashed line for the upcoming detour path.
 export function drawUpcomingPath(ctx, path) {
     ctx.save();
     ctx.globalAlpha = 0.5;
@@ -96,7 +96,7 @@ export function drawUpcomingPath(ctx, path) {
     ctx.restore();
 }
 
-// Draws the detour path as a solid segment.
+// Draws the detour path when it's active.
 export function drawDetourPath(ctx, path, mazeColor) {
     if (!path || path.length < 1) return;
     ctx.save();
@@ -116,7 +116,7 @@ export function drawDetourPath(ctx, path, mazeColor) {
 }
 
 
-// Draws the little pop-up tooltip that appears when you hover over a tower to merge it.
+// That little pop-up that shows what you'll get when you merge.
 export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     if (!mergeTooltip.show || !mergeTooltip.info) return;
 
@@ -128,7 +128,7 @@ export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     const iconSize = 24;
     const iconPadding = 5;
 
-    // Figure out how wide the tooltip needs to be based on its text and icons.
+    // How wide does this thing need to be? Let's measure the text and icons.
     const resultText = isDiscovered ? info.text : '???';
     ctx.font = "14px 'Press Start 2P'";
     const resultTextMetrics = ctx.measureText(resultText);
@@ -146,13 +146,13 @@ export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     const rectWidth = totalContentWidth + padding * 2;
     const rectHeight = iconSize + padding * 2;
 
-    // Make sure the tooltip doesn't go off the edge of the screen.
+    // Don't let the tooltip wander off-screen.
     let rectX = mergeTooltip.x + 20;
     let rectY = mergeTooltip.y - rectHeight - 10;
     if (rectX + rectWidth > canvasWidth) rectX = canvasWidth - rectWidth - 5;
     if (rectY < 5) rectY = mergeTooltip.y + 20;
 
-    // Draw the tooltip box.
+    // Draw the black box for the tooltip.
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.strokeStyle = '#00ff88';
     ctx.lineWidth = 2;
@@ -161,7 +161,7 @@ export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     ctx.fill();
     ctx.stroke();
 
-    // Draw the contents (icons and text) inside the tooltip.
+    // Now, fill it with the good stuff (icons and text).
     let currentX = rectX + padding;
     const contentY = rectY + padding + (rectHeight - padding * 2) / 2;
 
@@ -212,7 +212,7 @@ export function drawMergeTooltip(ctx, mergeTooltip, canvasWidth) {
     ctx.restore();
 }
 
-// Draws the info panel that shows an enemy's stats when you click on it.
+// When you click an enemy, this panel pops up to show its stats.
 export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     ctx.save();
     const enemyType = enemy.type;
@@ -236,7 +236,7 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     const iconSize = 12;
     const iconPadding = 4;
 
-    // Figure out the panel's size based on the text length.
+    // Measure the text to see how big the panel should be.
     ctx.font = "12px 'Press Start 2P'";
     const nameMetrics = ctx.measureText(name);
     ctx.font = "10px 'Press Start 2P'";
@@ -255,7 +255,7 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     let rectX = enemy.x + enemy.size + 10;
     let rectY = enemy.y - rectHeight / 2;
 
-    // Make sure the panel doesn't go off-screen.
+    // Keep the panel on the screen, please.
     if (rectX + rectWidth > canvasWidth) {
         rectX = enemy.x - enemy.size - 10 - rectWidth;
     }
@@ -263,7 +263,7 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     if (rectY + rectHeight > ctx.canvas.height) rectY = ctx.canvas.height - rectHeight - 5;
 
 
-    // Draw the panel background.
+    // Draw the black box for the panel.
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.strokeStyle = enemyType.color;
     ctx.lineWidth = 2;
@@ -272,7 +272,7 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     ctx.fill();
     ctx.stroke();
 
-    // Draw the enemy's name and stats.
+    // Add the enemy's name and all its stats.
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = enemyType.color;
@@ -292,7 +292,7 @@ export function drawEnemyInfoPanel(ctx, enemy, canvasWidth) {
     ctx.restore();
 }
 
-// NEW FUNCTION: Draws the selection rectangle when dragging
+// Draws the see-through box when you drag to select multiple towers.
 export function drawSelectionRect(ctx, start, end) {
     ctx.save();
     ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
@@ -306,7 +306,7 @@ export function drawSelectionRect(ctx, start, end) {
 }
 
 
-// A helper function to get the right icon name and font for a tower type.
+// Just a little helper to figure out which icon and font to use for a tower.
 export function getTowerIconInfo(type) {
     let icon;
     let className = 'material-icons';

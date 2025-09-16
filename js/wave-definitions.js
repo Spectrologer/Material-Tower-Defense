@@ -1,21 +1,17 @@
-// This file defines exactly what enemies appear in each wave of the game.
+// This file is the master plan for every wave in the game.
 
 import { ENEMY_TYPES } from './constants.js';
 
-// A little helper to make the wave composition easier to read.
+// Just a little shortcut to make the wave definitions cleaner.
 const comp = (type, count) => ({ type, count });
 
-// This is the main list of all the waves in the game.
-// Each wave is an object with a few properties:
-// - composition: Which enemies to spawn and how many of them.
-// - healthMultiplier/healthBonus: Makes enemies tougher in later waves.
-// - isSwarm/isBoss: Special flags for swarm or boss waves.
-// - detourRatio: A number from 0 to 1 that deterministically sends a fraction of enemies
-//                down the detour path. It only affects enemies with `prefersDetour: true`
-//                set in constants.js. For example, 0.5 means every 2nd eligible enemy
-//                will take the detour. 1.0 means all eligible enemies will.
-// - interleave: (boolean) If true, alternates spawning between enemy types in a round-robin fashion.
-// - endOfWaveAnnouncement: A message to show the player to warn them about the *next* wave.
+// This is the big list of all the pre-designed waves.
+// `composition`: Which enemies and how many.
+// `healthMultiplier/healthBonus`: Makes enemies tougher as the game goes on.
+// `isSwarm/isBoss`: Special flags for certain wave types.
+// `detourRatio`: What fraction of enemies should take the scenic route.
+// `interleave`: If true, mixes up the spawn order of different enemy types.
+// `endOfWaveAnnouncement`: A little heads-up for the player about what's coming next.
 export const waveDefinitions = [
     // Wave 1: A few NORMAL enemies, with a FAST one at the end to keep players on their toes.
     {
@@ -189,13 +185,14 @@ export const waveDefinitions = [
     },
 ];
 
+// This function creates waves procedurally for endless mode.
 export function generateWave(waveNumber) {
     // The wave number to start procedural generation from.
     const proceduralStartWave = 26;
 
     // Calculate the wave's difficulty based on how far past the start it is.
     const difficultyScale = waveNumber - proceduralStartWave;
-
+    // The basic structure of a generated wave.
     const wave = {
         composition: [],
         healthMultiplier: 6.5 + difficultyScale * 0.5,

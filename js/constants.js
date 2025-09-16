@@ -3,18 +3,18 @@
 
 import { SpecialTrack } from './tracks.js';
 
-// Sets up the size of the game grid.
+// How many squares wide and tall our game board is.
 export const GRID_COLS = 11;
 export const GRID_ROWS = 18;
-export const TILE_SIZE = 40; // The size of each square in pixels.
+export const TILE_SIZE = 40; // Each grid square is 40x40 pixels.
 
-// These are used to mark what's on each grid square.
-export const GRID_EMPTY = 0; // An empty spot where you can build.
-export const GRID_PATH = 1;  // Part of the enemy path.
-export const GRID_TOWER = 2; // A spot where a tower is already built.
+// What's on a grid tile? Let's find out.
+export const GRID_EMPTY = 0; // Nothing here, feel free to build.
+export const GRID_PATH = 1;  // The enemy's runway. Don't block it.
+export const GRID_TOWER = 2; // A tower's already here.
 
 // Gameplay Features
-export const CLOUD_STORAGE_COST = 25;
+export const CLOUD_STORAGE_COST = 25; // How much it costs to unlock the cloud for a round.
 
 // All the stats for basic towers.
 

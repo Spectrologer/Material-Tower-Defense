@@ -1,7 +1,7 @@
 import { TOWER_TYPES } from './constants.js';
 
 /**
- * Blends two hexadecimal colors.
+ * Mixes two hex colors together, 50/50.
  * @param {string} colorA - The first color in hex format (e.g., '#RRGGBB').
  * @param {string} colorB - The second color in hex format.
  * @returns {string} The blended color in hex format.
@@ -16,7 +16,7 @@ function blendColors(colorA, colorB) {
 }
 
 /**
- * Creates a consistent, order-independent key for a pair of tower types.
+ * Creates a key for a tower recipe that's the same no matter which order you put the towers in.
  * @param {string} type1 - The type of the first tower.
  * @param {string} type2 - The type of the second tower.
  * @returns {string} A sorted and joined key (e.g., 'CASTLE+PIN').
@@ -24,6 +24,7 @@ function blendColors(colorA, colorB) {
 const createRecipeKey = (type1, type2) => [type1, type2].sort().join('+');
 
 
+// This class knows all the secrets of tower merging.
 export class MergeHandler {
     constructor() {
         this.recipes = new Map();
@@ -363,7 +364,7 @@ export class MergeHandler {
             return null;
         }
 
-
+        // Look up the recipe for this combo.
         const key = createRecipeKey(existingTower.type, placingType);
         const recipe = this.recipes.get(key);
         const isDiscovered = gameState.discoveredMerges.has(key);
@@ -380,6 +381,7 @@ export class MergeHandler {
             };
         }
 
+        // If it's not a special recipe, it's just a standard level-up.
         if (existingTower.type === placingType && existingTower.level !== 'MAX LEVEL' && existingTower.level < 5) {
             return {
                 resultType: existingTower.type,
@@ -407,12 +409,14 @@ export class MergeHandler {
         const recipe = this.recipes.get(key);
 
         if (recipe) {
+            // If a special recipe exists, use it.
             if (recipe.canApply && !recipe.canApply(tower)) {
                 return false;
             }
 
             const oldCost = tower.cost;
             recipe.apply(tower, { existingTowerLevel, originalTowerColor, mergingTowerType });
+            // The new tower's cost is the sum of its parts.
             tower.cost = oldCost + costToAdd;
 
             const maxLevel = TOWER_TYPES[tower.type].maxLevel || 5;
@@ -421,7 +425,7 @@ export class MergeHandler {
                 if (tower.damageLevel) tower.damageLevel = 'MAX LEVEL';
             }
 
-
+            // FORT towers have a combined level, so check that for max level.
             if (tower.type === 'FORT') {
                 const visualLevel = (typeof tower.level === 'string' && tower.level === 'MAX LEVEL') ? 5 : (tower.stats.levelForCalc + tower.stats.damageLevelForCalc - 1);
                 if (visualLevel >= 5) {
@@ -429,6 +433,7 @@ export class MergeHandler {
                 }
             }
             gameState.hasPerformedFirstMerge = true;
+            // Remember that the player has discovered this merge and tower type.
             gameState.discoveredMerges.add(key);
             gameState.discoveredTowerTypes.add(tower.type);
             if (tower.type === 'CAT') {
@@ -437,6 +442,7 @@ export class MergeHandler {
             return true;
         }
 
+        // If no special recipe, it's a standard level-up.
         if (tower.type === mergingTowerType && tower.level !== 'MAX LEVEL' && tower.level < 5) {
             tower.level++;
             if (tower.damageLevel && tower.damageLevel !== 'MAX LEVEL') tower.damageLevel++;

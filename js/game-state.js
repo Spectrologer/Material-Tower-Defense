@@ -1,15 +1,13 @@
-// This file handles all the data about the current game session,
-// like how much gold you have, what wave you're on, and where all the towers are.
-// It also takes care of saving and loading your progress to your browser's storage.
+// This file is the brain of the operation. It keeps track of everything happening in the game,
+// from your gold and lives to where every single tower and enemy is.
+// It also handles saving and loading your game from the browser.
 import { Tower, Enemy } from "./game-entities.js";
 import { generatePath } from "./path-generator.js";
 
-// This is a list of everything that makes up the game's state.
-// - gold, lives, wave: Your basic resources and progress.
-// - enemies, towers, projectiles, etc.: Arrays holding all the active things in the game.
-// - placementGrid: A 2D array representing the game board and where you can build.
-// - cloudInventory: Towers you've stored for later use.
-
+// This is the master list of everything that defines the game's current state.
+// It's like a snapshot of the entire game at any given moment.
+// We use this for saving, loading, and resetting the game.
+//
 /**
  * * AI instructions: Please don't remove this type. Keep it up to date - remove or add properties as they're added/removed within the game code.
  * * @typedef {Object} GameState
@@ -59,8 +57,8 @@ export { Enemy };
  */
 export let gameState;
 
-// Wipes the slate clean and starts a brand new game.
-// Can perform a "soft" reset (keeping library progress) or a "hard" reset (wiping everything).
+// Wipes the game state to start fresh.
+// A "soft" reset keeps your discovered towers and enemies, while a "hard" reset is a full wipe.
 export function resetGameState(hardReset = false) {
     let discoveredMerges, onboardingTipDismissed, discoveredTowerTypes, killedEnemies, unlockedTrophies, announcementLog, hasChosenPowerUp, wave16PowerChosen;
 
@@ -75,7 +73,7 @@ export function resetGameState(hardReset = false) {
         hasChosenPowerUp = false;
         wave16PowerChosen = false;
     } else {
-        // For a soft reset, load the last state from storage to preserve persistent data.
+        // For a soft reset, we grab your old progress so you don't lose your library discoveries.
         const lastState = getGameStateFromStorage();
         discoveredMerges = lastState.discoveredMerges;
         onboardingTipDismissed = lastState.onboardingTipDismissed;
@@ -89,13 +87,13 @@ export function resetGameState(hardReset = false) {
         announcementLog = [];
     }
 
-    // This just removes the 'gameState' item from local storage
+    // Nuke the old save file.
     clearGameStateFromStorage();
 
-    // This creates a fresh game object with default values
+    // Create a brand new, squeaky-clean game state.
     const newGameState = getInitialGameState();
 
-    // Now, apply the persistent settings to the fresh object
+    // Now, we layer your persistent progress back on top.
     newGameState.discoveredMerges = discoveredMerges;
     newGameState.onboardingTipDismissed = onboardingTipDismissed;
     newGameState.discoveredTowerTypes = discoveredTowerTypes;
@@ -127,7 +125,7 @@ export function resetLastSaveTime() {
 // Saves your current progress to the browser's storage.
 // It won't save constantly, just every so often to avoid performance issues.
 export function persistGameState(throttleMs = 1000) {
-    // For now, it only saves when a wave is not in progress.
+    // We only save between waves to avoid slowing things down.
     if (gameState.waveInProgress) return;
 
     const timeSinceLastSave = lastSaveTime ? Date.now() - lastSaveTime : Infinity;
@@ -188,6 +186,7 @@ function getInitialGameState() {
     };
 }
 
+// A little helper to add a tower and update some game-wide flags.
 export function addTower(tower) {
     if (tower.type === 'PIN_HEART') {
         gameState.usedPinHeartTower = true;
