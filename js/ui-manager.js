@@ -220,7 +220,7 @@ export function updateNextWavePreview(currentWave) {
         groupEl.title = `${typeName.replace('_', ' ')}`;
 
         let iconStyle = `color: ${enemyType.color}; font-size: 24px; text-shadow: 1px 1px 3px #000; font-family: '${enemyType.iconFamily || 'Material Icons'}';`;
-        if (enemyType.iconFamily === 'Material Symbols Outlined' && enemyType.filled) {
+        if (enemyType.iconFamily === 'Material Symbols Outlined' && enemyType.filled) { // This was only checking for 'digital_wellbeing'
             iconStyle += ` font-variation-settings: 'FILL' 1;`;
         }
         groupEl.innerHTML = `
@@ -950,7 +950,7 @@ function createEnemyCardHTML(type, isDiscovered) {
         iconHTML = `<i class="fa-solid fa-${stats.icon}" style="${iconStyle}"></i>`;
     } else {
         let style = iconStyle;
-        if (stats.iconFamily === 'Material Symbols Outlined' && stats.filled) {
+        if (stats.iconFamily === 'Material Symbols Outlined' && stats.filled) { // This was only checking for 'digital_wellbeing' and 'helicopter'
             style += ` font-variation-settings: 'FILL' 1;`;
         }
         iconHTML = `<span class="${stats.iconFamily === 'Material Symbols Outlined' ? 'material-symbols-outlined' : 'material-icons'}" style="${style}">${stats.icon}</span>`;

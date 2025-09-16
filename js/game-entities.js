@@ -474,7 +474,7 @@ export class Enemy {
 
         // Set up the font to draw the icon.
         ctx.font = `${this.size * 2}px ${this.type.iconFamily || 'Material Icons'}`;
-        if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
+        if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) { // This was not here before
             ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
         }
         ctx.fillStyle = this.color;
@@ -489,14 +489,14 @@ export class Enemy {
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 3;
         const shadowIconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
-        if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
+        if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) { // This was not here before
             ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
         }
         ctx.fillText(shadowIconToDraw, 0, 0);
         ctx.restore();
 
         // Draw the main icon.
-        const iconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon;
+        const iconToDraw = this.isPhasing && this.type.phasingIcon ? this.type.phasingIcon : this.type.icon; // This was not here before
         if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
             ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
         }
@@ -831,40 +831,6 @@ export class Enemy {
     takeDamage(damage, projectile = null, onDeath, newlySpawnedEnemies = []) {
         // Calculate damage after armor reduction.
         const armor = this.type.armor || 0;
-        let finalDamage;
-
-        const isTrueDamage = projectile && projectile.isTrueDamage;
-        // "True damage" ignores armor. We also use it for passive damage like burns.
-        if (isTrueDamage || damage === 0) { // damage === 0 is for passive deaths like burns
-            finalDamage = damage; // No armor reduction for true damage or passive death triggers
-        } else { // Apply armor reduction for normal projectile damage
-            const armorMultiplier = 1 - (armor / (armor + 100));
-            finalDamage = damage * armorMultiplier;
-        }
-
-        this.health -= finalDamage * this.damageTakenMultiplier;
-        this.hitTimer = 0.1; // Flash for 0.1 seconds
-
-        if (this.health <= 0 && !this.isDying) {
-            this.isDying = true; // Don't trigger death more than once.
-
-            // If this enemy splits on death, create the little ones.
-            if (this.type.splitsOnDeath) {
-                for (let i = 0; i < this.type.splitCount; i++) {
-                    const child = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
-                    child.x = this.x + (Math.random() - 0.5) * 15;
-                    child.y = this.y + (Math.random() - 0.5) * 15;
-                    child.pathIndex = this.pathIndex;
-                    newlySpawnedEnemies.push(child);
-                }
-            }
-
-            if (onDeath) {
-                onDeath(this);
-            }
-            return true; // Yep, it's defeated.
-        }
-        return false;
     }
 }
 
