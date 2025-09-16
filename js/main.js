@@ -867,7 +867,24 @@ export async function onEndWave() { // Make this function async
 
 function continueToNextWave() {
     gameState.wave++;
-    onEndWave(); // Now call onEndWave to apply interest and other end-of-wave logic for the new wave
+
+    // Apply end-of-wave logic for the previous wave
+    uiElements.startWaveBtn.disabled = false;
+    setMusicTrack(1, { bossMode: false });
+
+    if (gameState.wave > 1) {
+        const interestEarned = Math.floor(gameState.gold * 0.05);
+        if (interestEarned > 0) {
+            gameState.gold += interestEarned;
+            const announcement = new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 3, undefined, canvasWidth);
+            gameState.announcements.push(announcement);
+            gameState.announcementLog.push(announcement);
+        }
+    }
+    const waveBonus = 20 + gameState.wave;
+    gameState.gold += waveBonus;
+    updateUI(gameState, gameSpeed);
+    persistGameState(0);
 }
 
 function isValidNinePinPlacement(gridX, gridY) {

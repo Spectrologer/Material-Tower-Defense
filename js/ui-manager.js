@@ -1107,21 +1107,19 @@ function startGlitterAnimation() {
 }
 
 export function showWave16PowerChoice(continueCallback) {
-    return new Promise(resolve => {
-        if (uiElements.wave16PowerChoiceModal) uiElements.wave16PowerChoiceModal.classList.remove('hidden');
-        startGlitterAnimation();
+    if (uiElements.wave16PowerChoiceModal) uiElements.wave16PowerChoiceModal.classList.remove('hidden');
+    startGlitterAnimation();
 
-        const createHandler = (handler) => (event) => {
-            handler(); // Grant the power-up
-            hideWave16PowerChoice(); // Hide the modal
-            resolve(); // Resolve the promise to let the game loop continue
-        };
+    const createHandler = (handler) => (event) => {
+        handler(); // Grant the power-up
+        hideWave16PowerChoice(); // Hide the modal
+        if (continueCallback) continueCallback(); // Continue the game
+    };
 
-        // Use .once = true to automatically remove the listener after it's called.
-        uiElements.deletePowerBtn.addEventListener('click', createHandler(handleDeletePower), { once: true });
-        uiElements.cloudPowerBtn.addEventListener('click', createHandler(handleCloudPower), { once: true });
-        uiElements.livesPowerBtn.addEventListener('click', createHandler(handleLivesPower), { once: true });
-    });
+    // Use .once = true to automatically remove the listener after it's called.
+    uiElements.deletePowerBtn.addEventListener('click', createHandler(handleDeletePower), { once: true });
+    uiElements.cloudPowerBtn.addEventListener('click', createHandler(handleCloudPower), { once: true });
+    uiElements.livesPowerBtn.addEventListener('click', createHandler(handleLivesPower), { once: true });
 }
 
 function handleDeletePower() {
