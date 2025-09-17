@@ -1,0 +1,39 @@
+name: Deploy to itch.io
+
+# This workflow runs whenever you push to the 'main' branch
+on:
+    push:
+        branches: [main]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest # Use a Linux virtual machine
+
+        steps:
+            # 1. Check out your repository's code
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            # 2. Set up butler
+            - name: Download and install butler
+              run: |
+                  curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+                  unzip butler.zip
+                  chmod +x butler
+
+            # 3. (CUSTOMIZE THIS STEP) Build your project
+            # This is a placeholder. Replace it with your game engine's build command.
+            # For this project, "building" means copying all necessary files into a 'build' directory.
+            - name: Build project
+              run: |
+                  mkdir build
+                  cp index.html build/
+                  cp -r js build/
+                  cp -r css build/
+                  cp -r assets build/
+
+            # 4. Push to itch.io using the API key secret
+            - name: Push to itch.io
+              run: ./butler push ./build hauntologer/iconic-defense:html5 --userversion-file ./build/version.txt
+              env:
+                  BUTLER_API_KEY: ${{ secrets.ITCHIO_API_KEY }}

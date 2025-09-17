@@ -1,4 +1,5 @@
 # Ignore system files
 desktop.ini
 Thumbs.db
+butler/
 .DS_Store
