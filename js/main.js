@@ -580,7 +580,6 @@ function gameLoop(currentTime) {
         }
         if (payload.isAnimatedDeath) {
             gameState.effects.push(new Effect(enemy.x, enemy.y, 'explosion', enemy.size * 4, '#ff9900', 0.5));
-            playExplosionSound();
         }
         // Remove the enemy from the game state
         gameState.enemies = gameState.enemies.filter(e => e.id !== enemy.id);
@@ -631,14 +630,15 @@ function gameLoop(currentTime) {
                 }
             }
         },
-        (e) => onEnemyDeath(e), // Pass the consolidated onEnemyDeath handler
+        (e, payload) => onEnemyDeath(e, payload),
         gameState.enemies, // Pass the full list of enemies for abilities like healing
         playWiggleSound,
         playCrackSound,
         effectiveDeltaTime,
         playHitSound,
         gameState.effects,
-        newlySpawnedEnemies
+        newlySpawnedEnemies,
+        playExplosionSound
     ));
     // Add any newly spawned enemies (from splitters, summoners, etc.) to the main list
     gameState.enemies.push(...newlySpawnedEnemies);

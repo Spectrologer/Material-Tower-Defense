@@ -595,13 +595,19 @@ export class Enemy {
         // If the enemy is dying, play a little animation.
         if (this.isDying) {
             this.deathAnimationTimer -= deltaTime;
-            if (this.type.isFlying) {
-                this.rotation += 30 * deltaTime;
-                this.y += 50 * deltaTime;
-            } else if (this.typeName === 'FAST' && this.deathAnimationTimer > 0) {
+            if (this.typeName === 'FAST' && this.deathAnimationTimer > 0) {
                 // Skitter and shrink death animation
                 this.x += Math.sin(this.deathAnimationTimer * 150) * 8; // Faster horizontal skitter
                 const shrinkProgress = 1 - (this.deathAnimationTimer / 0.5); // 0.5 is the original duration
+                this.size = this.type.size * (1 - shrinkProgress); // Shrink the enemy
+            } else if (this.typeName === 'HEAVY' && this.deathAnimationTimer > 0) {
+                // Tilt and shrink death animation
+                this.rotation += 5 * deltaTime; // Tilt
+                const shrinkProgress = 1 - (this.deathAnimationTimer / 0.5);
+                this.size = this.type.size * (1 - shrinkProgress); // Shrink the enemy
+            } else if (this.typeName === 'HEALER' && this.deathAnimationTimer > 0) {
+                // Explode death animation
+                const shrinkProgress = 1 - (this.deathAnimationTimer / 0.5);
                 this.size = this.type.size * (1 - shrinkProgress); // Shrink the enemy
             } else if (this.typeName === 'NORMAL' && effects) {
                 // Special "soul departs" death animation for the 'person'
@@ -609,7 +615,7 @@ export class Enemy {
                 effects.push(soulEffect);
             }
             if (this.deathAnimationTimer <= 0) {
-                onDeath(this, { isAnimatedDeath: true });
+                onDeath(this, { isAnimatedDeath: false });
                 return false;
             }
             return true;
@@ -889,6 +895,11 @@ export class Enemy {
         if (this.health <= 0 && !this.isDying) {
             this.isDying = true;
             this.deathAnimationTimer = 0.5; // 0.5s death animation
+            if (this.type.isFlying) {
+                // Make it spin and fall, then explode
+                this.rotation = 0; // Reset rotation
+                this.update = (onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects, newlySpawnedEnemies, playExplosionSound) => this.dyingFlyingUpdate(deltaTime, onDeath, playExplosionSound);
+            }
 
             if (this.type.splitsOnDeath) {
                 for (let i = 0; i < this.type.splitCount; i++) {
@@ -907,6 +918,17 @@ export class Enemy {
         }
 
         return false; // Enemy was not killed
+    }
+    dyingFlyingUpdate(deltaTime, onDeath, playExplosionSound) { // playExplosionSound is now correctly passed
+        this.rotation += 30 * deltaTime;
+        this.y += 50 * deltaTime;
+        this.deathAnimationTimer -= deltaTime;
+        if (this.deathAnimationTimer <= 0) {
+            playExplosionSound();
+            onDeath(this, { isAnimatedDeath: true });
+            return false;
+        }
+        return true;
     }
 }
 
