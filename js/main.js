@@ -1819,6 +1819,22 @@ consoleCommands.spawnSplitter = (count) => {
     }
 };
 
+consoleCommands.spawnTaunt = (count) => {
+    const numToSpawn = parseInt(String(count), 10) || 1;
+
+    if (gameState && gameState.path.length > 0) {
+        if (isNaN(numToSpawn) || numToSpawn < 1) {
+            console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.spawnTaunt(3)");
+            return;
+        }
+        for (let i = 0; i < numToSpawn; i++) {
+            const tauntEnemy = new Enemy(ENEMY_TYPES.TAUNT, gameState.path, 'TAUNT');
+            gameState.enemies.push(tauntEnemy);
+        }
+        console.log(`Spawned ${numToSpawn} TAUNT enemies!`);
+    }
+};
+
 consoleCommands.spawnHealer = (count) => {
     const numToSpawn = parseInt(String(count), 10) || 1;
 

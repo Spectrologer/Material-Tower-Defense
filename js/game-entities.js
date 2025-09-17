@@ -385,6 +385,7 @@ export class Enemy {
         this.progress = 0;
         this.isVisible = !this.type.isInvisible;
         this.isPhasing = false;
+        this.facing = 1; // 1 for right, -1 for left
 
         // Special setup for the BOSS.
         if (this.type.laysEggs) {
@@ -468,6 +469,11 @@ export class Enemy {
             ctx.translate(this.x + this.jostleX, this.y + this.jostleY);
         }
 
+        // Apply horizontal flip if facing is -1
+        if (this.facing === -1) {
+            ctx.scale(-1, 1);
+        }
+
         if (this.rotation !== 0) {
             ctx.rotate(this.rotation);
         }
@@ -492,7 +498,7 @@ export class Enemy {
         if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) { // This was not here before
             ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
         }
-        ctx.fillText(shadowIconToDraw, 0, 0);
+        ctx.fillText(shadowIconToDraw, 0, 0); // The shadow is also flipped by the scale
         ctx.restore();
 
         // Draw the main icon.
@@ -500,7 +506,7 @@ export class Enemy {
         if (this.type.iconFamily === 'Material Symbols Outlined' && this.type.filled) {
             ctx.fontVariationSettings = "'FILL' 1, 'wght' 400";
         }
-        ctx.fillText(iconToDraw, 0, 0);
+        ctx.fillText(iconToDraw, 0, 0); // The icon is also flipped
         ctx.fontVariationSettings = "'FILL' 0, 'wght' 400"; // Reset for other elements
         ctx.restore();
 
@@ -509,9 +515,9 @@ export class Enemy {
         const healthBarHeight = 5;
         const healthPercentage = this.health / this.maxHealth;
         ctx.fillStyle = '#333';
-        ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth, healthBarHeight);
+        ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth, healthBarHeight); // Health bar is not flipped
         ctx.fillStyle = 'green';
-        ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth * healthPercentage, healthBarHeight);
+        ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth * healthPercentage, healthBarHeight); // Health bar is not flipped
 
         // Flash the enemy white when it gets hit.
         if (this.hitTimer > 0) {
@@ -831,6 +837,11 @@ export class Enemy {
     takeDamage(damage, projectile = null, onDeath, newlySpawnedEnemies = []) {
         // Calculate damage after armor reduction.
         const armor = this.type.armor || 0;
+
+        // Flip the taunt enemy when it gets hit
+        if (this.type.isTaunting) {
+            this.facing *= -1;
+        }
     }
 }
 
@@ -921,6 +932,13 @@ class TowerController {
         const tower = this.tower;
         tower.target = null;
         let potentialTargets = enemies.filter(enemy => this.isInRange(enemy) && !enemy.isDying && enemy.isVisible && !enemy.isPhasing);
+
+        // New Taunt Logic: Prioritize taunting enemies if they are in range.
+        const tauntingEnemies = potentialTargets.filter(enemy => enemy.type.isTaunting);
+        if (tauntingEnemies.length > 0) {
+            // If there are taunting enemies, all other enemies are ignored for targeting.
+            potentialTargets = tauntingEnemies;
+        }
 
         if (tower.isUnderDiversifyAura) {
             potentialTargets = potentialTargets.filter(enemy => !frameTargetedEnemies.has(enemy.id));

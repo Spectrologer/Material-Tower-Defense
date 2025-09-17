@@ -23,7 +23,7 @@ export const waveDefinitions = [
     {
         composition: [comp(ENEMY_TYPES.NORMAL, 12), comp(ENEMY_TYPES.SWARM, 5)],
         healthMultiplier: 1.15, healthBonus: 0,
-        endOfWaveAnnouncement: { text: "Warning:\nFast enemies incoming!", color: '#ffb84d' }
+        endOfWaveAnnouncement: { text: "Warning:\nDetour path opening!", color: '#ffb84d' }
     },
     // Wave 3: A bigger split wave to make the detour more significant.
     {
@@ -47,6 +47,7 @@ export const waveDefinitions = [
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 7)],
         healthMultiplier: 1.1, healthBonus: 30,
+        endOfWaveAnnouncement: { text: "Warning:\nHealing signature detected!", color: '#0e87beff' }
     },
     // Wave 6: Introduce HEALERs alongside HEAVY enemies to teach the importance of focus fire.
     {
@@ -60,12 +61,12 @@ export const waveDefinitions = [
     {
         composition: [comp(ENEMY_TYPES.FLYING, 10), comp(ENEMY_TYPES.HEAVY, 1)],
         healthMultiplier: 1.3, healthBonus: 20,
+        endOfWaveAnnouncement: { text: "Warning:\nCellular division detected!", color: '#84cc16' }
     },
-    // Wave 8: A mix of ground and air to test defense flexibility.
+    // Wave 8: Miniboss wave to introduce the SPLITTER.
     {
-        interleave: true,
-        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.HEALER, 2), comp(ENEMY_TYPES.FLYING, 5)],
-        healthMultiplier: 1.4, healthBonus: 25,
+        composition: [comp(ENEMY_TYPES.SPLITTER, 1)],
+        healthMultiplier: 5, healthBonus: 100,
         endOfWaveAnnouncement: { text: "Unseen threats ahead!\nDetection required.", color: '#BDBDBD' }
     },
     // Wave 9: Test detection and speed simultaneously.
@@ -74,6 +75,13 @@ export const waveDefinitions = [
         composition: [comp(ENEMY_TYPES.STEALTH, 8), comp(ENEMY_TYPES.FAST, 5)],
         healthMultiplier: 1.1, healthBonus: 10,
         detourRatio: 0.5,
+        endOfWaveAnnouncement: { text: "Warning:\nTaunting detected!", color: '#a855f7' }
+    },
+    // Wave 10: Introduce TAUNT with some heavies to force prioritization choices.
+    {
+        composition: [comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.TAUNT, 1)],
+        healthMultiplier: 1.5, healthBonus: 15,
+        detourRatio: 0,
     },
     // Wave 10: A capstone wave for the early game, testing a bit of everything.
     {
@@ -96,7 +104,7 @@ export const waveDefinitions = [
     },
     // Wave 13: Mixed wave including STEALTH to test layered defenses.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 2), comp(ENEMY_TYPES.STEALTH, 2), comp(ENEMY_TYPES.FAST, 4)],
+        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.HEALER, 2), comp(ENEMY_TYPES.STEALTH, 2), comp(ENEMY_TYPES.TAUNT, 1), comp(ENEMY_TYPES.FAST, 4)],
         healthMultiplier: 2.2, healthBonus: 35,
         detourRatio: 0.5,
     },
@@ -106,7 +114,8 @@ export const waveDefinitions = [
             comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.HEALER, 2),
             comp(ENEMY_TYPES.FLYING, 4),
             comp(ENEMY_TYPES.SWARM, 4),
-            comp(ENEMY_TYPES.STEALTH, 4)
+            comp(ENEMY_TYPES.STEALTH, 4),
+            comp(ENEMY_TYPES.TAUNT, 1)
         ],
         healthMultiplier: 2, healthBonus: 30,
         detourRatio: 0.75,
@@ -131,7 +140,7 @@ export const waveDefinitions = [
     },
     // Wave 18: A tricky wave combining Phantoms that teleport and Summoners that create blockers.
     {
-        composition: [comp(ENEMY_TYPES.SUMMONER, 2), comp(ENEMY_TYPES.PHANTOM, 6)],
+        composition: [comp(ENEMY_TYPES.SUMMONER, 2), comp(ENEMY_TYPES.PHANTOM, 6), comp(ENEMY_TYPES.TAUNT, 1)],
         healthMultiplier: 3.2, healthBonus: 75,
         detourRatio: 0.5,
     },
@@ -139,9 +148,8 @@ export const waveDefinitions = [
     {
         isSwarm: true,
         composition: [comp(ENEMY_TYPES.SWARM, 30), comp(ENEMY_TYPES.SPLITTER_MINI, 10)],
-        healthMultiplier: 3.0, healthBonus: 40,
+        healthMultiplier: 3.5, healthBonus: 40,
         detourRatio: 1.0,
-        endOfWaveAnnouncement: { text: "Warning:\nCellular division detected!", color: '#84cc16' }
     },
     // Wave 20: Introduce the Splitter enemy.
     {
@@ -208,6 +216,7 @@ export function generateWave(waveNumber) {
     const baseFlying = 4;
     const baseStealth = 3;
     const basePhantom = 2;
+    const baseTaunt = 1;
 
     // Add a mix of enemies, increasing their count and difficulty based on the wave number.
     wave.composition.push(comp(ENEMY_TYPES.NORMAL, baseNormal + difficultyScale * 4));
@@ -222,6 +231,11 @@ export function generateWave(waveNumber) {
 
     // Introduce and scale phantom enemies.
     wave.composition.push(comp(ENEMY_TYPES.PHANTOM, basePhantom + Math.floor(difficultyScale * 1.1)));
+
+    // Sparingly add Taunt enemies in later waves.
+    if (waveNumber > 30) {
+        wave.composition.push(comp(ENEMY_TYPES.TAUNT, baseTaunt + Math.floor(difficultyScale / 5)));
+    }
 
     return wave;
 }
