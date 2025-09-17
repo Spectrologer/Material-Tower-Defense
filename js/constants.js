@@ -61,4 +61,5 @@ export const ENEMY_TYPES = {
     SPLITTER_MINI: { speed: 2.5, health: 10, armor: 0, color: '#85bc2bff', size: 10, gold: 1, icon: 'coronavirus', iconFamily: 'Material Icons', damagesLives: true, splitsOnDeath: true, splitCount: 2, splitInto: 'SPLITTER_MICRO', comment: "It keeps happening!" },
     SPLITTER_MICRO: { speed: 3.0, health: 5, armor: 0, color: '#88ae46ff', size: 6, gold: 0, icon: 'coronavirus', iconFamily: 'Material Icons', damagesLives: true, comment: "This seems derivative." },
     TAUNT: { speed: 1.2, health: 150, armor: 5, color: '#a855f7', size: 20, gold: 4, icon: 'taunt', iconFamily: 'Material Symbols Outlined', damagesLives: true, isTaunting: true, comment: "Come at me, bro.", filled: true },
+    PARAGLIDING: { speed: 0.8, health: 25, armor: 0, color: '#a7f3d0', size: 18, gold: 2, icon: 'paragliding', iconFamily: 'Material Symbols Outlined', damagesLives: true, isFlying: true, ignoresPath: true, comment: "Doesn't follow the rules of the road.", filled: true },
 };

@@ -766,6 +766,22 @@ export class Enemy {
             }
         }
 
+        // Handle enemies that ignore the path
+        if (this.type.ignoresPath) {
+            const exitNode = this.path[this.path.length - 1];
+            const dx = exitNode.x - this.x;
+            const dy = exitNode.y - this.y;
+            const distance = Math.hypot(dx, dy);
+            const moveDistance = this.speed * this.slowMultiplier * 60 * deltaTime;
+
+            if (distance < moveDistance) {
+                onFinish(this);
+                return false;
+            }
+            this.x += (dx / distance) * moveDistance;
+            this.y += (dy / distance) * moveDistance;
+            return true; // Keep this enemy, and skip the rest of the path-following logic.
+        }
         // Time to move!
         let atEnd = this.pathIndex >= this.path.length - 1;
         let atStart = this.pathIndex <= 0;
@@ -781,7 +797,7 @@ export class Enemy {
             }
         }
 
-        // Don't move if we're busy laying an egg or phasing.
+        // Don't move if we're busy laying an egg, phasing, or ignoring the path.
         if (!this.isLayingEgg && !this.isPhasing) {
             const targetIndex = this.pathIndex + this.direction;
             if (targetIndex < 0 || targetIndex >= this.path.length) {

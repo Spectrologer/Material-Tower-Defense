@@ -17,178 +17,180 @@ export const waveDefinitions = [
     {
         composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 1)],
         healthMultiplier: 0.9, healthBonus: 0,
-        detourRatio: 0,
+        endOfWaveAnnouncement: { text: "Warning:\nFaster enemies detected!", color: ENEMY_TYPES.FAST.color }
     },
-    // Wave 2: Introduce SWARM enemies early to hint at splash damage.
+    // Wave 2: Introduce FAST enemies.
     {
-        composition: [comp(ENEMY_TYPES.NORMAL, 12), comp(ENEMY_TYPES.SWARM, 5)],
-        healthMultiplier: 1.15, healthBonus: 0,
+        composition: [comp(ENEMY_TYPES.NORMAL, 8), comp(ENEMY_TYPES.FAST, 5)],
+        healthMultiplier: 1.0, healthBonus: 0,
+        interleave: true,
         endOfWaveAnnouncement: { text: "Warning:\nDetour path opening!", color: '#ffb84d' }
     },
-    // Wave 3: A bigger split wave to make the detour more significant.
+    // Wave 3: Introduce the Detour path with a mix of fast and normal enemies.
     {
         interleave: true,
-        composition: [comp(ENEMY_TYPES.NORMAL, 10), comp(ENEMY_TYPES.FAST, 12)],
-        healthMultiplier: 1.0, healthBonus: 0,
+        composition: [comp(ENEMY_TYPES.NORMAL, 8), comp(ENEMY_TYPES.FAST, 10)],
+        healthMultiplier: 1.1, healthBonus: 0,
         detourRatio: 0.5,
-        endOfWaveAnnouncement: { text: "Warning:\nWe've encountered a bug!", color: '#00e6e6' }
-
+        endOfWaveAnnouncement: { text: "Warning:\nWe've encountered a bug!", color: ENEMY_TYPES.SWARM.color }
     },
-    // Wave 4: A mixed swarm to test splash and single-target prioritization.
+    // Wave 4: Introduce SWARM enemies to teach the value of splash damage.
     {
         isSwarm: true,
         interleave: true,
-        composition: [comp(ENEMY_TYPES.NORMAL, 5), comp(ENEMY_TYPES.SWARM, 15)],
-        healthMultiplier: 1.0, healthBonus: 0,
+        composition: [comp(ENEMY_TYPES.NORMAL, 8), comp(ENEMY_TYPES.SWARM, 15)],
+        healthMultiplier: 1.2, healthBonus: 0,
         detourRatio: 1.0,
-        endOfWaveAnnouncement: { text: "Warning:\nBulky enemies inbound!", color: '#3446ceff' }
+        endOfWaveAnnouncement: { text: "Warning:\nBulky enemies inbound!", color: ENEMY_TYPES.HEAVY.color }
     },
-    // Wave 5: Introduce HEAVY enemies, a pure test of single-target damage.
+    // Wave 5: Introduce HEAVY enemies, a pure test of single-target damage and armor.
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 7)],
-        healthMultiplier: 1.1, healthBonus: 30,
-        endOfWaveAnnouncement: { text: "Warning:\nHealing signature detected!", color: '#0e87beff' }
+        healthMultiplier: 1.3, healthBonus: 30,
+        endOfWaveAnnouncement: { text: "Warning:\nHealing signature detected!", color: ENEMY_TYPES.HEALER.color }
     },
-    // Wave 6: Introduce HEALERs alongside HEAVY enemies to teach the importance of focus fire.
+    // Wave 6: Introduce HEALERs to teach the importance of focus fire.
     {
         interleave: true,
         composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 2)],
-        healthMultiplier: 1.2, healthBonus: 10,
+        healthMultiplier: 1.4, healthBonus: 10,
         detourRatio: 0,
-        endOfWaveAnnouncement: { text: "Fliers incoming!", color: '#4fc3f7' }
+        endOfWaveAnnouncement: { text: "Fliers incoming!\nAnti-Air required.", color: ENEMY_TYPES.FLYING.color }
     },
-    // Wave 7: A pure anti-air check with a tough ground-based surprise at the end.
+    // Wave 7: Introduce FLYING enemies, a pure anti-air check.
     {
-        composition: [comp(ENEMY_TYPES.FLYING, 10), comp(ENEMY_TYPES.HEAVY, 1)],
-        healthMultiplier: 1.3, healthBonus: 20,
-        endOfWaveAnnouncement: { text: "Warning:\nCellular division detected!", color: '#84cc16' }
+        composition: [comp(ENEMY_TYPES.FLYING, 12)],
+        healthMultiplier: 1.5, healthBonus: 20,
+        endOfWaveAnnouncement: { text: "Warning:\nCellular division detected!", color: ENEMY_TYPES.SPLITTER.color }
     },
-    // Wave 8: Miniboss wave to introduce the SPLITTER.
+    // Wave 8: Introduce the SPLITTER enemy.
     {
-        composition: [comp(ENEMY_TYPES.SPLITTER, 1)],
-        healthMultiplier: 5, healthBonus: 100,
+        composition: [comp(ENEMY_TYPES.SPLITTER, 5)],
+        healthMultiplier: 1.6, healthBonus: 50,
         endOfWaveAnnouncement: { text: "Unseen threats ahead!\nDetection required.", color: '#BDBDBD' }
     },
-    // Wave 9: Test detection and speed simultaneously.
+    // Wave 9: Introduce STEALTH enemies.
     {
         interleave: true,
-        composition: [comp(ENEMY_TYPES.STEALTH, 8), comp(ENEMY_TYPES.FAST, 5)],
-        healthMultiplier: 1.1, healthBonus: 10,
+        composition: [comp(ENEMY_TYPES.STEALTH, 10), comp(ENEMY_TYPES.FAST, 8)],
+        healthMultiplier: 1.8, healthBonus: 10,
         detourRatio: 0.5,
-        endOfWaveAnnouncement: { text: "Warning:\nTaunting detected!", color: '#a855f7' }
+        endOfWaveAnnouncement: { text: "Warning:\nTaunting detected!", color: ENEMY_TYPES.TAUNT.color }
     },
-    // Wave 10: Introduce TAUNT with some heavies to force prioritization choices.
+    // Wave 10: Introduce TAUNT to force prioritization choices.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.TAUNT, 1)],
-        healthMultiplier: 1.5, healthBonus: 15,
+        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.TAUNT, 1), comp(ENEMY_TYPES.HEAVY, 5)],
+        healthMultiplier: 2.0, healthBonus: 15,
         detourRatio: 0,
+        endOfWaveAnnouncement: { text: "Warning:\nUnidentified objects\nignoring path!", color: ENEMY_TYPES.PARAGLIDING.color }
     },
-    // Wave 10: A capstone wave for the early game, testing a bit of everything.
+    // Wave 11: Introduce PARAGLIDING enemies that ignore the path.
     {
-        isSwarm: true,
-        composition: [comp(ENEMY_TYPES.NORMAL, 12), comp(ENEMY_TYPES.SWARM, 15), comp(ENEMY_TYPES.HEAVY, 1)],
-        healthMultiplier: 1.6, healthBonus: 10,
-        detourRatio: 0.25,
+        composition: [comp(ENEMY_TYPES.PARAGLIDING, 8), comp(ENEMY_TYPES.FLYING, 8)],
+        healthMultiplier: 2.2, healthBonus: 20,
+        interleave: true,
         endOfWaveAnnouncement: { text: "Warning:\nFinancial assets at risk!", color: '#f7e51aff' }
     },
-    // Wave 11: Introduce BITCOIN enemies as an economic challenge.
+    // Wave 12: Introduce BITCOIN enemies as an economic challenge.
     {
         composition: [comp(ENEMY_TYPES.BITCOIN, 25)],
-        healthMultiplier: 2, healthBonus: 25,
+        healthMultiplier: 2.4, healthBonus: 25,
+        endOfWaveAnnouncement: { text: "Warning:\nReality is becoming unstable!", color: ENEMY_TYPES.PHANTOM.color }
     },
-    // Wave 12: A difficult pincer attack with HEAVY and FAST enemies on separate paths.
+    // Wave 13: Introduce PHANTOM enemies.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 7), comp(ENEMY_TYPES.HEALER, 3), comp(ENEMY_TYPES.FAST, 7)],
-        healthMultiplier: 1.9, healthBonus: 35,
-        detourRatio: 1.0,
+        composition: [comp(ENEMY_TYPES.PHANTOM, 8), comp(ENEMY_TYPES.FAST, 10)],
+        healthMultiplier: 2.6, healthBonus: 60,
+        detourRatio: 0.6,
+        endOfWaveAnnouncement: { text: "Warning:\nMinion spawners detected!", color: ENEMY_TYPES.SUMMONER.color }
     },
-    // Wave 13: Mixed wave including STEALTH to test layered defenses.
+    // Wave 14: Introduce the SUMMONER.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.HEALER, 2), comp(ENEMY_TYPES.STEALTH, 2), comp(ENEMY_TYPES.TAUNT, 1), comp(ENEMY_TYPES.FAST, 4)],
-        healthMultiplier: 2.2, healthBonus: 35,
-        detourRatio: 0.5,
+        composition: [comp(ENEMY_TYPES.SUMMONER, 4)],
+        healthMultiplier: 2.8, healthBonus: 50,
+        endOfWaveAnnouncement: { text: "ALERT:\nFLUTTERDASH APPROACHING!", color: '#f542e9ff' }
     },
-    // Wave 14: Pre-boss wave with a mix of all major threats.
+    // Wave 15: Pre-boss wave with a mix of all major threats.
     {
         composition: [
             comp(ENEMY_TYPES.HEAVY, 4), comp(ENEMY_TYPES.HEALER, 2),
-            comp(ENEMY_TYPES.FLYING, 4),
-            comp(ENEMY_TYPES.SWARM, 4),
+            comp(ENEMY_TYPES.FLYING, 6),
+            comp(ENEMY_TYPES.SWARM, 10),
             comp(ENEMY_TYPES.STEALTH, 4),
             comp(ENEMY_TYPES.TAUNT, 1)
         ],
-        healthMultiplier: 2, healthBonus: 30,
+        healthMultiplier: 3.0, healthBonus: 30,
         detourRatio: 0.75,
-        endOfWaveAnnouncement: { text: "ALERT:\nFLUTTERDASH APPROACHING!", color: '#f542e9ff' }
+        interleave: true,
     },
-    // Wave 15: The Final Boss
+    // Wave 16: The BOSS wave.
     {
         isBoss: true,
         composition: [comp(ENEMY_TYPES.BOSS, 1)], // Flutterdash
     },
-    // Wave 16: Introduce the Summoner, a slow but persistent threat.
+    // Wave 17: A breather wave with a new combination.
     {
-        composition: [comp(ENEMY_TYPES.SUMMONER, 4)],
-        healthMultiplier: 2.5, healthBonus: 50,
-        endOfWaveAnnouncement: { text: "Warning:\nReality is becoming unstable!", color: '#9333ea' }
-    },
-    // Wave 17: Introduce Phantoms, testing tracking and burst damage.
-    {
-        composition: [comp(ENEMY_TYPES.PHANTOM, 8), comp(ENEMY_TYPES.FAST, 10)],
-        healthMultiplier: 2.8, healthBonus: 60,
-        detourRatio: 0.6,
+        composition: [comp(ENEMY_TYPES.SPLITTER, 8), comp(ENEMY_TYPES.PARAGLIDING, 8)],
+        healthMultiplier: 3.2, healthBonus: 70,
+        interleave: true,
     },
     // Wave 18: A tricky wave combining Phantoms that teleport and Summoners that create blockers.
     {
         composition: [comp(ENEMY_TYPES.SUMMONER, 2), comp(ENEMY_TYPES.PHANTOM, 6), comp(ENEMY_TYPES.TAUNT, 1)],
-        healthMultiplier: 3.2, healthBonus: 75,
+        healthMultiplier: 3.5, healthBonus: 75,
         detourRatio: 0.5,
     },
-    // Wave 19: A massive swarm wave to push splash damage towers to their limit.
+    // Wave 19: A massive swarm wave to push splash damage towers to their limits.
     {
         isSwarm: true,
         composition: [comp(ENEMY_TYPES.SWARM, 30), comp(ENEMY_TYPES.SPLITTER_MINI, 10)],
-        healthMultiplier: 3.5, healthBonus: 40,
+        healthMultiplier: 3.8, healthBonus: 40,
         detourRatio: 1.0,
     },
-    // Wave 20: Introduce the Splitter enemy.
+    // Wave 20: A high-density wave of Splitters.
     {
         composition: [comp(ENEMY_TYPES.SPLITTER, 10)],
         healthMultiplier: 4.0, healthBonus: 100,
         detourRatio: 0.33,
     },
-    // Wave 21: Splitters are now mixed with Heavies, creating a durable, high-density threat.
+    // Wave 21: Splitters are now mixed with Heavies and Healers, a durable, high-density threat.
     {
         composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 3), comp(ENEMY_TYPES.SPLITTER, 6)],
         healthMultiplier: 4.5, healthBonus: 120,
+        interleave: true,
     },
     // Wave 22: A test of detection and area damage with Stealth and Splitter units.
     {
         composition: [comp(ENEMY_TYPES.STEALTH, 12), comp(ENEMY_TYPES.SPLITTER, 6)],
         healthMultiplier: 4.8, healthBonus: 130,
         detourRatio: 0.5,
+        interleave: true,
     },
     // Wave 23: A chaotic wave featuring all new enemy types together.
     {
         composition: [comp(ENEMY_TYPES.SUMMONER, 2), comp(ENEMY_TYPES.PHANTOM, 5), comp(ENEMY_TYPES.SPLITTER, 5)],
-        healthMultiplier: 5.0, healthBonus: 150, // Health multiplier does not affect boss
+        healthMultiplier: 5.0, healthBonus: 150,
         detourRatio: 0.4,
+        interleave: true,
     },
     // Wave 24: A challenging air and ground pincer attack.
     {
         composition: [comp(ENEMY_TYPES.FLYING, 15), comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.HEALER, 4)],
         healthMultiplier: 5.5, healthBonus: 180,
+        interleave: true,
     },
-    // Wave 25: A pre-infinite wave with a bit of everything, including stealth.
+    // Wave 25: The final handcrafted wave, a kitchen-sink of threats before endless mode.
     {
         composition: [
-            comp(ENEMY_TYPES.BOSS, 1),
             comp(ENEMY_TYPES.SUMMONER, 2),
             comp(ENEMY_TYPES.PHANTOM, 4),
-            comp(ENEMY_TYPES.SPLITTER, 4)
+            comp(ENEMY_TYPES.SPLITTER, 4),
+            comp(ENEMY_TYPES.TAUNT, 2),
+            comp(ENEMY_TYPES.PARAGLIDING, 5)
         ],
         healthMultiplier: 6.5, healthBonus: 250,
         detourRatio: 0.5,
+        interleave: true,
         endOfWaveAnnouncement: { text: "Warning:\nInfinite waves incoming!", color: '#ff4d4d' }
     },
 ];

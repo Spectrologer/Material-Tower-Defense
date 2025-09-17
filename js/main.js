@@ -1835,6 +1835,22 @@ consoleCommands.spawnTaunt = (count) => {
     }
 };
 
+consoleCommands.spawnParagliding = (count) => {
+    const numToSpawn = parseInt(String(count), 10) || 1;
+
+    if (gameState && gameState.path.length > 0) {
+        if (isNaN(numToSpawn) || numToSpawn < 1) {
+            console.error("Invalid count. Please provide a number greater than 0. Example: consoleCommands.spawnParagliding(3)");
+            return;
+        }
+        for (let i = 0; i < numToSpawn; i++) {
+            const paraglider = new Enemy(ENEMY_TYPES.PARAGLIDING, gameState.path, 'PARAGLIDING');
+            gameState.enemies.push(paraglider);
+        }
+        console.log(`Spawned ${numToSpawn} PARAGLIDING enemies!`);
+    }
+};
+
 consoleCommands.spawnHealer = (count) => {
     const numToSpawn = parseInt(String(count), 10) || 1;
 

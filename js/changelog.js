@@ -1,5 +1,12 @@
 export const changelog = [
     {
+        version: '0.2.4',
+        date: '2025-09-17',
+        changes: [
+            'New Enemy: PARAGLIDER! This enemy ignores the path and moves directly to the exit.',
+        ]
+    },
+    {
         version: '0.2.3',
         date: '2025-09-16',
         changes: [
