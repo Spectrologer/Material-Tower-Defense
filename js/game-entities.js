@@ -448,6 +448,11 @@ export class Enemy {
             ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 50) * 0.2;
         }
 
+        // Make the PHANTOM enemy semi-transparent
+        if (this.typeName === 'PHANTOM' && !this.isPhasing) {
+            ctx.globalAlpha = 0.25;
+        }
+
         // Show the healing pulse effect.
         if (this.isHealingPulse) {
             ctx.save();
@@ -593,6 +598,15 @@ export class Enemy {
             if (this.type.isFlying) {
                 this.rotation += 30 * deltaTime;
                 this.y += 50 * deltaTime;
+            } else if (this.typeName === 'FAST' && this.deathAnimationTimer > 0) {
+                // Skitter and shrink death animation
+                this.x += Math.sin(this.deathAnimationTimer * 150) * 8; // Faster horizontal skitter
+                const shrinkProgress = 1 - (this.deathAnimationTimer / 0.5); // 0.5 is the original duration
+                this.size = this.type.size * (1 - shrinkProgress); // Shrink the enemy
+            } else if (this.typeName === 'NORMAL' && effects) {
+                // Special "soul departs" death animation for the 'person'
+                const soulEffect = new Effect(this.x, this.y, 'person', this.size * 1.5, '#FFFFFF', 1.0);
+                effects.push(soulEffect);
             }
             if (this.deathAnimationTimer <= 0) {
                 onDeath(this, { isAnimatedDeath: true });
@@ -863,6 +877,12 @@ export class Enemy {
 
         // Flip the taunt enemy when it gets hit
         if (this.type.isTaunting) {
+            this.facing *= -1;
+        }
+
+
+        // Flip the normal enemy when it gets hit
+        if (this.typeName === 'NORMAL') {
             this.facing *= -1;
         }
 
@@ -1612,7 +1632,7 @@ export class Effect {
         this.life -= deltaTime;
         return this.life > 0;
     }
-    draw(ctx) {
+    draw(ctx, deltaTime = 0) {
         let progress = 1 - (this.life / this.maxLife);
         let currentSize = this.size * progress;
         let opacity = 1 - progress;
@@ -1649,6 +1669,12 @@ export class Effect {
         if (this.icon === 'attach_money') {
             currentSize = this.size + (5 * progress);
             opacity = 1 - progress * 0.5;
+        } else if (this.icon === 'person') { // Soul animation
+            this.y -= 60 * deltaTime; // Float up
+            this.x += Math.sin(this.life * 20) * 1.5; // Wiggle side to side
+            currentSize = this.size * (1 - progress); // Shrink
+            opacity = 1 - progress;
+            iconFamily = 'Material Icons';
         }
 
         // Some effects are a ring of icons, like the healer's pulse.

@@ -727,7 +727,7 @@ function gameLoop(currentTime) {
     }
 
     gameState.projectiles.forEach(p => p.draw(ctx));
-    gameState.effects.forEach(effect => effect.draw(ctx));
+    gameState.effects.forEach(effect => effect.draw(ctx, effectiveDeltaTime));
     gameState.announcements.forEach(announcement => announcement.draw(ctx));
     if (selectedEnemy) {
         selectedEnemy.drawSelection(ctx);
