@@ -1,5 +1,14 @@
 export const changelog = [
     {
+        version: '0.2.3',
+        date: '2025-09-16',
+        changes: [
+            'New Enemy: TAUNT! This enemy forces nearby towers to target it, creating new strategic challenges. Appears sparingly after wave 8.',
+            'Wave 8 is now a "miniboss" wave, featuring a single, powerful SPLITTER enemy to introduce the mechanic earlier.',
+            'Re-balanced and clarified all end-of-wave announcements to be more accurate and helpful.'
+        ]
+    },
+    {
         version: '0.2.2',
         date: '2025-09-15',
         changes: [
