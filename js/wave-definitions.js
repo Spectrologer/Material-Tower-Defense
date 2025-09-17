@@ -65,14 +65,14 @@ export const waveDefinitions = [
     },
     // Wave 8: Introduce the SPLITTER enemy.
     {
-        composition: [comp(ENEMY_TYPES.SPLITTER, 5)],
+        composition: [comp(ENEMY_TYPES.SPLITTER, 4)],
         healthMultiplier: 1.6, healthBonus: 50,
         endOfWaveAnnouncement: { text: "Unseen threats ahead!\nDetection required.", color: '#BDBDBD' }
     },
     // Wave 9: Introduce STEALTH enemies.
     {
         interleave: true,
-        composition: [comp(ENEMY_TYPES.STEALTH, 10), comp(ENEMY_TYPES.FAST, 8)],
+        composition: [comp(ENEMY_TYPES.STEALTH, 8), comp(ENEMY_TYPES.FAST, 8)],
         healthMultiplier: 1.8, healthBonus: 10,
         detourRatio: 0.5,
         endOfWaveAnnouncement: { text: "Warning:\nTaunting detected!", color: ENEMY_TYPES.TAUNT.color }
@@ -86,7 +86,7 @@ export const waveDefinitions = [
     },
     // Wave 11: Introduce PARAGLIDING enemies that ignore the path.
     {
-        composition: [comp(ENEMY_TYPES.PARAGLIDING, 8), comp(ENEMY_TYPES.FLYING, 8)],
+        composition: [comp(ENEMY_TYPES.PARAGLIDING, 6), comp(ENEMY_TYPES.FLYING, 6)],
         healthMultiplier: 2.2, healthBonus: 20,
         interleave: true,
         endOfWaveAnnouncement: { text: "Warning:\nFinancial assets at risk!", color: '#f7e51aff' }

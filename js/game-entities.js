@@ -875,9 +875,13 @@ export class Enemy {
         const armor = this.type.armor || 0;
         const finalDamage = Math.max(0, damage * this.damageTakenMultiplier - armor);
 
-        if (finalDamage <= 0 && !projectile?.isTrueDamage) return false;
+        // If there's no damage to deal AND the projectile doesn't have special on-hit effects (like burn), then we can exit.
+        const hasOnHitEffect = projectile?.owner.type === 'FIREPLACE'; // Expand this if other towers get non-damage on-hit effects
+        if (finalDamage <= 0 && !projectile?.isTrueDamage && !hasOnHitEffect) {
+            return false;
+        }
 
-        this.health -= projectile?.isTrueDamage ? damage : finalDamage;
+        this.health -= (projectile?.isTrueDamage ? damage : finalDamage);
         this.hitTimer = 0.1; // Flash for 0.1 seconds
         this.jostleTimer = 0.1;
 
