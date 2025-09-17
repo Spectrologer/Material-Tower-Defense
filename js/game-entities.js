@@ -901,6 +901,11 @@ export class Enemy {
                 this.update = (onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects, newlySpawnedEnemies, playExplosionSound) => this.dyingFlyingUpdate(deltaTime, onDeath, playExplosionSound);
             }
 
+            if (this.typeName === 'BITCOIN') {
+                // Make it shrink and then have a little implosion effect
+                this.update = (onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects) => this.dyingBitcoinUpdate(deltaTime, onDeath, effects);
+            }
+
             if (this.type.splitsOnDeath) {
                 for (let i = 0; i < this.type.splitCount; i++) {
                     const child = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
@@ -918,6 +923,19 @@ export class Enemy {
         }
 
         return false; // Enemy was not killed
+    }
+    dyingBitcoinUpdate(deltaTime, onDeath, effects) {
+        this.deathAnimationTimer -= deltaTime;
+        const shrinkProgress = 1 - (this.deathAnimationTimer / 0.5);
+        this.size = this.type.size * (1 - shrinkProgress); // Shrink the enemy
+
+        if (this.deathAnimationTimer <= 0) {
+            // Create an implosion effect
+            effects.push(new Effect(this.x, this.y, 'lens', 40, this.color, 0.3));
+            onDeath(this, { isAnimatedDeath: true });
+            return false;
+        }
+        return true;
     }
     dyingFlyingUpdate(deltaTime, onDeath, playExplosionSound) { // playExplosionSound is now correctly passed
         this.rotation += 30 * deltaTime;
