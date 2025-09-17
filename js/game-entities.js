@@ -853,11 +853,40 @@ export class Enemy {
     takeDamage(damage, projectile = null, onDeath, newlySpawnedEnemies = []) {
         // Calculate damage after armor reduction.
         const armor = this.type.armor || 0;
+        const finalDamage = Math.max(0, damage * this.damageTakenMultiplier - armor);
+
+        if (finalDamage <= 0 && !projectile?.isTrueDamage) return false;
+
+        this.health -= projectile?.isTrueDamage ? damage : finalDamage;
+        this.hitTimer = 0.1; // Flash for 0.1 seconds
+        this.jostleTimer = 0.1;
 
         // Flip the taunt enemy when it gets hit
         if (this.type.isTaunting) {
             this.facing *= -1;
         }
+
+        if (this.health <= 0 && !this.isDying) {
+            this.isDying = true;
+            this.deathAnimationTimer = 0.5; // 0.5s death animation
+
+            if (this.type.splitsOnDeath) {
+                for (let i = 0; i < this.type.splitCount; i++) {
+                    const child = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
+                    child.x = this.x + (Math.random() - 0.5) * 15;
+                    child.y = this.y + (Math.random() - 0.5) * 15;
+                    child.pathIndex = this.pathIndex;
+                    newlySpawnedEnemies.push(child);
+                }
+            }
+
+            if (onDeath) {
+                onDeath(this);
+            }
+            return true; // Enemy was killed
+        }
+
+        return false; // Enemy was not killed
     }
 }
 

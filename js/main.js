@@ -448,7 +448,7 @@ function handleProjectileHit(projectile, hitEnemy) {
     const finalDamage = projectile.owner.damage * projectile.owner.damageMultiplier * projectile.damageMultiplier;
 
     const awardGold = (enemy) => {
-        if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon) return;
+        if (enemy.type.icon === ENEMY_TYPES.BITCOIN.icon || enemy.type === ENEMY_TYPES.MINION) return;
         const bonusGold = projectile.owner.goldBonus || 0;
         const goldToGive = enemy.gold + bonusGold;
 
