@@ -450,7 +450,7 @@ export class Enemy {
 
         // Make the PHANTOM enemy semi-transparent
         if (this.typeName === 'PHANTOM' && !this.isPhasing) {
-            ctx.globalAlpha = 0.25;
+            ctx.globalAlpha = 0.75;
         }
 
         // Show the healing pulse effect.
@@ -906,6 +906,11 @@ export class Enemy {
                 this.update = (onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects) => this.dyingBitcoinUpdate(deltaTime, onDeath, effects);
             }
 
+            if (this.typeName === 'PHANTOM') {
+                // Make it explode into chaff
+                this.update = (onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects) => this.dyingPhantomUpdate(deltaTime, onDeath, effects);
+            }
+
             if (this.type.splitsOnDeath) {
                 for (let i = 0; i < this.type.splitCount; i++) {
                     const child = new Enemy(ENEMY_TYPES[this.type.splitInto], this.path, this.type.splitInto);
@@ -923,6 +928,21 @@ export class Enemy {
         }
 
         return false; // Enemy was not killed
+    }
+    dyingPhantomUpdate(deltaTime, onDeath, effects) {
+        this.deathAnimationTimer -= deltaTime;
+        const progress = 1 - (this.deathAnimationTimer / 0.5);
+        this.size = this.type.size * (1 - progress); // Shrink the enemy
+
+        if (this.deathAnimationTimer <= 0) {
+            // Create a chaff grenade-like explosion
+            for (let i = 0; i < 15; i++) {
+                effects.push(new Effect(this.x, this.y, 'lens', 20 + Math.random() * 20, this.color, 1.5 + Math.random() * 0.5));
+            }
+            onDeath(this, { isAnimatedDeath: false }); // No big explosion, just the chaff
+            return false;
+        }
+        return true;
     }
     dyingBitcoinUpdate(deltaTime, onDeath, effects) {
         this.deathAnimationTimer -= deltaTime;
