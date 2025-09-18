@@ -3,6 +3,7 @@ import { getTowerIconInfo } from './drawing-function.js';
 import { gameState } from './game-state.js';
 import { TextAnnouncement, Effect } from './game-entities.js';
 import { waveDefinitions } from './wave-definitions.js';
+import { t } from './i18n.js';
 
 /**
  * Just a little helper to grab a button from the HTML.
@@ -136,6 +137,7 @@ export const uiElements = {
     towerKillCount: document.getElementById('tower-kill-count'),
     killCountValue: document.getElementById('kill-count-value'),
     nextWavePreview: document.getElementById('next-wave-preview'),
+    languageSelect: document.getElementById('language-select'),
 };
 
 export function updateUI(state, gameSpeed) {
@@ -282,7 +284,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
 
         if (uiElements.sellTowerBtn) {
             if (!isSellConfirmPending) {
-                uiElements.sellTowerBtn.textContent = `SELL FOR ${totalSellValue}G`;
+                uiElements.sellTowerBtn.textContent = t('buttons.sell_for_g', { cost: totalSellValue });
                 uiElements.sellTowerBtn.style.textShadow = 'none'; // Remove text shadow
                 uiElements.sellTowerBtn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-600', 'shadow-[0_4px_0_#ca8a04]');
                 uiElements.sellTowerBtn.classList.add('bg-red-700', 'text-yellow-300', 'border-red-900'); // Removed shadow class
@@ -344,7 +346,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
 
             // Figure out what to display for the tower's level.
             let levelText;
-            const maxLevelText = `<span class="material-icons text-yellow-400 align-bottom !text-base">star</span> MAX LEVEL`;
+            const maxLevelText = `<span class="material-icons text-yellow-400 align-bottom !text-base">star</span> ${t('towerStats.max_level')}`;
             const towerType = selectedTower.type;
             const maxLevel = TOWER_TYPES[towerType].maxLevel || 5;
 
@@ -354,13 +356,13 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                 let visualLevel = selectedTower.stats.levelForCalc;
                 if (towerType === 'ORBIT') {
                     visualLevel = (selectedTower.level - 1) + (selectedTower.damageLevel - 1) + 1;
-                    levelText = `LVL ${visualLevel}`;
+                    levelText = t('towerStats.level', { level: visualLevel });
                 } else if (towerType === 'FORT') {
                     visualLevel = selectedTower.stats.levelForCalc + selectedTower.stats.damageLevelForCalc - 1;
                     if (visualLevel >= maxLevel) {
                         levelText = maxLevelText;
                     } else {
-                        levelText = `LVL ${visualLevel}`;
+                        levelText = t('towerStats.level', { level: visualLevel });
                     }
                 } else {
                     if (visualLevel >= maxLevel) {
@@ -368,7 +370,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                     } else if (visualLevel === 1 && (towerType === 'PIN' || towerType === 'CASTLE')) {
                         levelText = '';
                     } else {
-                        levelText = `LVL ${visualLevel}`;
+                        levelText = t('towerStats.level', { level: visualLevel });
                     }
                 }
             }
@@ -389,16 +391,16 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                     }
                 }
                 if (selectedTower.type === 'MIND' || selectedTower.type === 'CAT') {
-                    if (toggleModeBtn) toggleModeBtn.textContent = `MODE: ${selectedTower.mode.toUpperCase()}`;
+                    if (toggleModeBtn) toggleModeBtn.textContent = t('towerStats.mode', { mode: selectedTower.mode.toUpperCase() });
                 } else if (selectedTower.type === 'ORBIT') {
-                    if (toggleModeBtn) toggleModeBtn.textContent = `ORBIT: ${selectedTower.orbitMode.toUpperCase()}`;
+                    if (toggleModeBtn) toggleModeBtn.textContent = t('towerStats.orbit', { mode: selectedTower.orbitMode.toUpperCase() });
                     const toggleOrbitDirBtn = uiElements.toggleOrbitDirectionBtn;
                     if (toggleOrbitDirBtn) {
                         toggleOrbitDirBtn.classList.remove('hidden');
                         // Reset and apply styles
                         toggleOrbitDirBtn.classList.remove('bg-green-800', 'border-green-500', 'shadow-[0_4px_0_#15803d]');
                         toggleOrbitDirBtn.classList.add('bg-green-800', 'border-green-500', 'shadow-[0_4px_0_#15803d]');
-                        toggleOrbitDirBtn.textContent = `DIR: ${selectedTower.orbitDirection === 1 ? 'CW' : 'CCW'}`;
+                        toggleOrbitDirBtn.textContent = t('towerStats.direction', { direction: selectedTower.orbitDirection === 1 ? 'CW' : 'CCW' });
                     }
                 }
             }
@@ -426,7 +428,7 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
 
         } else {
             // MULTIPLE TOWERS SELECTED
-            if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.textContent = `${selectedTowers.length} TOWERS SELECTED`;
+            if (uiElements.selectedTowerInfoEl) uiElements.selectedTowerInfoEl.textContent = t('misc.towers_selected', { count: selectedTowers.length });
             uiElements.towerKillCount.classList.add('hidden');
 
             const allSameType = selectedTowers.every(t => t.type === selectedTowers[0].type);
@@ -441,15 +443,15 @@ export function updateSellPanel(selectedTowers, isCloudUnlocked, isSellConfirmPe
                         toggleModeBtn.classList.add(type === 'ORBIT' ? 'bg-cyan-700' : 'bg-purple-800', type === 'ORBIT' ? 'border-cyan-500' : 'border-purple-500', type === 'ORBIT' ? 'shadow-[0_4px_0_#0e7490]' : 'shadow-[0_4px_0_#6b21a8]');
                     }
                     if (type === 'ORBIT') {
-                        if (toggleModeBtn) toggleModeBtn.textContent = `ORBIT: ${selectedTowers[0].orbitMode.toUpperCase()}`;
+                        if (toggleModeBtn) toggleModeBtn.textContent = t('towerStats.orbit', { mode: selectedTowers[0].orbitMode.toUpperCase() });
                         const toggleOrbitDirBtn = uiElements.toggleOrbitDirectionBtn;
                         if (toggleOrbitDirBtn) {
                             toggleOrbitDirBtn.classList.remove('hidden');
                             toggleOrbitDirBtn.classList.add('bg-green-800', 'border-green-500', 'shadow-[0_4px_0_#15803d]');
-                            toggleOrbitDirBtn.textContent = `DIR: ${selectedTowers[0].orbitDirection === 1 ? 'CW' : 'CCW'}`;
+                            toggleOrbitDirBtn.textContent = t('towerStats.direction', { direction: selectedTowers[0].orbitDirection === 1 ? 'CW' : 'CCW' });
                         }
                     } else {
-                        if (toggleModeBtn) toggleModeBtn.textContent = `MODE: ${selectedTowers[0].mode.toUpperCase()}`;
+                        if (toggleModeBtn) toggleModeBtn.textContent = t('towerStats.mode', { mode: selectedTowers[0].mode.toUpperCase() });
                     }
                 }
             }
@@ -508,13 +510,13 @@ function updateTargetingButton(targetingMode, towerType) {
     if (!uiElements.toggleTargetingBtn) return;
     // Show "MIXED" if towers have different modes, otherwise show the mode.
     let targetingText = targetingMode === 'mixed'
-        ? 'MIXED'
+        ? t('towerStats.mixed')
         : targetingMode.toUpperCase();
     let lockIcon = '';
     if (towerType === 'PIN_HEART') {
         lockIcon = '<span class="material-symbols-outlined !text-base !leading-none">lock</span>';
     }
-    uiElements.toggleTargetingBtn.innerHTML = `TARGET: ${targetingText} ${lockIcon}`;
+    uiElements.toggleTargetingBtn.innerHTML = `${t('towerStats.target')} ${targetingText} ${lockIcon}`;
 
     // Reset all possible color/style classes before applying new ones
     uiElements.toggleTargetingBtn.classList.remove(
@@ -550,9 +552,9 @@ function updateTargetingButton(targetingMode, towerType) {
 function updateStatsDisplay(selectedTower) {
     const baseStats = TOWER_TYPES[selectedTower.type];
     if (baseStats.special) {
-        let specialText = baseStats.special;
+        let specialText = t(`towerData.${selectedTower.type}.special`, { defaultValue: baseStats.special });
         if (selectedTower.type === 'FORT' && selectedTower.hasShrapnel) {
-            specialText += " + AA Shrapnel";
+            specialText += " + AA Shrapnel"; // This part is not easily translatable yet
         }
         if (uiElements.statSpecialP) {
             uiElements.statSpecialP.classList.remove('hidden');
@@ -569,7 +571,7 @@ function updateStatsDisplay(selectedTower) {
             if (icon) icon.style.color = '#f472b6';
         }
         if (uiElements.statFrags) uiElements.statFrags.textContent = selectedTower.fragmentBounces;
-        if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Fragmenting Shot';
+        if (uiElements.statSpecial) uiElements.statSpecial.textContent = t('towerData.FRAGMENTING_SHOT.special'); // Assuming this key exists
     }
 
     if (selectedTower.splashRadius > 0) {
@@ -590,7 +592,7 @@ function updateStatsDisplay(selectedTower) {
                 const icon = /** @type {HTMLElement | null} */ (uiElements.statGoldP.querySelector('span.material-icons'));
                 if (icon) {
                     const iconHTML = icon.outerHTML;
-                    uiElements.statGoldP.innerHTML = `${iconHTML} Gld: +${selectedTower.goldBonus}G`;
+                    uiElements.statGoldP.innerHTML = `${iconHTML} ${t('towerStats.gold')} +${selectedTower.goldBonus}G`;
                 }
             }
         }
@@ -621,7 +623,7 @@ function updateStatsDisplay(selectedTower) {
                     const icon = /** @type {HTMLElement | null} */ (uiElements.statSpecialP.querySelector('span'));
                     if (icon) icon.style.color = '#facc15';
                 }
-                if (uiElements.statSpecial) uiElements.statSpecial.textContent = 'Aura: Towers attack different enemies';
+                if (uiElements.statSpecial) uiElements.statSpecial.textContent = t('towerData.MIND.special_diversify');
             }
         } else { // SUPPORT tower
             if (uiElements.statBoostP) {
@@ -787,7 +789,7 @@ export function showMergeConfirmation(mergeState) {
     if (mergeState.placingFromCloud || mergeState.mergingFromCanvas) {
         cost = mergeState.mergingTower.cost;
     }
-    if (uiElements.mergeCostInfo) uiElements.mergeCostInfo.textContent = `Cost: ${cost}G`;
+    if (uiElements.mergeCostInfo) uiElements.mergeCostInfo.textContent = t('modals.merge_confirm.cost', { cost: cost });
     if (uiElements.mergeConfirmModal) uiElements.mergeConfirmModal.classList.remove('hidden');
 }
 
@@ -795,11 +797,11 @@ export function showMergeConfirmation(mergeState) {
 export function triggerGameOver(isWin, wave) {
     if (uiElements.gameOverModal) uiElements.gameOverModal.classList.remove('hidden');
     if (isWin) {
-        if (uiElements.gameOverTitle) uiElements.gameOverTitle.textContent = "YOU WIN!";
-        if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = `You conquered all ${wave} waves!`;
+        if (uiElements.gameOverTitle) uiElements.gameOverTitle.textContent = t('modals.game_over.win_title');
+        if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = t('modals.game_over.win_message', { wave: wave });
     } else {
-        if (uiElements.gameOverTitle) uiElements.gameOverTitle.textContent = "GAME OVER";
-        if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = `You survived ${wave} waves.`;
+        if (uiElements.gameOverTitle) uiElements.gameOverTitle.textContent = t('modals.game_over.title');
+        if (uiElements.gameOverMessage) uiElements.gameOverMessage.textContent = t('modals.game_over.lose_message', { wave: wave });
     }
 }
 
@@ -873,7 +875,7 @@ function createTowerCardHTML(type, isDiscovered) {
         iconHTML = `<span class="${iconInfo.className}" style="${style}">${iconInfo.icon}</span>`;
     }
 
-    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic whitespace-normal">"${stats.comment || ''}"</p>`;
+    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic whitespace-normal">"${t(`towerData.${type}.comment`)|_blank}"</p>`;
 
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(statDisplayConfig)
@@ -897,7 +899,7 @@ function createTowerCardHTML(type, isDiscovered) {
 
     const specialAbilities = [];
     if (stats.special) {
-        specialAbilities.push(stats.special);
+        specialAbilities.push(t(`towerData.${type}.special`));
     }
 
     return `
@@ -913,7 +915,7 @@ function createTowerCardHTML(type, isDiscovered) {
                 </div>
                 ${specialAbilities.length > 0 ? `
                     <div class="text-left text-base w-full mt-2 px-2">
-                        <h5 class="text-fuchsia-400">Abilities:</h5>
+                        <h5 class="text-fuchsia-400">${t('misc.abilities')}</h5>
                         <ul class="list-disc list-inside text-sm">${specialAbilities.map(s => `<li>${s}</li>`).join('')}</ul>
                     </div>` : ''}
             </div>
@@ -956,20 +958,20 @@ function createEnemyCardHTML(type, isDiscovered) {
         iconHTML = `<span class="${stats.iconFamily === 'Material Symbols Outlined' ? 'material-symbols-outlined' : 'material-icons'}" style="${style}">${stats.icon}</span>`;
     }
 
-    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic whitespace-normal">"${stats.comment || ''}"</p>`;
+    const commentHTML = `<p class="text-sm text-yellow-400 mt-2 mb-2 italic whitespace-normal">"${t(`enemyData.${type}.comment`)|_blank}"</p>`;
 
     const specialAbilities = [];
-    if (stats.isFlying) specialAbilities.push('Flying');
-    if (stats.splashImmune) specialAbilities.push('Splash Immune');
-    if (stats.laysEggs) specialAbilities.push('Lays Eggs');
-    if (stats.isInvisible) specialAbilities.push('Stealth');
-    if (stats.prefersDetour) specialAbilities.push('Prefers Detour');
-    if (stats.isStationary) specialAbilities.push('Stationary');
-    if (stats.isHealer) specialAbilities.push('Heals nearby allies');
-    if (stats.spawnsMinions) specialAbilities.push(`Spawns ${stats.spawnCount} ${stats.minionType}s`);
-    if (stats.hatchTime) specialAbilities.push(`Hatches into ${stats.hatchesTo}`);
-    if (stats.phaseInterval) specialAbilities.push('Phasing');
-    if (stats.splitsOnDeath) specialAbilities.push(`Splits into ${stats.splitCount} ${stats.splitInto}s`);
+    if (stats.isFlying) specialAbilities.push(t('enemyAbilities.flying'));
+    if (stats.splashImmune) specialAbilities.push(t('enemyAbilities.splashImmune'));
+    if (stats.laysEggs) specialAbilities.push(t('enemyAbilities.laysEggs'));
+    if (stats.isInvisible) specialAbilities.push(t('enemyAbilities.stealth'));
+    if (stats.prefersDetour) specialAbilities.push(t('enemyAbilities.prefersDetour'));
+    if (stats.isStationary) specialAbilities.push(t('enemyAbilities.stationary'));
+    if (stats.isHealer) specialAbilities.push(t('enemyAbilities.healer'));
+    if (stats.spawnsMinions) specialAbilities.push(t('enemyAbilities.spawnsMinions', { count: stats.spawnCount, type: stats.minionType }));
+    if (stats.hatchTime) specialAbilities.push(t('enemyAbilities.hatches', { type: stats.hatchesTo }));
+    if (stats.phaseInterval) specialAbilities.push(t('enemyAbilities.phasing'));
+    if (stats.splitsOnDeath) specialAbilities.push(t('enemyAbilities.splits', { count: stats.splitCount, type: stats.splitInto }));
 
     // Build stats with icons dynamically from the config
     const statsGridHTML = Object.entries(enemyStatDisplayConfig)
@@ -979,7 +981,7 @@ function createEnemyCardHTML(type, isDiscovered) {
                 const formattedValue = config.formatter ? config.formatter(statValue, stats) : statValue;
                 const iconFamily = config.family || 'material-symbols-outlined';
                 const iconStyle = config.filled ? `font-variation-settings: 'FILL' 1;` : '';
-                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color}; ${iconStyle}">${config.icon}</span>${config.label}: ${formattedValue}</p>`;
+                return `<p class="flex items-center gap-1"><span class="${iconFamily} text-2xl align-bottom" style="color:${config.color}; ${iconStyle}">${config.icon}</span>${t(`enemyStats.${key}`)}: ${formattedValue}</p>`;
             }
             return '';
         })
@@ -998,7 +1000,7 @@ function createEnemyCardHTML(type, isDiscovered) {
                 </div>
                 ${specialAbilities.length > 0 ? `
                     <div class="text-left text-base w-full mt-2 px-2">
-                        <h5 class="text-fuchsia-400">Abilities:</h5>
+                        <h5 class="text-fuchsia-400">${t('misc.abilities')}</h5>
                         <ul class="list-disc list-inside text-sm">${specialAbilities.map(s => `<li>${s}</li>`).join('')}</ul>
                     </div>` : ''}
             </div>
@@ -1043,35 +1045,11 @@ export function populateLibraries(gameState) {
     populateEnemyLibrary(gameState);
 }
 
-export function populateTrophies(gameState, trophiesData) {
-    if (!uiElements.trophiesList) return;
-    uiElements.trophiesList.innerHTML = '';
-
-    for (const [id, data] of Object.entries(trophiesData)) {
-        const isUnlocked = gameState.unlockedTrophies.has(id);
-        const trophyElement = document.createElement('div');
-        trophyElement.className = `p-4 border-b border-gray-700 flex items-center gap-4 ${isUnlocked ? 'text-white' : 'text-gray-500'}`;
-
-        const icon = isUnlocked ? data.icon : 'lock';
-        const name = isUnlocked ? data.name : '???';
-        const color = isUnlocked && data.color ? data.color : (isUnlocked ? '#facc15' : '#6b7280');
-        const description = isUnlocked ? data.description : '????????????????????????';
-
-        trophyElement.innerHTML = `
-            <span class="material-symbols-outlined text-4xl" style="color: ${color};">${icon}</span>
-            <div>
-                <h4 class="text-lg font-bold" style="color: ${color};">${name}</h4>
-                <p class="text-sm">${description}</p>
-            </div>
-        `;
-        uiElements.trophiesList.appendChild(trophyElement);
-    }
-}
-
 // Fills the changelog modal with all the version history.
-export function populateChangelog(changelogData) {
+export function populateChangelog() {
     if (!uiElements.changelogList) return;
     uiElements.changelogList.innerHTML = '';
+    const changelogData = t('changelog');
 
     for (const entry of changelogData) {
         const entryElement = document.createElement('div');

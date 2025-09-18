@@ -474,12 +474,12 @@
 
         <!-- The top bar with stats and the options button -->
         <div class="game-stats-panel py-1 px-2 flex-shrink-0 w-full flex flex-col gap-y-1">
-            <h1 id="game-title" class="text-3xl sm:text-4xl font-extrabold text-fuchsia-400 text-center cursor-pointer"
+            <h1 id="game-title" data-i18n="gameTitle" class="text-3xl sm:text-4xl font-extrabold text-fuchsia-400 text-center cursor-pointer"
                 style="text-shadow: 0 0 12px rgba(217, 70, 239, 0.5), 0 2px 4px rgba(0,0,0,0.7);">ICONIC DEFENSE</h1>
             <div class="grid grid-cols-[auto_1fr_auto] items-center">
                 <div class="justify-self-start">
                     <button id="options-btn" class="pixel-button !p-0 w-10 h-10 flex items-center justify-center">
-                        <span class="material-symbols-outlined !text-2xl">settings</span>
+                        <span data-i18n="buttons.options" class="material-symbols-outlined !text-2xl">settings</span>
                     </button>
                 </div>
                 <div class="grid grid-cols-3 gap-x-2 md:gap-x-4 place-items-center text-sm md:text-base">
@@ -491,16 +491,16 @@
                             class="material-symbols-outlined text-yellow-400 text-xl md:text-2xl"
                             style="font-variation-settings: 'FILL' 1;">paid</span> <span id="gold"
                             class="text-yellow-400">100</span></p>
-                    <p class="flex items-center gap-1 text-cyan-400">WAVE: <span id="wave"
+                    <p class="flex items-center gap-1 text-cyan-400"><span data-i18n="stats.wave">WAVE:</span> <span id="wave"
                             class="text-cyan-400">0</span></p>
                 </div>
                 <div class="flex justify-self-end">
                     <!-- Sound and music toggles -->
                     <button id="music-toggle-btn" class="text-xs px-2 py-1 toggle-btn">
-                        <span id="music-icon" class="material-icons">music_off</span>
+                        <span id="music-icon" class="material-icons" data-i18n="buttons.music_off">music_off</span>
                     </button>
                     <button id="sound-toggle-btn" class="text-xs px-2 py-1 toggle-btn">
-                        <span id="sound-icon" class="material-icons">volume_up</span>
+                        <span id="sound-icon" class="material-icons" data-i18n="buttons.sound_on">volume_up</span>
                     </button>
                 </div>
             </div>
@@ -510,14 +510,14 @@
         <div id="options-menu-overlay" class="hidden fixed inset-0 z-25 bg-black/50"></div>
         <!-- A dark overlay for when the menu is open -->
         <div id="options-menu" class="options-menu game-ui-panel hidden">
-            <h3 class="text-lg text-fuchsia-400 mb-2">OPTIONS</h3>
+            <h3 data-i18n="optionsMenu.title" class="text-lg text-fuchsia-400 mb-2">OPTIONS</h3>
             <button id="library-btn"
                 class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 mt-2 shadow-[0_4px_0_#4b5563] border-gray-400">
                 <span class="material-symbols-outlined !text-lg justify-self-center"
                     style="color: #81d4fa; font-variation-settings: 'FILL' 1;">
                     menu_book
                 </span>
-                <span class="text-left">LIBRARY</span>
+                <span data-i18n="optionsMenu.library" class="text-left">LIBRARY</span>
             </button>
             <button id="trophies-btn"
                 class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 shadow-[0_4px_0_#4b5563] border-gray-400">
@@ -525,27 +525,34 @@
                     style="color: #ffd700; font-variation-settings: 'FILL' 1;">
                     emoji_events
                 </span>
-                <span class="text-left">TROPHIES</span>
+                <span data-i18n="optionsMenu.trophies" class="text-left">TROPHIES</span>
             </button>
             <button id="log-btn"
                 class="pixel-button text-sm py-2 text-center grid grid-cols-[24px_1fr] items-center gap-2 shadow-[0_4px_0_#4b5563] border-gray-400">
                 <span class="material-symbols-outlined !text-lg justify-self-center"
                     style="color: #a5d6a7; font-variation-settings: 'FILL' 1;">history_edu</span>
-                <span class="text-left">MESSAGE LOG</span>
+                <span data-i18n="optionsMenu.message_log" class="text-left">MESSAGE LOG</span>
             </button>
-            <button id="toggle-merge-confirm-btn" class="pixel-button text-sm py-2 text-center mt-2">CONFIRM MERGES:
+            <button id="toggle-merge-confirm-btn" data-i18n="buttons.toggle_merge_confirm" class="pixel-button text-sm py-2 text-center mt-2">CONFIRM MERGES:
                 ON</button>
-            <button id="reset-game-btn"
+            <div class="mt-4">
+                <label for="language-select" class="text-sm text-gray-400" data-i18n="optionsMenu.language">Language</label>
+                <select id="language-select" class="w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-white">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
+            <button id="reset-game-btn" data-i18n="buttons.reset_game"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] text-sm py-2 text-center mt-2">RESET
                 GAME</button>
             <div class="flex gap-2 mt-auto pt-2">
                 <div class="relative w-1/2">
                     <button id="changelog-btn"
                         class="pixel-button text-sm py-2 text-center w-full flex items-center justify-center">
-                        <span class="material-symbols-outlined align-middle !text-lg"
+                        <span data-i18n="optionsMenu.changelog" class="material-symbols-outlined align-middle !text-lg"
                             style="color: #b39ddb;">history</span>
                     </button>
-                    <span id="changelog-indicator"
+                    <span id="changelog-indicator" data-i18n="misc.new"
                         class="hidden absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 bg-red-600 text-white text-[8px] font-bold rounded-full">NEW</span>
                 </div>
                 <a href="https://github.com/Spectrologer" target="_blank"
@@ -565,7 +572,7 @@
             <!-- Cloud Inventory Panel, this is a drop target for towers from the canvas -->
             <div id="cloud-inventory-panel"
                 class="hidden game-ui-panel w-[72px] flex-shrink-0 flex flex-col items-center p-1 gap-2 overflow-y-auto">
-                <h3 class="text-xs text-fuchsia-400 -mb-1">CLOUD</h3>
+                <h3 data-i18n="panels.cloud_inventory_title" class="text-xs text-fuchsia-400 -mb-1">CLOUD</h3>
                 <div id="cloud-inventory-slots" class="flex flex-col gap-2 w-full items-center">
                     <!-- Inventoried towers will be added here -->
                 </div>
@@ -578,7 +585,7 @@
 
             <div id="next-wave-preview"
                 class="hidden absolute bottom-full left-2 flex items-center gap-2 text-white text-sm mb-2">
-                <span class="font-bold">UPCOMING:</span>
+                <span data-i18n="misc.upcoming" class="font-bold">UPCOMING:</span>
             </div>
             <button id="delete-btn"
                 class="pixel-button !p-0 w-12 h-12 hidden absolute bottom-full mb-2 right-2 bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c] flex items-center justify-center z-[-1]">
@@ -586,23 +593,23 @@
             </button>
             <div id="onboarding-merge-tip"
                 class="hidden absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-[90%] bg-sky-600 border-2 border-sky-400 p-2 text-center text-xs shadow-lg rounded-md z-10">
-                <p class="text-white pr-4">Drag towers onto each other to merge and upgrade them!</p>
+                <p data-i18n="tooltips.onboarding_merge" class="text-white pr-4">Drag towers onto each other to merge and upgrade them!</p>
                 <button id="onboarding-dismiss-btn" class="absolute top-0 right-0 p-1 text-white hover:text-sky-200">
-                    <span class="material-symbols-outlined !text-base">close</span>
+                    <span data-i18n="buttons.close" class="material-symbols-outlined !text-base">close</span>
                 </button>
             </div>
 
             <div id="tower-buttons-group" class="relative">
-                <h2 id="towers-title" class="text-lg sm:text-xl text-fuchsia-400 text-center">TOWERS</h2>
+                <h2 id="towers-title" data-i18n="panels.towers_title" class="text-lg sm:text-xl text-fuchsia-400 text-center">TOWERS</h2>
                 <!-- Buttons to buy the basic towers -->
                 <div id="tower-buttons" class="grid grid-cols-3 gap-4 mt-2">
-                    <button id="buy-pin"
+                    <button id="buy-pin" data-i18n="buttons.buy_pin"
                         class="pixel-button tower-button text-sm sm:text-lg flex items-center justify-center text-center h-12 sm:h-auto px-2">PIN
                         (25G)</button>
-                    <button id="buy-castle"
+                    <button id="buy-castle" data-i18n="buttons.buy_castle"
                         class="pixel-button tower-button text-sm sm:text-lg flex items-center justify-center text-center h-12 sm:h-auto px-2">CASTLE
                         (75G)</button>
-                    <button id="buy-support"
+                    <button id="buy-support" data-i18n="buttons.buy_support"
                         class="pixel-button tower-button text-sm sm:text-lg flex items-center justify-center text-center h-12 sm:h-auto px-2">
                         SUPPORT (50G)
                     </button>
@@ -619,7 +626,7 @@
                         </button>
                     </div>
                     <div class="text-center">
-                        <h3 class="text-xl sm:text-2xl text-fuchsia-400">SELECTED</h3>
+                        <h3 data-i18n="panels.selected_title" class="text-xl sm:text-2xl text-fuchsia-400">SELECTED</h3>
                     </div>
                     <div class="flex justify-end">
                         <div id="tower-kill-count" class="flex items-center gap-1 text-sm text-gray-400 hidden">
@@ -633,96 +640,96 @@
                 <div id="tower-stats-panel"
                     class="flex flex-wrap justify-center gap-x-4 sm:gap-x-5 gap-y-2 text-sm sm:text-lg mb-2">
                     <p id="stat-damage-p" class="flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Damage">bolt</span> Dmg: <span
+                            class="material-icons text-xl align-bottom" title="Damage">bolt</span> <span data-i18n="towerStats.damage">Dmg:</span> <span
                             id="stat-damage">0</span></p>
                     <p id="stat-range-p" class="flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Range">radar</span> Rng: <span
+                            class="material-icons text-xl align-bottom" title="Range">radar</span> <span data-i18n="towerStats.range">Rng:</span> <span
                             id="stat-range">0</span></p>
                     <p id="stat-speed-p" class="flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Attack Speed">speed</span> Spd: <span
+                            class="material-icons text-xl align-bottom" title="Attack Speed">speed</span> <span data-i18n="towerStats.speed">Spd:</span> <span
                             id="stat-speed">0</span>/s</p>
                     <p id="stat-splash-p" class="flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Splash Radius">bubble_chart</span> Spl:
+                            class="material-icons text-xl align-bottom" title="Splash Radius">bubble_chart</span> <span data-i18n="towerStats.splash">Spl:</span>
                         <span id="stat-splash">0</span>
                     </p>
                     <p id="stat-projectiles-p" class="flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom"
-                            title="Projectiles">multiple_stop</span> Proj: <span id="stat-projectiles">0</span></p>
+                            title="Projectiles">multiple_stop</span> <span data-i18n="towerStats.projectiles">Proj:</span> <span id="stat-projectiles">0</span></p>
                     <p id="stat-boost-p" class="flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Boost">electric_bolt</span> Bst: <span
+                            class="material-icons text-xl align-bottom" title="Boost">electric_bolt</span> <span data-i18n="towerStats.boost">Bst:</span> <span
                             id="stat-boost">0</span>%</p>
                     <p id="stat-slow-p" class="flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom" title="Slow">hourglass_empty</span>
-                        Slw: <span id="stat-slow">0</span>%</p>
+                        <span data-i18n="towerStats.slow">Slw:</span> <span id="stat-slow">0</span>%</p>
                     <p id="stat-gold-p" class="hidden flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Gold Bonus">savings</span> Gld: +<span
+                            class="material-icons text-xl align-bottom" title="Gold Bonus">savings</span> <span data-i18n="towerStats.gold">Gld:</span> +<span
                             id="stat-gold">0</span>%</p>
                     <p id="stat-burn-p" class="flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom"
-                            title="Burn Damage">local_fire_department</span> Brn: <span id="stat-burn">0/s</span></p>
+                            title="Burn Damage">local_fire_department</span> <span data-i18n="towerStats.burn">Brn:</span> <span id="stat-burn">0/s</span></p>
                     <p id="stat-frags-p" class="hidden flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Fragments">call_split</span> Frags:
+                            class="material-icons text-xl align-bottom" title="Fragments">call_split</span> <span data-i18n="towerStats.frags">Frags:</span>
                         <span id="stat-frags">0</span>
                     </p>
                     <p id="stat-pins-p" class="hidden flex items-center gap-1"><span
-                            class="material-icons text-xl align-bottom" title="Radial Pins">push_pin</span> Pins:
+                            class="material-icons text-xl align-bottom" title="Radial Pins">push_pin</span> <span data-i18n="towerStats.pins">Pins:</span>
                         <span id="stat-pins">0</span>
                     </p>
                     <p id="stat-jumps-p" class="hidden flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom"
-                            title="Chain Jumps">electric_bolt</span> Jumps: <span id="stat-jumps">0</span>
+                            title="Chain Jumps">electric_bolt</span> <span data-i18n="towerStats.jumps">Jumps:</span> <span id="stat-jumps">0</span>
                     </p>
                     <p id="stat-jump-range-p" class="hidden flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom"
-                            title="Jump Range">social_distance</span> Jmp Rng: <span id="stat-jump-range">0</span>
+                            title="Jump Range">social_distance</span> <span data-i18n="towerStats.jump_range">Jmp Rng:</span> <span id="stat-jump-range">0</span>
                     </p>
                     <p id="stat-stun-p" class="hidden flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom" title="Stun Duration">bolt</span>
-                        Stun: <span id="stat-stun">0</span>s
+                        <span data-i18n="towerStats.stun">Stun:</span> <span id="stat-stun">0</span>s
                     </p>
                     <p id="stat-armor-pen-p" class="hidden flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom"
                             title="Armor Penetration">shield_moon</span>
-                        AP: <span id="stat-armor-pen">0</span>
+                        <span data-i18n="towerStats.armor_pen">AP:</span> <span id="stat-armor-pen">0</span>
                     </p>
                     <p id="stat-damage-amp-p" class="hidden flex items-center gap-1"><span
                             class="material-symbols-outlined text-xl align-bottom"
                             title="Damage Amplification">trending_up</span>
-                        Dmg Amp: <span id="stat-damage-amp">0</span>
+                        <span data-i18n="towerStats.damage_amp">Dmg Amp:</span> <span id="stat-damage-amp">0</span>
                     </p>
                     <p id="stat-special-p" class="flex items-center gap-1 col-span-full justify-center"><span
                             class="material-symbols-outlined text-xl align-bottom"
-                            title="Special Ability">star</span><span id="stat-special">None</span></p>
+                            title="Special Ability">star</span><span id="stat-special" data-i18n="towerStats.special">None</span></p>
                 </div>
                 <div class="flex flex-col gap-2 mt-2">
-                    <button id="toggle-mode" class="pixel-button hidden">MODE:</button>
-                    <button id="toggle-orbit-direction-btn" class="pixel-button hidden">DIR: CW</button>
-                    <button id="toggle-targeting" class="pixel-button hidden">TARGET:</button>
+                    <button id="toggle-mode" class="pixel-button hidden" data-i18n="towerStats.mode">MODE:</button>
+                    <button id="toggle-orbit-direction-btn" class="pixel-button hidden" data-i18n="towerStats.direction">DIR: CW</button>
+                    <button id="toggle-targeting" class="pixel-button hidden" data-i18n="towerStats.target">TARGET:</button>
                 </div>
                 <div id="selected-tower-actions" class="grid grid-cols-2 gap-2 mt-2">
                     <!-- Sell the selected tower -->
-                    <button id="sell-tower-btn"
+                    <button id="sell-tower-btn" data-i18n="buttons.sell"
                         class="pixel-button bg-red-700 text-yellow-300 border-red-900 shadow-[0_4px_0_#9a3412] py-2 sell-cloud-btn">SELL</button>
                     <!-- Move the selected tower to the cloud -->
                     <button id="move-to-cloud-btn"
                         class="pixel-button bg-cyan-700 text-white border-cyan-500 shadow-[0_4px_0_#0e7490] py-2 hidden items-center justify-center gap-1 sm:flex">
                         <span class="material-symbols-outlined !text-base">cloud_upload</span>
-                        <span class="hidden sm:inline ">MOVE</span>
+                        <span data-i18n="buttons.move_to_cloud" class="hidden sm:inline ">MOVE</span>
                     </button>
                 </div>
             </div>
 
             <!-- The main game controls: start wave, speed, and cloud -->
             <div id="game-controls" class="flex gap-4">
-                <button id="start-wave"
+                <button id="start-wave" data-i18n="buttons.start_wave"
                     class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center">START
                     WAVE
                 </button>
-                <button id="speed-toggle"
+                <button id="speed-toggle" data-i18n="buttons.speed_toggle"
                     class="pixel-button flex-auto text-sm sm:text-lg flex items-center justify-center">x1</button>
                 <button id="cloud-button" class="pixel-button flex-auto flex items-center justify-center text-sm">
                     <span id="cloud-icon" class="material-symbols-outlined !text-lg">cloud</span>
-                    <span id="cloud-text" class="ml-1 text-sm sm:text-lg">(25G)</span>
+                    <span id="cloud-text" data-i18n="buttons.cloud_buy" class="ml-1 text-sm sm:text-lg">(25G)</span>
                 </button>
             </div>
         </div>
@@ -733,9 +740,9 @@
     <div id="game-over-modal"
         class="hidden absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
         <div class="game-over-modal text-center p-8">
-            <h2 id="game-over-title" class="text-4xl mb-4">GAME OVER</h2>
-            <p id="game-over-message" class="text-xl mb-6">You survived 0 waves!</p>
-            <button id="restart-game" class="pixel-button text-2xl">RESTART</button>
+            <h2 id="game-over-title" data-i18n="modals.game_over.title" class="text-4xl mb-4">GAME OVER</h2>
+            <p id="game-over-message" data-i18n="modals.game_over.lose_message" class="text-xl mb-6">You survived 0 waves!</p>
+            <button id="restart-game" data-i18n="buttons.restart" class="pixel-button text-2xl">RESTART</button>
         </div>
     </div>
 
@@ -743,13 +750,13 @@
     <div id="endless-choice-modal"
         class="hidden absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
         <div class="game-over-modal text-center p-8">
-            <h2 class="text-4xl mb-4 text-fuchsia-400">WAVES COMPLETE!</h2>
-            <p class="text-xl mb-6">You've beaten all handcrafted waves. What's next?</p>
+            <h2 data-i18n="modals.endless_choice.title" class="text-4xl mb-4 text-fuchsia-400">WAVES COMPLETE!</h2>
+            <p data-i18n="modals.endless_choice.message" class="text-xl mb-6">You've beaten all handcrafted waves. What's next?</p>
             <div class="flex gap-4">
-                <button id="start-endless-btn"
+                <button id="start-endless-btn" data-i18n="buttons.start_endless"
                     class="pixel-button text-2xl bg-purple-700 border-purple-500 shadow-[0_4px_0_#6b21a8]">START
                     ENDLESS</button>
-                <button id="restart-endless-btn"
+                <button id="restart-endless-btn" data-i18n="buttons.restart"
                     class="pixel-button text-2xl flex items-center justify-center">RESTART</button>
             </div>
         </div>
@@ -759,32 +766,32 @@
     <div id="wave-16-power-choice-modal"
         class="hidden absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
         <div class="game-over-modal text-center p-8">
-            <h2 class="text-4xl mb-4 text-fuchsia-400">POWER UP!</h2>
-            <p class="text-xl mb-6">You've reached Wave 16! Choose your power:</p>
+            <h2 data-i18n="modals.wave_16_power.title" class="text-4xl mb-4 text-fuchsia-400">POWER UP!</h2>
+            <p data-i18n="modals.wave_16_power.message" class="text-xl mb-6">You've reached Wave 16! Choose your power:</p>
             <div class="flex flex-row gap-4 w-full justify-center">
                 <div class="flex flex-col items-center text-center w-28">
                     <button id="delete-power-btn"
                         class="pixel-button text-lg bg-red-700 border-red-500 shadow-[0_4px_0_#b91c1c] flex flex-col items-center justify-center h-24 w-24">
                         <span class="material-symbols-outlined !text-3xl">ink_eraser</span>
-                        <span class="text-sm">DELETE</span>
+                        <span data-i18n="buttons.delete_power" class="text-sm">DELETE</span>
                     </button>
-                    <p class="text-xs mt-2 leading-tight">Clear all enemies from the screen once.</p>
+                    <p data-i18n="modals.wave_16_power.delete_desc" class="text-xs mt-2 leading-tight">Clear all enemies from the screen once.</p>
                 </div>
                 <div class="flex flex-col items-center text-center w-28">
                     <button id="cloud-power-btn"
                         class="pixel-button text-lg bg-blue-700 border-blue-500 shadow-[0_4px_0_#1e40af] flex flex-col items-center justify-center h-24 w-24">
                         <span class="material-symbols-outlined !text-3xl">cloud_done</span>
-                        <span class="text-sm">CLOUD</span>
+                        <span data-i18n="buttons.cloud_power" class="text-sm">CLOUD</span>
                     </button>
-                    <p class="text-xs mt-2 leading-tight">Unlock permanent cloud storage & get 125G.</p>
+                    <p data-i18n="modals.wave_16_power.cloud_desc" class="text-xs mt-2 leading-tight">Unlock permanent cloud storage & get 125G.</p>
                 </div>
                 <div class="flex flex-col items-center text-center w-28">
                     <button id="lives-power-btn"
                         class="pixel-button text-lg bg-green-700 border-green-500 shadow-[0_4px_0_#15803d] flex flex-col items-center justify-center h-24 w-24">
                         <span class="material-symbols-outlined !text-3xl">heart_plus</span>
-                        <span class="text-sm">+20 LIVES</span>
+                        <span data-i18n="buttons.lives_power" class="text-sm">+20 LIVES</span>
                     </button>
-                    <p class="text-xs mt-2 leading-tight">Instantly gain 20 lives.</p>
+                    <p data-i18n="modals.wave_16_power.lives_desc" class="text-xs mt-2 leading-tight">Instantly gain 20 lives.</p>
                 </div>
             </div>
         </div>
@@ -795,7 +802,7 @@
     <div id="merge-confirm-modal"
         class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-30">
         <div class="game-ui-panel text-center p-6 w-11/12 max-w-sm">
-            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4">CONFIRM MERGE</h3>
+            <h3 data-i18n="modals.merge_confirm.title" class="text-lg sm:text-xl text-fuchsia-400 mb-4">CONFIRM MERGE</h3>
             <div class="flex items-center justify-center gap-4 text-white text-sm sm:text-base">
                 <div id="merge-from-tower-icon-container" class="w-12 h-12 flex items-center justify-center text-3xl">
                 </div>
@@ -814,11 +821,11 @@
                 <span id="merge-result-tower-name" class="mt-1"></span>
                 <span id="merge-result-benefit-text" class="text-xs text-yellow-400 mt-1"></span>
             </div>
-            <div id="merge-cost-info" class="text-center text-yellow-400 text-sm my-4"></div>
+            <div id="merge-cost-info" data-i18n="modals.merge_confirm.cost" class="text-center text-yellow-400 text-sm my-4"></div>
             <div class="grid grid-cols-2 gap-4 mt-6">
-                <button id="confirm-merge-btn"
+                <button id="confirm-merge-btn" data-i18n="buttons.confirm"
                     class="pixel-button bg-purple-700 text-white border-purple-500 shadow-[0_4px_0_#6b21a8]">CONFIRM</button>
-                <button id="cancel-merge-btn"
+                <button id="cancel-merge-btn" data-i18n="buttons.cancel"
                     class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c]">CANCEL</button>
             </div>
         </div>
@@ -827,12 +834,12 @@
     <!-- Library Modal -->
     <div id="library-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-lg h-[85%] flex flex-col">
-            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-2 text-center">LIBRARY</h3>
+            <h3 data-i18n="modals.library.title" class="text-lg sm:text-xl text-fuchsia-400 mb-2 text-center">LIBRARY</h3>
             <!-- Tabs to switch between towers and enemies -->
             <div class="flex border-b-2 border-gray-600 mb-2">
-                <button id="library-towers-tab"
+                <button id="library-towers-tab" data-i18n="modals.library.towers_tab"
                     class="pixel-button flex-1 !rounded-b-none border-b-0 bg-gray-600 text-sm py-2">TOWERS</button>
-                <button id="library-enemies-tab"
+                <button id="library-enemies-tab" data-i18n="modals.library.enemies_tab"
                     class="pixel-button flex-1 !rounded-b-none border-b-0 text-sm py-2">ENEMIES</button>
             </div>
 
@@ -847,11 +854,11 @@
             </div>
 
             <div class="flex justify-between items-center mt-4">
-                <button id="library-prev-btn" class="pixel-button text-base p-2">&lt; PREV</button>
+                <button id="library-prev-btn" data-i18n="buttons.prev" class="pixel-button text-base p-2">&lt; PREV</button>
                 <span id="library-counter" class="text-white text-base">1 / X</span>
-                <button id="library-next-btn" class="pixel-button text-base p-2">NEXT &gt;</button>
+                <button id="library-next-btn" data-i18n="buttons.next" class="pixel-button text-base p-2">NEXT &gt;</button>
             </div>
-            <button id="library-close-btn"
+            <button id="library-close-btn" data-i18n="buttons.close"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
         </div>
     </div>
@@ -859,11 +866,11 @@
     <!-- Trophies Modal -->
     <div id="trophies-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
-            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">TROPHIES</h3>
+            <h3 data-i18n="modals.trophies.title" class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">TROPHIES</h3>
             <div id="trophies-list" class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto">
                 <!-- Trophies will be listed here -->
             </div>
-            <button id="trophies-close-btn"
+            <button id="trophies-close-btn" data-i18n="buttons.close"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
         </div>
     </div>
@@ -871,12 +878,12 @@
     <!-- Changelog Modal -->
     <div id="changelog-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
-            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">CHANGELOG</h3>
+            <h3 data-i18n="modals.changelog.title" class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">CHANGELOG</h3>
             <div id="changelog-list"
                 class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto flex flex-col gap-4">
                 <!-- Changelog entries go here -->
             </div>
-            <button id="changelog-close-btn"
+            <button id="changelog-close-btn" data-i18n="buttons.close"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4 flex items-center justify-center">CLOSE</button>
         </div>
     </div>
@@ -884,12 +891,12 @@
     <!-- Message Log Modal -->
     <div id="log-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
         <div class="game-ui-panel p-4 w-11/12 max-w-sm h-3/4 flex flex-col">
-            <h3 class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">MESSAGE LOG</h3>
+            <h3 data-i18n="modals.log.title" class="text-lg sm:text-xl text-fuchsia-400 mb-4 text-center">MESSAGE LOG</h3>
             <div id="log-list"
                 class="flex-grow bg-black/20 p-2 border border-gray-600 overflow-y-auto flex flex-col-reverse gap-2">
                 <!-- Past announcements will be listed here -->
             </div>
-            <button id="log-close-btn"
+            <button id="log-close-btn" data-i18n="buttons.close"
                 class="pixel-button bg-red-700 text-white border-red-500 shadow-[0_4px_0_#b91c1c] mt-4">CLOSE</button>
         </div>
     </div>

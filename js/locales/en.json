@@ -1,0 +1,280 @@
+{
+  "gameTitle": "ICONIC DEFENSE",
+  "stats": {
+    "wave": "WAVE:",
+    "lives": "Lives",
+    "gold": "Gold"
+  },
+  "buttons": {
+    "options": "settings",
+    "music_off": "music_off",
+    "music_on": "music_note",
+    "sound_off": "volume_off",
+    "sound_on": "volume_up",
+    "buy_pin": "PIN ({cost}G)",
+    "buy_castle": "CASTLE ({cost}G)",
+    "buy_support": "SUPPORT ({cost}G)",
+    "start_wave": "START WAVE",
+    "speed_toggle": "x1",
+    "cloud_buy": "({cost}G)",
+    "sell": "SELL",
+    "sell_for_g": "SELL FOR {cost}G",
+    "sell_confirm": "ARE YOU SURE?",
+    "move_to_cloud": "MOVE",
+    "restart": "RESTART",
+    "start_endless": "START ENDLESS",
+    "confirm": "CONFIRM",
+    "cancel": "CANCEL",
+    "close": "CLOSE",
+    "prev": "< PREV",
+    "next": "NEXT >",
+    "delete_power": "DELETE",
+    "cloud_power": "CLOUD",
+    "lives_power": "+20 LIVES",
+    "toggle_merge_confirm": "CONFIRM MERGES: {status}",
+    "reset_game": "RESET GAME"
+  },
+  "optionsMenu": {
+    "title": "OPTIONS",
+    "library": "LIBRARY",
+    "trophies": "TROPHIES",
+    "message_log": "MESSAGE LOG",
+    "changelog": "history",
+    "language": "Language"
+  },
+  "panels": {
+    "towers_title": "TOWERS",
+    "selected_title": "SELECTED",
+    "cloud_inventory_title": "CLOUD"
+  },
+  "towerStats": {
+    "level": "LVL {level}",
+    "max_level": "MAX LEVEL",
+    "damage": "Dmg:",
+    "range": "Rng:",
+    "speed": "Spd:",
+    "splash": "Spl:",
+    "projectiles": "Proj:",
+    "boost": "Bst:",
+    "slow": "Slw:",
+    "gold": "Gld:",
+    "burn": "Brn:",
+    "frags": "Frags:",
+    "pins": "Pins:",
+    "jumps": "Jumps:",
+    "jump_range": "Jmp Rng:",
+    "stun": "Stun:",
+    "armor_pen": "AP:",
+    "damage_amp": "Dmg Amp:",
+    "special": "None",
+    "mode": "MODE: {mode}",
+    "orbit": "ORBIT: {mode}",
+    "direction": "DIR: {direction}",
+    "target": "TARGET: {mode}",
+    "mixed": "MIXED"
+  },
+  "modals": {
+    "game_over": {
+      "title": "GAME OVER",
+      "win_message": "You conquered all {wave} waves!",
+      "lose_message": "You survived {wave} waves."
+    },
+    "endless_choice": {
+      "title": "WAVES COMPLETE!",
+      "message": "You've beaten all handcrafted waves. What's next?"
+    },
+    "wave_16_power": {
+      "title": "POWER UP!",
+      "message": "You've reached Wave 16! Choose your power:",
+      "delete_desc": "Clear all enemies from the screen once.",
+      "cloud_desc": "Unlock permanent cloud storage & get 125G.",
+      "lives_desc": "Instantly gain 20 lives."
+    },
+    "merge_confirm": {
+      "title": "CONFIRM MERGE",
+      "cost": "Cost: {cost}G"
+    },
+    "library": {
+      "title": "LIBRARY",
+      "towers_tab": "TOWERS",
+      "enemies_tab": "ENEMIES"
+    },
+    "trophies": {
+      "title": "TROPHIES"
+    },
+    "changelog": {
+      "title": "CHANGELOG"
+    },
+    "log": {
+      "title": "MESSAGE LOG"
+    }
+  },
+  "tooltips": {
+    "onboarding_merge": "Drag towers onto each other to merge and upgrade them!"
+  },
+  "misc": {
+    "upcoming": "UPCOMING:",
+    "new": "NEW",
+    "towers_selected": "{count} TOWERS SELECTED",
+    "abilities": "Abilities:",
+    "unknown": "???",
+    "unknown_comment": "\"? ? ? ? ? ? ? ? ?\""
+  },
+  "announcements": {
+    "trophy_unlocked": "Trophy Unlocked!\n{name}",
+    "new_enemy": "New Enemy:\n{name}",
+    "nine_pin": "NINE PIN!",
+    "interest": "+{amount}G Interest!",
+    "support_online": "Support\nAgent\nis Online",
+    "cloud_access_granted": "Cloud access granted until wave start.",
+    "delete_armed": "DELETE armed! Press the button to use it.",
+    "permanent_cloud": "Cloud access permanently granted!",
+    "plus_125_gold": "+125 Gold!",
+    "plus_20_lives": "+20 Lives!"
+  },
+  "trophiesData": {
+    "NO_HEARTS_15": {
+        "name": "Heartless",
+        "description": "Beat wave 15 without building a PIN_HEART tower."
+    },
+    "PIN_15": {
+        "name": "PIN 15",
+        "description": "Have at least 15 PIN towers on wave 15."
+    },
+    "LIQUIDATION": {
+        "name": "Liquidation",
+        "description": "Sold more than 4 towers before reaching wave 15."
+    },
+    "CAT_BY_6": {
+        "name": "It Pays For Itself",
+        "description": "Build a CAT tower by wave 6."
+    }
+  },
+  "towerData": {
+    "PIN": { "comment": "A basic, reliable tower.", "special": "" },
+    "CASTLE": { "comment": "Deals heavy splash damage to ground enemies.", "special": "" },
+    "SUPPORT": { "comment": "Boosts the attack speed of adjacent towers.", "special": "Aura: Boosts attack speed of adjacent towers." },
+    "NINE_PIN": { "comment": "Synergy tower. Combines nine PIN towers into one.", "special": "Fires a volley of 9 pins." },
+    "FORT": { "comment": "A powerful tower with a ground-targeted mortar.", "special": "Mortar deals splash damage." },
+    "FIREPLACE": { "comment": "Burns enemies, dealing damage over time and weakening them.", "special": "Applies a burn effect to enemies." },
+    "PIN_HEART": { "comment": "A fragile tower that shoots homing hearts.", "special": "Projectiles home in on targets." },
+    "NAT": { "comment": "Fires multiple projectiles at once.", "special": "Fires multiple projectiles." },
+    "STUN_BOT": { "comment": "Stuns enemies with a chain lightning attack.", "special": "Stuns enemies and chains to others." },
+    "MIND": { "comment": "A versatile support tower that can boost allies or slow enemies.", "special": "Aura: Boosts damage/speed, slows enemies, or diversifies targeting." },
+    "CAT": { "comment": "Generates extra gold from kills and provides buffs.", "special": "Generates extra gold and provides auras." },
+    "ORBIT": { "comment": "Projectiles orbit the tower, damaging any enemies they touch.", "special": "Orbiting projectiles damage enemies." },
+    "ANTI_AIR": { "comment": "Specializes in taking down flying enemies.", "special": "Targets flying enemies only." }
+  },
+  "enemyData": {
+    "REGULAR": { "comment": "A standard enemy. Nothing special." },
+    "FAST": { "comment": "Moves quickly, but has low health." },
+    "HEAVY": { "comment": "Slow and tough, with high health." },
+    "FLYING": { "comment": "Can only be targeted by specific towers." },
+    "SPLITTER": { "comment": "Splits into two smaller enemies on death." },
+    "CHILD": { "comment": "A smaller, weaker version of another enemy." },
+    "HEALER": { "comment": "Heals nearby enemies." },
+    "STEALTH": { "comment": "Invisible to most towers unless detected." },
+    "BITCOIN": { "comment": "If it reaches the end, you lose 1 gold. Gives no gold on kill." },
+    "SUMMONER": { "comment": "Periodically spawns minions." },
+    "MINION": { "comment": "A weak enemy spawned by a Summoner." },
+    "PHANTOM": { "comment": "Briefly becomes untargetable." },
+    "EGG": { "comment": "Stationary. Hatches into a stronger enemy if not destroyed in time." },
+    "HATCHLING": { "comment": "A fast and dangerous enemy that hatches from an Egg." },
+    "TAUNT": { "comment": "Forces nearby towers to target it." },
+    "PARAGLIDING": { "comment": "Ignores the path and flies directly to the exit." },
+    "BOSS": { "comment": "A powerful boss enemy with unique abilities." }
+  },
+  "enemyAbilities": {
+    "flying": "Flying",
+    "splashImmune": "Splash Immune",
+    "laysEggs": "Lays Eggs",
+    "stealth": "Stealth",
+    "prefersDetour": "Prefers Detour",
+    "stationary": "Stationary",
+    "healer": "Heals nearby allies",
+    "spawnsMinions": "Spawns {count} {type}s",
+    "hatches": "Hatches into {type}",
+    "phasing": "Phasing",
+    "splits": "Splits into {count} {type}s"
+  },
+  "enemyStats": {
+    "health": "Health",
+    "speed": "Speed",
+    "gold": "Gold",
+    "armor": "Armor",
+    "healCooldown": "Heal Cooldown",
+    "healRange": "Heal Range",
+    "healAmount": "Heal Amount"
+  },
+  "changelog": [
+    {
+        "version": "0.2.4",
+        "changes": [
+            "New Enemy: PARAGLIDER! This enemy ignores the path and moves directly to the exit."
+        ]
+    },
+    {
+        "version": "0.2.3",
+        "changes": [
+            "New Enemy: TAUNT! This enemy forces nearby towers to target it, creating new strategic challenges. Appears sparingly after wave 8.",
+            "Wave 8 is now a 'miniboss' wave, featuring a single, powerful SPLITTER enemy to introduce the mechanic earlier.",
+            "Re-balanced and clarified all end-of-wave announcements to be more accurate and helpful."
+        ]
+    },
+    {
+        "version": "0.2.2",
+        "changes": [
+            "The 'Upcoming Wave' preview is now always visible.",
+            "Fixed a bug where selecting a tower while the bottom panel was retracted would hide the selection menu."
+        ]
+    },
+    {
+        "version": "0.2.1",
+        "changes": [
+            "Added a retractable bottom panel to provide more visibility of the game board.",
+            "Added an 'Upcoming Wave' preview that appears when the bottom panel is retracted.",
+            "Fixed an issue where the 'Upcoming Wave' preview would overlap with the tower selection panel."
+        ]
+    },
+    {
+        "version": "0.2.0",
+        "changes": [
+            "Game music now automatically pauses when the app goes into the background on mobile.",
+            "Added a service worker to enable offline play after the first visit.",
+            "Fixed a bug where icons inside buttons could block click events.",
+            "Ensured UI icons render with the correct font family."
+        ]
+    },
+    {
+        "version": "0.1.2",
+        "changes": [
+            "Corrected an audio error in the enemy wiggle sound effect.",
+            "Fixed a bug where the merge tooltip would get stuck on screen after a merge.",
+            "Tower purchase buttons are now correctly deselected after a merge.",
+            "Assigned unique IDs to enemies to prevent targeting issues.",
+            "Stationary enemies (like Eggs) now correctly calculate path progress for targeting.",
+            "Defeated Eggs now correctly unlock in the enemy library."
+        ]
+    },
+    {
+        "version": "0.1.1",
+        "changes": [
+            "Refactored projectile rendering logic for improved clarity and extensibility.",
+            "Resolved various bugs related to projectile property initialization.",
+            "Cleaned up project structure by removing duplicated test files."
+        ]
+    },
+    {
+        "version": "0.1.0",
+        "changes": [
+            "The Glass Update: Complete UI overhaul with a new style for all panels and buttons.",
+            "Added a 'Message Log' to review past in-game announcements.",
+            "Introduced new enemy types: Healer, Flying, Stealth, Bitcoin, Summoner, Phantom, and Splitter.",
+            "Rebalanced all waves from 1 to 25, introducing new enemy types and mechanics gradually.",
+            "Added `endOfWaveAnnouncement` to provide players with hints about upcoming enemy types.",
+            "Implemented a procedural wave generator for endless mode (waves 26+).",
+            "Fixed an issue where the game would not properly reset after a 'Game Over'."
+        ]
+    }
+  ]
+}

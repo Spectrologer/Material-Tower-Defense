@@ -2,18 +2,16 @@ import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_EMPTY, GRID_TOWER, GRID_COLS,
 import { Enemy, Tower, Projectile, Effect, TextAnnouncement } from './game-entities.js';
 import { uiElements, updateUI, updateSellPanel, triggerGameOver, showMergeConfirmation, populateLibraries, populateTrophies, populateChangelog, showEndlessChoice, populateMessageLog, showWave16PowerChoice, updateNextWavePreview } from './ui-manager.js';
 import { drawPlacementGrid, drawPath, drawDetourPath, drawMergeTooltip, getTowerIconInfo, drawEnemyInfoPanel, drawSelectionRect } from './drawing-function.js';
+import { initI18n, t, loadLanguage, applyHtmlTranslations, currentLang } from './i18n.js';
 import { MergeHandler } from './merge-logic.js';
 import { gameState, addTower, resetGameState, persistGameState, loadGameStateFromStorage } from './game-state.js';
 import { waveDefinitions, generateWave } from './wave-definitions.js';
-import { changelog } from './changelog.js';
 import {
     playHitSound, playMoneySound, playExplosionSound, playLifeLostSound,
     playWiggleSound, playCrackSound, playBzztSound, resumeAudioContext, toggleSoundEnabled,
     toggleMusic, setMusicOptions, setMusicTrack, nextMusicTrack, previousMusicTrack,
     SpecialTrack
 } from './audio.js';
-
-export const CHANGELOG_VERSION = changelog[0]?.version || '1.0.0';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameCanvas"));
 const ctx = canvas.getContext('2d');
@@ -25,30 +23,22 @@ let detourMazeColor = 'rgba(102, 102, 102, 0.2)'; // Slightly visible when inact
 
 const TROPHIES = {
     'NO_HEARTS_15': {
-        name: "Heartless",
-        description: "Beat wave 15 without building a PIN_HEART tower.",
         icon: 'heart_broken',
         color: '#ff69b4',
     },
     'PIN_15': {
-        name: "PIN 15",
-        description: "Have at least 15 PIN towers on wave 15.",
         icon: 'location_pin',
         color: '#FFFFFF',
         filled: true,
         iconClass: 'material-symbols-outlined',
     },
     'LIQUIDATION': {
-        name: "Liquidation",
-        description: "Sold more than 4 towers before reaching wave 15.",
         icon: 'attach_money',
         color: '#facc15',
         filled: true,
         iconClass: 'material-symbols-outlined',
     },
     'CAT_BY_6': {
-        name: "It Pays For Itself",
-        description: "Build a CAT tower by wave 6.",
         icon: 'savings',
         color: '#650bf5ff',
         iconClass: 'material-icons',
@@ -151,7 +141,7 @@ function gcd(a, b) {
 function checkTrophies() {
     // Trophy: NO_HEARTS_15 (Reach wave 15)
     if (gameState.wave === 15 && !gameState.usedPinHeartTower && !gameState.unlockedTrophies.has('NO_HEARTS_15')) {
-        const announcement = new TextAnnouncement("Trophy Unlocked!\nHeartless", canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth);
+        const announcement = new TextAnnouncement(t('announcements.trophy_unlocked', { name: t('trophiesData.NO_HEARTS_15.name') }), canvasWidth / 2, canvasHeight / 2, 5, '#ffd700', canvasWidth);
         gameState.unlockedTrophies.add('NO_HEARTS_15');
         gameState.announcements.push(announcement);
         gameState.announcementLog.push(announcement);
@@ -161,12 +151,12 @@ function checkTrophies() {
     const pinTowerCount = gameState.towers.filter(t => t.type === 'PIN').length;
     if (gameState.wave === 15 && pinTowerCount >= 15 && !gameState.unlockedTrophies.has('PIN_15')) {
         gameState.unlockedTrophies.add('PIN_15');
-        gameState.announcements.push(new TextAnnouncement("Trophy Unlocked!\nPIN 15", canvasWidth / 2, canvasHeight / 2, 5, '#FFFFFF', canvasWidth));
+        gameState.announcements.push(new TextAnnouncement(t('announcements.trophy_unlocked', { name: t('trophiesData.PIN_15.name') }), canvasWidth / 2, canvasHeight / 2, 5, '#FFFFFF', canvasWidth));
     }
 
     // Trophy: LIQUIDATION (Sold more than 4 towers and reached wave 15)
     if (gameState.towersSoldThisGame > 4 && gameState.wave === 15 && !gameState.unlockedTrophies.has('LIQUIDATION')) {
-        const announcement = new TextAnnouncement("Trophy Unlocked!\nLiquidation", canvasWidth / 2, canvasHeight / 2, 5, '#facc15', canvasWidth);
+        const announcement = new TextAnnouncement(t('announcements.trophy_unlocked', { name: t('trophiesData.LIQUIDATION.name') }), canvasWidth / 2, canvasHeight / 2, 5, '#facc15', canvasWidth);
         gameState.unlockedTrophies.add('LIQUIDATION');
         gameState.announcements.push(announcement);
         gameState.announcementLog.push(announcement);
@@ -174,7 +164,7 @@ function checkTrophies() {
 
     // Trophy: CAT_BY_6 (Build a CAT tower by wave 6)
     if (gameState.wave <= 6 && gameState.hasBuiltCat && !gameState.unlockedTrophies.has('CAT_BY_6')) {
-        const announcement = new TextAnnouncement("Trophy Unlocked!\nIt Pays For Itself", canvasWidth / 2, canvasHeight / 2, 5, '#f59e0b', canvasWidth);
+        const announcement = new TextAnnouncement(t('announcements.trophy_unlocked', { name: t('trophiesData.CAT_BY_6.name') }), canvasWidth / 2, canvasHeight / 2, 5, '#f59e0b', canvasWidth);
         gameState.unlockedTrophies.add('CAT_BY_6');
         gameState.announcements.push(announcement);
         gameState.announcementLog.push(announcement);
@@ -276,7 +266,7 @@ async function spawnWave() {
         if (enemyTypeName && !gameState.introducedEnemies.has(enemyTypeName)) {
             gameState.introducedEnemies.add(enemyTypeName);
             const displayName = enemyType.icon.replace(/_/g, ' ');
-            const announcement = new TextAnnouncement(`New Enemy:\n${displayName}`, canvasWidth / 2, 50, 3, undefined, canvasWidth);
+            const announcement = new TextAnnouncement(t('announcements.new_enemy', { name: displayName }), canvasWidth / 2, 50, 3, undefined, canvasWidth);
             gameState.announcements.push(announcement);
             gameState.announcementLog.push(announcement);
         }
@@ -854,7 +844,7 @@ export async function onEndWave() { // Make this function async
         const interestEarned = Math.floor(gameState.gold * 0.05);
         if (interestEarned > 0) {
             gameState.gold += interestEarned;
-            const announcement = new TextAnnouncement(`+${interestEarned}G Interest!`, canvasWidth / 2, 80, 3, undefined, canvasWidth);
+            const announcement = new TextAnnouncement(t('announcements.interest', { amount: interestEarned }), canvasWidth / 2, 80, 3, undefined, canvasWidth);
             gameState.announcements.push(announcement);
             gameState.announcementLog.push(announcement);
         }
@@ -1026,7 +1016,7 @@ function checkForNinePinOnBoard() {
                         }
                     }
 
-                    const announcement = new TextAnnouncement("NINE PIN!", canvasWidth / 2, 50, 3, '#FFFFFF', canvasWidth);
+                    const announcement = new TextAnnouncement(t('announcements.nine_pin'), canvasWidth / 2, 50, 3, '#FFFFFF', canvasWidth);
                     gameState.announcements.push(announcement);
                     gameState.announcementLog.push(announcement);
                     selectedTowers = [ninePin];
@@ -1165,7 +1155,7 @@ function handleCanvasClick(e) {
             }
 
             if (newTower.type === 'SUPPORT' && !gameState.hasPlacedFirstSupport) {
-                const announcement = new TextAnnouncement("Support\nAgent\nis Online", canvasWidth / 2, 50, 3, undefined, canvasWidth);
+                const announcement = new TextAnnouncement(t('announcements.support_online'), canvasWidth / 2, 50, 3, undefined, canvasWidth);
                 gameState.announcements.push(announcement);
                 gameState.announcementLog.push(announcement);
                 gameState.hasPlacedFirstSupport = true;
@@ -1708,10 +1698,29 @@ function reset(hardReset = false) {
     init(true);
 }
 
-function init(fromReset = false) {
+async function init(fromReset = false) {
+    if (!fromReset) {
+        await initI18n();
+    }
     loadGameStateFromStorage();
 
     if (!fromReset && gameState.gameOver) return reset();
+
+    // Set the language dropdown to the current language
+    if (uiElements.languageSelect) {
+        uiElements.languageSelect.value = currentLang;
+        uiElements.languageSelect.addEventListener('change', async (e) => {
+            const newLang = e.target.value;
+            await loadLanguage(newLang);
+            applyHtmlTranslations();
+            // Re-render dynamic UI components
+            document.title = t('gameTitle');
+            updateUI(gameState, gameSpeed);
+            updateSellPanel(selectedTowers, gameState.isCloudUnlocked, isSellConfirmPending, settingAttackGroundForTower);
+            populateTrophies(gameState, TROPHIES);
+            populateLibraries(gameState);
+        });
+    }
 
     setMusicTrack(1, { bossMode: false });
 
@@ -2027,7 +2036,7 @@ uiElements.sellTowerBtn.addEventListener('click', () => {
     if (selectedTowers.length > 0) {
         if (!isSellConfirmPending) {
             isSellConfirmPending = true;
-            uiElements.sellTowerBtn.textContent = 'ARE YOU SURE?';
+            uiElements.sellTowerBtn.textContent = t('buttons.sell_confirm');
             uiElements.sellTowerBtn.classList.remove('bg-red-700', 'text-yellow-300', 'border-yellow-400', 'shadow-[0_4px_0_#9a3412]');
             uiElements.sellTowerBtn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-600', 'shadow-[0_4px_0_#ca8a04]');
         } else {
@@ -2247,7 +2256,7 @@ uiElements.cloudButton.addEventListener('click', () => {
                 gameState.gold -= CLOUD_STORAGE_COST;
             }
             gameState.isCloudUnlocked = true;
-            const announcement = new TextAnnouncement("Cloud access granted until wave start.", canvasWidth / 2, 50, 3, undefined, canvasWidth);
+            const announcement = new TextAnnouncement(t('announcements.cloud_access_granted'), canvasWidth / 2, 50, 3, undefined, canvasWidth);
             gameState.announcements.push(announcement);
             gameState.announcementLog.push(announcement);
             updateUI(gameState, gameSpeed);
@@ -2456,11 +2465,14 @@ uiElements.trophiesCloseBtn.addEventListener('click', () => {
 });
 
 uiElements.changelogBtn.addEventListener('click', () => {
-    populateChangelog(changelog);
+    populateChangelog();
     uiElements.changelogModal.classList.remove('hidden');
     closeOptionsMenu();
     // Hide the indicator once the changelog is viewed
-    localStorage.setItem('lastSeenVersion', CHANGELOG_VERSION);
+    const changelogData = t('changelog');
+    if (changelogData && changelogData.length > 0) {
+        localStorage.setItem('lastSeenVersion', changelogData[0].version);
+    }
     uiElements.changelogIndicator.classList.add('hidden');
 });
 
@@ -2523,7 +2535,8 @@ window.addEventListener('resize', resizeCanvas);
 
 // Check if a new version has been released
 const lastSeenVersion = localStorage.getItem('lastSeenVersion');
-if (lastSeenVersion !== CHANGELOG_VERSION) {
+const changelogData = t('changelog');
+if (changelogData && changelogData.length > 0 && lastSeenVersion !== changelogData[0].version) {
     uiElements.changelogIndicator.classList.remove('hidden');
 }
 

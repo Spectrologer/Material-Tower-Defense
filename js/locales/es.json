@@ -1,0 +1,225 @@
+{
+  "gameTitle": "DEFENSA ICÓNICA",
+  "stats": {
+    "wave": "RONDA:",
+    "lives": "Vidas",
+    "gold": "Oro"
+  },
+  "buttons": {
+    "options": "ajustes",
+    "music_off": "música_apagada",
+    "music_on": "nota_musical",
+    "sound_off": "volumen_apagado",
+    "sound_on": "volumen_encendido",
+    "buy_pin": "PIN ({cost}G)",
+    "buy_castle": "CASTILLO ({cost}G)",
+    "buy_support": "SOPORTE ({cost}G)",
+    "start_wave": "INICIAR RONDA",
+    "speed_toggle": "x1",
+    "cloud_buy": "({cost}G)",
+    "sell": "VENDER",
+    "sell_for_g": "VENDER POR {cost}G",
+    "sell_confirm": "¿ESTÁS SEGURO?",
+    "move_to_cloud": "MOVER",
+    "restart": "REINICIAR",
+    "start_endless": "INICIAR SIN FIN",
+    "confirm": "CONFIRMAR",
+    "cancel": "CANCELAR",
+    "close": "CERRAR",
+    "prev": "< ANT",
+    "next": "SIG >",
+    "delete_power": "BORRAR",
+    "cloud_power": "NUBE",
+    "lives_power": "+20 VIDAS",
+    "toggle_merge_confirm": "CONFIRMAR FUSIONES: {status}",
+    "reset_game": "REINICIAR JUEGO"
+  },
+  "optionsMenu": {
+    "title": "OPCIONES",
+    "library": "BIBLIOTECA",
+    "trophies": "TROFEOS",
+    "message_log": "REGISTRO",
+    "changelog": "historial",
+    "language": "Idioma"
+  },
+  "panels": {
+    "towers_title": "TORRES",
+    "selected_title": "SELECCIONADO",
+    "cloud_inventory_title": "NUBE"
+  },
+  "towerStats": {
+    "level": "NVL {level}",
+    "max_level": "NIVEL MÁXIMO",
+    "damage": "Dñ:",
+    "range": "Alc:",
+    "speed": "Vel:",
+    "splash": "Salp:",
+    "projectiles": "Proy:",
+    "boost": "Pot:",
+    "slow": "Len:",
+    "gold": "Oro:",
+    "burn": "Quem:",
+    "frags": "Frag:",
+    "pins": "Púas:",
+    "jumps": "Saltos:",
+    "jump_range": "Alc Salto:",
+    "stun": "Atur:",
+    "armor_pen": "PA:",
+    "damage_amp": "Amp Dñ:",
+    "special": "Ninguna",
+    "mode": "MODO: {mode}",
+    "orbit": "ÓRBITA: {mode}",
+    "direction": "DIR: {direction}",
+    "target": "OBJETIVO: {mode}",
+    "mixed": "MIXTO"
+  },
+  "modals": {
+    "game_over": {
+      "title": "FIN DEL JUEGO",
+      "win_message": "¡Conquistaste las {wave} rondas!",
+      "lose_message": "Sobreviviste {wave} rondas."
+    },
+    "endless_choice": {
+      "title": "¡RONDAS COMPLETADAS!",
+      "message": "Has superado todas las rondas predefinidas. ¿Qué sigue?"
+    },
+    "wave_16_power": {
+      "title": "¡POTENCIADOR!",
+      "message": "¡Has llegado a la Ronda 16! Elige tu poder:",
+      "delete_desc": "Elimina a todos los enemigos de la pantalla una vez.",
+      "cloud_desc": "Desbloquea el almacenamiento en la nube y obtén 125G.",
+      "lives_desc": "Gana 20 vidas al instante."
+    },
+    "merge_confirm": {
+      "title": "CONFIRMAR FUSIÓN",
+      "cost": "Costo: {cost}G"
+    },
+    "library": {
+      "title": "BIBLIOTECA",
+      "towers_tab": "TORRES",
+      "enemies_tab": "ENEMIGOS"
+    },
+    "trophies": {
+      "title": "TROFEOS"
+    },
+    "changelog": {
+      "title": "REGISTRO DE CAMBIOS"
+    },
+    "log": {
+      "title": "REGISTRO DE MENSAJES"
+    }
+  },
+  "tooltips": {
+    "onboarding_merge": "¡Arrastra torres una sobre otra para fusionarlas y mejorarlas!"
+  },
+  "misc": {
+    "upcoming": "PRÓXIMAMENTE:",
+    "new": "NUEVO",
+    "towers_selected": "{count} TORRES SELECCIONADAS",
+    "abilities": "Habilidades:",
+    "unknown": "???",
+    "unknown_comment": "\"? ? ? ? ? ? ? ? ?\""
+  },
+  "announcements": {
+    "trophy_unlocked": "¡Trofeo Desbloqueado!\n{name}",
+    "new_enemy": "Nuevo Enemigo:\n{name}",
+    "nine_pin": "¡NINE PIN!",
+    "interest": "¡+{amount}G de Interés!",
+    "support_online": "Agente de Soporte\nEn Línea",
+    "cloud_access_granted": "Acceso a la nube concedido hasta el inicio de la ronda.",
+    "delete_armed": "¡BORRAR armado! Presiona el botón para usarlo.",
+    "permanent_cloud": "¡Acceso a la nube concedido permanentemente!",
+    "plus_125_gold": "¡+125 de Oro!",
+    "plus_20_lives": "¡+20 Vidas!"
+  },
+  "trophiesData": {
+    "NO_HEARTS_15": {
+        "name": "Sin Corazón",
+        "description": "Supera la ronda 15 sin construir una torre PIN_HEART."
+    },
+    "PIN_15": {
+        "name": "PIN 15",
+        "description": "Ten al menos 15 torres PIN en la ronda 15."
+    },
+    "LIQUIDATION": {
+        "name": "Liquidación",
+        "description": "Vendió más de 4 torres antes de llegar a la ronda 15."
+    },
+    "CAT_BY_6": {
+        "name": "Se Paga Solo",
+        "description": "Construye una torre CAT antes de la ronda 6."
+    }
+  },
+  "towerData": {
+    "PIN": { "comment": "Una torre básica y fiable.", "special": "" },
+    "CASTLE": { "comment": "Causa gran daño de salpicadura a enemigos terrestres.", "special": "" },
+    "SUPPORT": { "comment": "Aumenta la velocidad de ataque de las torres adyacentes.", "special": "Aura: Aumenta la velocidad de ataque de las torres adyacentes." },
+    "NINE_PIN": { "comment": "Torre de sinergia. Combina nueve torres PIN en una.", "special": "Dispara una andanada de 9 púas." },
+    "FORT": { "comment": "Una torre poderosa con un mortero de objetivo terrestre.", "special": "El mortero causa daño de salpicadura." },
+    "FIREPLACE": { "comment": "Quema a los enemigos, causando daño con el tiempo y debilitándolos.", "special": "Aplica un efecto de quemadura a los enemigos." },
+    "PIN_HEART": { "comment": "Una torre frágil que dispara corazones teledirigidos.", "special": "Los proyectiles se dirigen a los objetivos." },
+    "NAT": { "comment": "Dispara múltiples proyectiles a la vez.", "special": "Dispara múltiples proyectiles." },
+    "STUN_BOT": { "comment": "Aturde a los enemigos con un ataque de rayo en cadena.", "special": "Aturde a los enemigos y se encadena a otros." },
+    "MIND": { "comment": "Una torre de apoyo versátil que puede potenciar a los aliados o ralentizar a los enemigos.", "special": "Aura: Aumenta el daño/velocidad, ralentiza a los enemigos o diversifica los objetivos." },
+    "CAT": { "comment": "Genera oro extra de las muertes y proporciona auras.", "special": "Genera oro extra y proporciona auras." },
+    "ORBIT": { "comment": "Los proyectiles orbitan la torre, dañando a cualquier enemigo que toquen.", "special": "Los proyectiles en órbita dañan a los enemigos." },
+    "ANTI_AIR": { "comment": "Se especializa en derribar enemigos voladores.", "special": "Apunta solo a enemigos voladores." }
+  },
+  "enemyData": {
+    "REGULAR": { "comment": "Un enemigo estándar. Nada especial." },
+    "FAST": { "comment": "Se mueve rápidamente, pero tiene poca salud." },
+    "HEAVY": { "comment": "Lento y resistente, con mucha salud." },
+    "FLYING": { "comment": "Solo puede ser apuntado por torres específicas." },
+    "SPLITTER": { "comment": "Se divide en dos enemigos más pequeños al morir." },
+    "CHILD": { "comment": "Una versión más pequeña y débil de otro enemigo." },
+    "HEALER": { "comment": "Cura a los enemigos cercanos." },
+    "STEALTH": { "comment": "Invisible para la mayoría de las torres a menos que se detecte." },
+    "BITCOIN": { "comment": "Si llega al final, pierdes 1 de oro. No da oro al morir." },
+    "SUMMONER": { "comment": "Invoca esbirros periódicamente." },
+    "MINION": { "comment": "Un esbirro débil invocado por un Invocador." },
+    "PHANTOM": { "comment": "Se vuelve intocable brevemente." },
+    "EGG": { "comment": "Estacionario. Eclosiona en un enemigo más fuerte si no se destruye a tiempo." },
+    "HATCHLING": { "comment": "Un enemigo rápido y peligroso que eclosiona de un Huevo." },
+    "TAUNT": { "comment": "Obliga a las torres cercanas a apuntarle." },
+    "PARAGLIDING": { "comment": "Ignora el camino y vuela directamente a la salida." },
+    "BOSS": { "comment": "Un poderoso enemigo jefe con habilidades únicas." }
+  },
+  "enemyAbilities": {
+    "flying": "Volador",
+    "splashImmune": "Inmune a Salpicaduras",
+    "laysEggs": "Pone Huevos",
+    "stealth": "Sigilo",
+    "prefersDetour": "Prefiere Desvío",
+    "stationary": "Estacionario",
+    "healer": "Cura aliados cercanos",
+    "spawnsMinions": "Invoca {count} {type}s",
+    "hatches": "Eclosiona en {type}",
+    "phasing": "Desvanecimiento",
+    "splits": "Se divide en {count} {type}s"
+  },
+  "enemyStats": {
+    "health": "Salud",
+    "speed": "Velocidad",
+    "gold": "Oro",
+    "armor": "Armadura",
+    "healCooldown": "Enfriamiento de Curación",
+    "healRange": "Rango de Curación",
+    "healAmount": "Cantidad de Curación"
+  },
+  "changelog": [
+    {
+        "version": "0.2.4",
+        "changes": [
+            "Nuevo Enemigo: ¡PARAGLIDER! Este enemigo ignora el camino y se mueve directamente a la salida."
+        ]
+    },
+    {
+        "version": "0.2.3",
+        "changes": [
+            "Nuevo Enemigo: ¡TAUNT! Este enemigo obliga a las torres cercanas a atacarlo, creando nuevos desafíos estratégicos. Aparece con moderación después de la oleada 8.",
+            "La oleada 8 es ahora una oleada de 'minijefe', con un único y poderoso enemigo SPLITTER para introducir la mecánica antes.",
+            "Re-equilibrado y clarificado todos los anuncios de fin de oleada para ser más precisos y útiles."
+        ]
+    }
+  ]
+}
