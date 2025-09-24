@@ -515,14 +515,16 @@ export class Enemy {
         ctx.fontVariationSettings = "'FILL' 0, 'wght' 400"; // Reset for other elements
         ctx.restore();
 
-        // Draw the health bar above the enemy.
-        const healthBarWidth = this.size * 2;
-        const healthBarHeight = 5;
-        const healthPercentage = this.health / this.maxHealth;
-        ctx.fillStyle = '#333';
-        ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth, healthBarHeight); // Health bar is not flipped
-        ctx.fillStyle = 'green';
-        ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth * healthPercentage, healthBarHeight); // Health bar is not flipped
+        // Draw the health bar above the enemy, but only if it's not in the dying animation.
+        if (!this.isDying) {
+            const healthBarWidth = this.size * 2;
+            const healthBarHeight = 5;
+            const healthPercentage = this.health / this.maxHealth;
+            ctx.fillStyle = '#333';
+            ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth, healthBarHeight);
+            ctx.fillStyle = 'green';
+            ctx.fillRect(this.x - this.size, this.y - this.size - 10, healthBarWidth * healthPercentage, healthBarHeight);
+        }
 
         // Flash the enemy white when it gets hit.
         if (this.hitTimer > 0) {
@@ -875,9 +877,9 @@ export class Enemy {
         const armor = this.type.armor || 0;
         const finalDamage = Math.max(0, damage * this.damageTakenMultiplier - armor);
 
-        // If there's no damage to deal AND the projectile doesn't have special on-hit effects (like burn), then we can exit.
+        // If there's no damage to deal AND the projectile doesn't have special on-hit effects (like burn), and the enemy is already alive, then we can exit.
         const hasOnHitEffect = projectile?.owner.type === 'FIREPLACE'; // Expand this if other towers get non-damage on-hit effects
-        if (finalDamage <= 0 && !projectile?.isTrueDamage && !hasOnHitEffect) {
+        if (this.health > 0 && finalDamage <= 0 && !projectile?.isTrueDamage && !hasOnHitEffect) {
             return false;
         }
 
@@ -950,13 +952,8 @@ export class Enemy {
     }
     dyingBitcoinUpdate(deltaTime, onDeath, effects) {
         this.deathAnimationTimer -= deltaTime;
-        const shrinkProgress = 1 - (this.deathAnimationTimer / 0.5);
-        this.size = this.type.size * (1 - shrinkProgress); // Shrink the enemy
-
         if (this.deathAnimationTimer <= 0) {
-            // Create an implosion effect
-            effects.push(new Effect(this.x, this.y, 'lens', 40, this.color, 0.3));
-            onDeath(this, { isAnimatedDeath: true });
+            onDeath(this, { isAnimatedDeath: false });
             return false;
         }
         return true;
@@ -1811,7 +1808,7 @@ export class TextAnnouncement {
         ctx.save();
         ctx.globalAlpha = opacity;
         let fontSize = 24;
-        ctx.font = `bold ${fontSize}px 'Press Start 2P'`; // Make font bold
+        ctx.font = `bold ${fontSize}px 'Roboto', sans-serif`;
         const lines = this.text.split('\n');
         let maxLineWidth = 0;
         for (const line of lines) { // Calculate the widest line
@@ -1824,7 +1821,7 @@ export class TextAnnouncement {
         if (maxLineWidth > safeMaxWidth) {
             const ratio = safeMaxWidth / maxLineWidth; // Scale down if too wide
             fontSize *= ratio;
-            ctx.font = `bold ${fontSize}px 'Press Start 2P'`;
+            ctx.font = `bold ${fontSize}px 'Roboto', sans-serif`;
         }
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
