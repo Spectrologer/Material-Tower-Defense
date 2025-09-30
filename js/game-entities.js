@@ -589,21 +589,46 @@ export class Enemy {
             const centerCol = Math.floor(GRID_COLS / 2);
             const floodStartCol = centerCol - 2;
             const floodEndCol = centerCol + 2;
-            
+
             const currentCol = Math.floor(this.x / TILE_SIZE);
             const currentRow = Math.floor(this.y / TILE_SIZE);
-            
+
             // Check if enemy is in flooded columns
             if (currentCol >= floodStartCol && currentCol <= floodEndCol) {
                 // Check if this row is actually flooded based on animation progress
                 // We need to estimate total rows and see if this enemy's row is flooded
                 const estimatedTotalRows = 15; // Approximate based on typical game grid
                 const floodedRows = Math.floor(estimatedTotalRows * gameState.floodProgress);
-                
+
                 if (currentRow < floodedRows) {
                     this.slowMultiplier = 0.4; // Slow to 40% speed in flood
                 }
             }
+        }
+
+        // Check for lava flow effects
+        if (gameState && gameState.lavaFlows) {
+            const currentRow = Math.floor(this.y / TILE_SIZE);
+            const currentCol = Math.floor(this.x / TILE_SIZE);
+            
+            // Check if enemy is in any active lava flow row
+            Object.keys(gameState.lavaFlows).forEach(rowKey => {
+                const row = parseInt(rowKey);
+                const lavaFlow = gameState.lavaFlows[rowKey];
+                
+                // Account for visual offset - lava row 4 appears in visual row 4, so enemy row should be row-1
+                if (currentRow === (row - 1) && (lavaFlow.active || lavaFlow.animating) && lavaFlow.progress > 0) {
+                    // Check if enemy's column is within the lava flow reach (flowing from right to left)
+                    const totalCols = Math.floor(GRID_COLS); // Use actual grid width
+                    const lavaedCols = Math.floor(totalCols * lavaFlow.progress);
+                    const lavaStartCol = totalCols - lavaedCols; // Starting column from the right
+                    
+                    if (currentCol >= lavaStartCol) {
+                        // Apply powerful lingering burn - much stronger than regular fire towers
+                        this.applyBurn(4.5, 8, true); // 4.5 DPS for 8 seconds with damage amp
+                    }
+                }
+            });
         }
 
         // If stunned, just sit there and take it.

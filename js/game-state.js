@@ -51,6 +51,7 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} isFlooded - Whether the flood effect is active.
  * @property {boolean} floodAnimating - Whether the flood is currently animating in or out.
  * @property {number} floodProgress - Animation progress from 0 to 1 (0 = no flood, 1 = fully flooded).
+ * @property {Object} lavaFlows - Object tracking lava flows by row number {4: {active: boolean, animating: boolean, progress: number}, 10: {...}, 15: {...}}.
  * @property {boolean} isDetourOpen - Whether the detour path is open.
  * @property {Array} path - The main enemy path coordinates.
  * @property {Array} detourPath - The detour enemy path coordinates.
@@ -194,6 +195,11 @@ function getInitialGameState() {
         isFlooded: false,
         floodAnimating: false,
         floodProgress: 0,
+        lavaFlows: {
+            4: { active: false, animating: false, progress: 0 },
+            10: { active: false, animating: false, progress: 0 },
+            15: { active: false, animating: false, progress: 0 }
+        },
         isDetourOpen: false,
         path: pathData.path,
         detourPath: pathData.detourPath,

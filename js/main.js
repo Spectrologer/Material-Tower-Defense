@@ -560,31 +560,31 @@ function handleProjectileHit(projectile, hitEnemy) {
 
 function drawFlood(ctx, canvasWidth, canvasHeight, floodProgress = 1) {
     if (floodProgress <= 0) return; // No flood to draw
-    
+
     // Calculate the middle 5 tiles of the canvas
     const centerX = Math.floor(GRID_COLS / 2);
     const floodWidth = 5;
     const startX = centerX - Math.floor(floodWidth / 2);
-    
+
     // Calculate how far down the flood should reach based on progress
     const totalRows = Math.ceil(canvasHeight / TILE_SIZE);
     const floodedRows = Math.floor(totalRows * floodProgress);
     const floodHeight = floodedRows * TILE_SIZE;
-    
+
     // Add a smooth edge effect for partial progress
     const partialRowProgress = (totalRows * floodProgress) - floodedRows;
     const extraHeight = partialRowProgress * TILE_SIZE;
-    
+
     // Draw the flood river
     ctx.save();
     ctx.fillStyle = 'rgba(100, 149, 237, 0.6)'; // Semi-transparent blue
-    
+
     // Fill the flood area
     for (let x = startX; x < startX + floodWidth; x++) {
         if (x >= 0 && x < GRID_COLS) {
             // Draw fully flooded rows
             ctx.fillRect(x * TILE_SIZE, 0, TILE_SIZE, floodHeight);
-            
+
             // Draw partial row with fading effect
             if (extraHeight > 0 && floodHeight < canvasHeight) {
                 const fadeOpacity = 0.6 * partialRowProgress;
@@ -594,11 +594,11 @@ function drawFlood(ctx, canvasWidth, canvasHeight, floodProgress = 1) {
             }
         }
     }
-    
+
     // Add water texture with animated ripples (only on flooded areas)
     const time = Date.now() * 0.003;
     ctx.fillStyle = 'rgba(135, 206, 235, 0.3)'; // Lighter blue for ripples
-    
+
     for (let x = startX; x < startX + floodWidth; x++) {
         if (x >= 0 && x < GRID_COLS) {
             for (let y = 0; y < floodHeight; y += 20) {
@@ -609,8 +609,71 @@ function drawFlood(ctx, canvasWidth, canvasHeight, floodProgress = 1) {
             }
         }
     }
-    
+
     ctx.restore();
+}
+
+function drawLava(ctx, canvasWidth, canvasHeight, lavaFlows) {
+    Object.keys(lavaFlows).forEach(rowKey => {
+        const row = parseInt(rowKey);
+        const lavaFlow = lavaFlows[rowKey];
+        
+        if (lavaFlow.progress <= 0) return; // No lava to draw
+        
+        const rowY = (row - 1) * TILE_SIZE; // Offset by 1 to match visual row numbers
+        const rowHeight = TILE_SIZE;
+        
+        // Calculate how far across the lava should reach based on progress (from right to left)
+        const totalCols = Math.floor(canvasWidth / TILE_SIZE);
+        const lavaedCols = Math.floor(totalCols * lavaFlow.progress);
+        const lavaWidth = lavaedCols * TILE_SIZE;
+        
+        // Calculate starting position from the right side
+        const lavaStartX = canvasWidth - lavaWidth;
+        
+        // Add a smooth edge effect for partial progress
+        const partialColProgress = (totalCols * lavaFlow.progress) - lavaedCols;
+        const extraWidth = partialColProgress * TILE_SIZE;
+        
+        ctx.save();
+        
+        // Draw main lava flow (from right side)
+        ctx.fillStyle = 'rgba(255, 69, 0, 0.8)'; // Orange-red lava
+        ctx.fillRect(lavaStartX, rowY, lavaWidth, rowHeight);
+        
+        // Draw partial column with fading effect (to the left of main flow)
+        if (extraWidth > 0 && lavaWidth < canvasWidth) {
+            const fadeOpacity = 0.8 * partialColProgress;
+            ctx.fillStyle = `rgba(255, 69, 0, ${fadeOpacity})`;
+            ctx.fillRect(lavaStartX - extraWidth, rowY, extraWidth, rowHeight);
+        }
+        
+        // Add lava texture with animated bubbles and glow
+        const time = Date.now() * 0.002;
+        
+        // Hot spots/bubbles (from right side)
+        ctx.fillStyle = 'rgba(255, 140, 0, 0.6)'; // Bright orange
+        for (let x = 0; x < lavaWidth; x += 15) {
+            const actualX = lavaStartX + x;
+            const bubble = Math.sin(time * 2 + actualX * 0.1 + row * 0.3) * 0.5 + 0.5;
+            if (bubble > 0.7) {
+                const bubbleSize = 8 + bubble * 6;
+                ctx.fillRect(actualX, rowY + (rowHeight - bubbleSize) / 2, bubbleSize, bubbleSize);
+            }
+        }
+        
+        // Bright edge glow (from right side)
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.4)'; // Yellow glow
+        for (let x = 0; x < lavaWidth; x += 10) {
+            const actualX = lavaStartX + x;
+            const glow = Math.sin(time * 3 + actualX * 0.2 + row * 0.5) * 0.5 + 0.5;
+            if (glow > 0.6) {
+                ctx.fillRect(actualX, rowY + 2, 6, rowHeight - 4);
+            }
+        }
+        
+        ctx.restore();
+    });
 }
 
 function gameLoop(currentTime) {
@@ -717,7 +780,7 @@ function gameLoop(currentTime) {
     if (gameState.floodAnimating) {
         const floodAnimationSpeed = 0.8; // Animation duration in seconds
         const progressDelta = effectiveDeltaTime / floodAnimationSpeed;
-        
+
         if (gameState.isFlooded) {
             // Flooding in
             gameState.floodProgress = Math.min(1, gameState.floodProgress + progressDelta);
@@ -732,6 +795,29 @@ function gameLoop(currentTime) {
             }
         }
     }
+
+    // Update lava flow animations
+    const lavaAnimationSpeed = 1.2; // Animation duration in seconds
+    const lavaProgressDelta = effectiveDeltaTime / lavaAnimationSpeed;
+    
+    Object.keys(gameState.lavaFlows).forEach(row => {
+        const lavaFlow = gameState.lavaFlows[row];
+        if (lavaFlow.animating) {
+            if (lavaFlow.active) {
+                // Lava flowing in
+                lavaFlow.progress = Math.min(1, lavaFlow.progress + lavaProgressDelta);
+                if (lavaFlow.progress >= 1) {
+                    lavaFlow.animating = false;
+                }
+            } else {
+                // Lava flowing out
+                lavaFlow.progress = Math.max(0, lavaFlow.progress - lavaProgressDelta);
+                if (lavaFlow.progress <= 0) {
+                    lavaFlow.animating = false;
+                }
+            }
+        }
+    });
 
     if (isInfiniteGold) {
         gameState.gold = 99999;
@@ -823,6 +909,12 @@ function gameLoop(currentTime) {
     // Draw flood effect if active or animating
     if (gameState.isFlooded || gameState.floodAnimating) {
         drawFlood(ctx, canvasWidth, canvasHeight, gameState.floodProgress);
+    }
+
+    // Draw lava flows if any are active or animating
+    const hasActiveLava = Object.values(gameState.lavaFlows).some(lava => lava.active || lava.animating);
+    if (hasActiveLava) {
+        drawLava(ctx, canvasWidth, canvasHeight, gameState.lavaFlows);
     }
 
     // Draw ground target marker if one is set for the selected tower
@@ -2355,14 +2447,45 @@ consoleCommands.flood = () => {
             console.log("Flood animation already in progress...");
             return;
         }
-        
+
         // Toggle flood state and start animation
         gameState.isFlooded = !gameState.isFlooded;
         gameState.floodAnimating = true;
-        
-        console.log(gameState.isFlooded ? 
-            "Flood summoned! Waters creep through the maze center..." : 
+
+        console.log(gameState.isFlooded ?
+            "Flood summoned! Waters creep through the maze center..." :
             "Flood receding... Waters slowly drain away...");
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
+consoleCommands.lava = (row) => {
+    if (gameState) {
+        // Validate row parameter
+        const validRows = [4, 10, 15];
+        if (!row || !validRows.includes(parseInt(row))) {
+            console.log("Usage: consoleCommands.lava(row) - where row is 4, 10, or 15");
+            console.log("Example: consoleCommands.lava(4) - spawns lava flow in row 4");
+            return;
+        }
+
+        const targetRow = parseInt(row);
+        const lavaFlow = gameState.lavaFlows[targetRow];
+
+        // Don't allow triggering new animation if one is already in progress for this row
+        if (lavaFlow.animating) {
+            console.log(`Lava flow animation already in progress for row ${targetRow}...`);
+            return;
+        }
+
+        // Toggle lava state and start animation
+        lavaFlow.active = !lavaFlow.active;
+        lavaFlow.animating = true;
+
+        console.log(lavaFlow.active ?
+            `Lava flow erupting in row ${targetRow}! Molten rock spreads across the battlefield...` :
+            `Lava flow in row ${targetRow} cooling down... The molten rock slowly hardens...`);
     } else {
         console.error("Game not initialized.");
     }
