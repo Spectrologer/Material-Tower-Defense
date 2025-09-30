@@ -838,8 +838,8 @@ export async function onEndWave() { // Make this function async
         return;
     }
 
-    // After wave 15, show the power-up choice if it hasn't been chosen yet. Await the choice.
-    if (gameState.wave === 15) {
+    // After wave 16 (boss fight), show the power-up choice if it hasn't been chosen yet.
+    if (gameState.wave === 16) {
         showWave16PowerChoice(continueToNextWave); // Pass a specific continuation function
         // The game loop will be continued by the choice handler in ui-manager.js
         return;
