@@ -1264,6 +1264,16 @@ class TowerController {
 class TowerRenderer {
     constructor(tower) {
         this.tower = tower;
+        this.pinSvgImage = null;
+        this.loadPinSvg();
+    }
+
+    // Load the PIN tower SVG
+    loadPinSvg() {
+        if (this.tower.type === 'PIN') {
+            this.pinSvgImage = new Image();
+            this.pinSvgImage.src = 'images/icons/location.svg';
+        }
     }
 
     draw(ctx) {
@@ -1376,12 +1386,29 @@ class TowerRenderer {
         } else if (tower.type === 'NAT') {
             ctx.rotate(angle);
         } else if (tower.type === 'PIN' || tower.type === 'PIN_HEART') {
-            ctx.rotate(angle - Math.PI / 2);
+            if (tower.target) {
+                // When targeting, face the target
+                ctx.rotate(angle - Math.PI / 2);
+            } else {
+                // When idle, slowly rotate like an auto-turret scanning
+                const timeInSeconds = performance.now() / 1000;
+                const idleRotation = (timeInSeconds / 12) * Math.PI * 2; // 12 seconds per rotation
+                ctx.rotate(idleRotation);
+            }
         } else if (tower.type === 'ANTI_AIR') {
             ctx.rotate(angle + Math.PI / 2);
         }
 
-        ctx.fillText(icon, 0, 0);
+        // Render the tower
+        if (tower.type === 'PIN' && this.pinSvgImage && this.pinSvgImage.complete) {
+            // Use SVG image for PIN towers
+            const size = iconSize;
+            ctx.drawImage(this.pinSvgImage, -size/2, -size/2, size, size);
+        } else {
+            // Use icon font for other towers
+            ctx.fillText(icon, 0, 0);
+        }
+        
         ctx.restore();
 
         // Orbiters draw themselves so they don't get rotated with the main tower.
