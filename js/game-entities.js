@@ -1403,12 +1403,12 @@ class TowerRenderer {
         if (tower.type === 'PIN' && this.pinSvgImage && this.pinSvgImage.complete) {
             // Use SVG image for PIN towers
             const size = iconSize;
-            ctx.drawImage(this.pinSvgImage, -size/2, -size/2, size, size);
+            ctx.drawImage(this.pinSvgImage, -size / 2, -size / 2, size, size);
         } else {
             // Use icon font for other towers
             ctx.fillText(icon, 0, 0);
         }
-        
+
         ctx.restore();
 
         // Orbiters draw themselves so they don't get rotated with the main tower.
