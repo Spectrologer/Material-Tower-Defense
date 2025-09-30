@@ -1785,12 +1785,12 @@ export class Effect {
         if (this.icon === 'cloud' && this.isBackground) {
             ctx.save();
             ctx.globalAlpha = opacity * 0.6; // Slightly more visible since it's not overlapping
-            
+
             // Draw dust particles around the perimeter of the tile
             const particleCount = 8;
             const tileSize = 40; // TILE_SIZE equivalent
             const baseSize = 4 + progress * 6; // Start small, grow bigger
-            
+
             for (let i = 0; i < particleCount; i++) {
                 const angle = (i / particleCount) * Math.PI * 2;
                 // Start very close to center, then push outward more aggressively
@@ -1798,13 +1798,13 @@ export class Effect {
                 const particleX = this.x + Math.cos(angle) * distance;
                 const particleY = this.y + Math.sin(angle) * distance;
                 const particleSize = baseSize * (0.7 + Math.random() * 0.6);
-                
+
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
                 ctx.fill();
             }
-            
+
             ctx.restore();
             return;
         }

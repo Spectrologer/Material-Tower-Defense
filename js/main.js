@@ -710,10 +710,10 @@ function gameLoop(currentTime) {
     gameState.enemies.forEach(enemy => {
         enemy.draw(ctx);
     });
-    
+
     // Draw background effects (like dust clouds) before towers
     gameState.effects.filter(effect => effect.isBackground).forEach(effect => effect.draw(ctx, effectiveDeltaTime));
-    
+
     if (placingTower) {
         drawPlacementGrid(ctx, canvasWidth, canvasHeight, gameState.placementGrid, mouse);
     }
@@ -1021,13 +1021,13 @@ function checkForNinePinOnBoard() {
                     const centerY = (y + 1) * TILE_SIZE + TILE_SIZE / 2;
                     const ninePin = new Tower(centerX, centerY, 'NINE_PIN');
                     ninePin.cost = totalCost;
-                    
+
                     // Add larger dust cloud effect for NINE_PIN tower placement (before adding the tower)
                     gameState.effects.push(new Effect(ninePin.x, ninePin.y, 'cloud', 120, '#e0d7c7', 1.2, { background: true }));
-                    
+
                     // Play tower placement sound
                     playTowerPlaceSound();
-                    
+
                     addTower(ninePin);
                     gameState.discoveredTowerTypes.add('NINE_PIN');
 
@@ -1193,15 +1193,15 @@ function handleCanvasClick(e) {
             } else {
                 gameState.placementGrid[gridY][gridX] = GRID_TOWER;
             }
-            
+
             // Add dust cloud effect when tower is placed (before adding the tower)
             gameState.effects.push(new Effect(newTower.x, newTower.y, 'cloud', 60, '#e0d7c7', 0.8, { background: true }));
-            
+
             // Play tower placement sound
             playTowerPlaceSound();
-            
+
             addTower(newTower);
-            
+
             if (newTower.type === 'PIN') {
                 checkForNinePinOnBoard();
             }
