@@ -185,7 +185,7 @@ function checkTrophies() {
 async function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
-    
+
     // Track wave start for perfect wave bonus system
     gameState.lostHealthThisWave = false;
     gameState.waveStartLives = gameState.lives;
@@ -570,6 +570,12 @@ function gameLoop(currentTime) {
         return;
     }
 
+    // Pause handling - continue loop but don't update game state
+    if (gameState.isPaused) {
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+    }
+
     const effectiveDeltaTime = deltaTime * gameSpeed;
     const frameTargetedEnemies = new Set();
 
@@ -666,28 +672,28 @@ function gameLoop(currentTime) {
         // Check for perfect wave bonus (no health lost)
         if (!gameState.lostHealthThisWave) {
             gameState.perfectWaveStreak++;
-            
+
             // Calculate bonus: 10 for first, 15 for second, 20 for third, etc.
             const baseBonus = 5;
             const firstWaveBonus = 10;
             const totalBonus = firstWaveBonus + (baseBonus * (gameState.perfectWaveStreak - 1));
-            
+
             gameState.gold += totalBonus;
-            
+
             // Create announcement for perfect wave bonus
-            const streakText = gameState.perfectWaveStreak === 1 ? 
-                `Perfect Wave! +$${totalBonus}` : 
+            const streakText = gameState.perfectWaveStreak === 1 ?
+                `Perfect Wave! +$${totalBonus}` :
                 `Perfect Streak x${gameState.perfectWaveStreak}! +$${totalBonus}`;
-            
+
             const announcement = new TextAnnouncement(
-                streakText, 
-                canvasWidth / 2, 
-                canvasHeight / 3, 
-                3, 
-                '#4CAF50', 
+                streakText,
+                canvasWidth / 2,
+                canvasHeight / 3,
+                3,
+                '#4CAF50',
                 canvasWidth
             );
-            
+
             setTimeout(() => {
                 gameState.announcements.push(announcement);
                 gameState.announcementLog.push(announcement);
@@ -696,14 +702,14 @@ function gameLoop(currentTime) {
             // Reset streak if health was lost
             if (gameState.perfectWaveStreak > 0) {
                 const streakLostAnnouncement = new TextAnnouncement(
-                    `Perfect streak lost!`, 
-                    canvasWidth / 2, 
-                    canvasHeight / 3, 
-                    2, 
-                    '#ff6b6b', 
+                    `Perfect streak lost!`,
+                    canvasWidth / 2,
+                    canvasHeight / 3,
+                    2,
+                    '#ff6b6b',
                     canvasWidth
                 );
-                
+
                 setTimeout(() => {
                     gameState.announcements.push(streakLostAnnouncement);
                     gameState.announcementLog.push(streakLostAnnouncement);
@@ -2276,6 +2282,37 @@ uiElements.startWaveBtn.addEventListener('click', () => {
 });
 uiElements.buyPinBtn.addEventListener('click', () => selectTowerToPlace('PIN'));
 
+// Pause button event listener
+uiElements.pauseBtn.addEventListener('click', () => {
+    resumeAudioContext();
+    if (gameState.isPaused) {
+        // Unpause the game
+        gameState.isPaused = false;
+        gameState.autoPausedOnBlur = false;
+        
+        // Remove pause notifications
+        gameState.announcements = gameState.announcements.filter(
+            announcement => !announcement.text.includes("Game Paused")
+        );
+    } else {
+        // Pause the game
+        gameState.isPaused = true;
+        gameState.autoPausedOnBlur = false; // Manual pause, not auto-pause
+        
+        // Show pause notification
+        const pauseNotification = new TextAnnouncement(
+            "Game Paused\n(Press pause to resume)", 
+            canvasWidth / 2, 
+            canvasHeight / 2, 
+            0, // Duration 0 means it stays until manually removed
+            '#ffeb3b', 
+            canvasWidth
+        );
+        gameState.announcements.push(pauseNotification);
+    }
+    updateUI(gameState, gameSpeed);
+});
+
 uiElements.startEndlessBtn.addEventListener('click', () => {
     uiElements.endlessChoiceModal.classList.add('hidden');
     onEndWave().catch(error => {
@@ -2802,6 +2839,50 @@ if (uiElements.gameTitle) {
 }
 
 window.addEventListener('resize', resizeCanvas);
+
+// Auto-pause when window loses focus
+window.addEventListener('blur', () => {
+    if (!gameState.gameOver && !gameState.isPaused) {
+        gameState.isPaused = true;
+        gameState.autoPausedOnBlur = true;
+        updateUI(gameState, gameSpeed);
+        
+        // Show pause notification
+        const pauseNotification = new TextAnnouncement(
+            "Game Paused\n(Window lost focus)", 
+            canvasWidth / 2, 
+            canvasHeight / 2, 
+            0, // Duration 0 means it stays until manually removed
+            '#ffeb3b', 
+            canvasWidth
+        );
+        gameState.announcements.push(pauseNotification);
+    }
+});
+
+window.addEventListener('focus', () => {
+    if (gameState.autoPausedOnBlur && gameState.isPaused) {
+        // Just clear the auto-pause flag but keep the game paused
+        gameState.autoPausedOnBlur = false;
+        
+        // Update the pause notification to show manual resume instructions
+        gameState.announcements = gameState.announcements.filter(
+            announcement => !announcement.text.includes("Game Paused")
+        );
+        
+        const pauseNotification = new TextAnnouncement(
+            "Game Paused\n(Press pause to resume)", 
+            canvasWidth / 2, 
+            canvasHeight / 2, 
+            0, // Duration 0 means it stays until manually removed
+            '#ffeb3b', 
+            canvasWidth
+        );
+        gameState.announcements.push(pauseNotification);
+        
+        updateUI(gameState, gameSpeed);
+    }
+});
 
 // Check if a new version has been released
 const lastSeenVersion = localStorage.getItem('lastSeenVersion');

@@ -71,6 +71,10 @@
                     </p>
                 </div>
                 <div class="flex justify-self-end">
+                    <!-- Pause button -->
+                    <button id="pause-btn" class="text-xs px-2 py-1 toggle-btn">
+                        <span id="pause-icon" class="material-icons">pause</span>
+                    </button>
                     <!-- Sound and music toggles -->
                     <button id="music-toggle-btn" class="text-xs px-2 py-1 toggle-btn">
                         <span id="music-icon" class="material-icons">music_off</span>
@@ -134,6 +138,14 @@
 
         <!-- This container holds the actual game canvas AND the new cloud inventory -->
         <div class="flex-grow relative w-full max-w-[440px] min-h-0 flex gap-2">
+            <!-- Pause Indicator -->
+            <div id="pause-indicator" class="hidden absolute top-2 left-1/2 transform -translate-x-1/2 z-30 bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold text-lg shadow-lg border-2 border-yellow-600">
+                <div class="flex items-center justify-center gap-2 text-center">
+                    <span class="material-icons">pause</span>
+                    <span>GAME PAUSED</span>
+                    <span class="material-icons">pause</span>
+                </div>
+            </div>
             <div id="canvas-container" class="flex-grow relative h-full min-h-0">
                 <!-- The canvas is now draggable to enable dragging towers from the game grid -->
                 <canvas id="gameCanvas" draggable="true"></canvas>

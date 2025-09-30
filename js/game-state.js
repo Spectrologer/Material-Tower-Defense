@@ -38,6 +38,8 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} wave16PowerChosen - Whether the player has chosen their power-up after wave 15.
  * @property {boolean} spawningEnemies - Whether enemies are currently being spawned.
  * @property {boolean} gameOver - Whether the game is over.
+ * @property {boolean} isPaused - Whether the game is currently paused.
+ * @property {boolean} autoPausedOnBlur - Whether the game was auto-paused due to window losing focus.
  * @property {boolean} hasDelete - Whether the player has a delete charge available.
  * @property {boolean} hasChosenPowerUp - Whether the player has made their power choice.
  * @property {boolean} isCloudUnlocked - Whether the cloud inventory feature is unlocked.
@@ -175,6 +177,8 @@ function getInitialGameState() {
         waveInProgress: false,
         spawningEnemies: false,
         gameOver: false,
+        isPaused: false,
+        autoPausedOnBlur: false,
         wave16PowerChosen: false,
         hasDelete: false,
         hasChosenPowerUp: false,

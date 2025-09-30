@@ -20,6 +20,9 @@ export const uiElements = {
     waveEl: document.getElementById('wave'),
     streakDisplay: document.getElementById('streak-display'),
     streakCount: document.getElementById('streak-count'),
+    pauseBtn: getButton('pause-btn'),
+    pauseIcon: document.getElementById('pause-icon'),
+    pauseIndicator: document.getElementById('pause-indicator'),
     startWaveBtn: getButton('start-wave'),
     gameTitle: document.getElementById('game-title'),
     buyPinBtn: getButton('buy-pin'),
@@ -144,7 +147,7 @@ export function updateUI(state, gameSpeed) {
     uiElements.livesEl.textContent = state.lives;
     uiElements.goldEl.textContent = state.gold;
     uiElements.waveEl.textContent = state.wave;
-    
+
     // Update perfect wave streak display
     if (state.perfectWaveStreak > 0) {
         uiElements.streakDisplay.classList.remove('hidden');
@@ -153,6 +156,17 @@ export function updateUI(state, gameSpeed) {
         uiElements.streakDisplay.classList.add('hidden');
     }
     
+    // Update pause button
+    if (state.isPaused) {
+        uiElements.pauseIcon.textContent = 'play_arrow';
+        uiElements.pauseBtn.classList.add('active');
+        uiElements.pauseIndicator.classList.remove('hidden');
+    } else {
+        uiElements.pauseIcon.textContent = 'pause';
+        uiElements.pauseBtn.classList.remove('active');
+        uiElements.pauseIndicator.classList.add('hidden');
+    }
+
     uiElements.buyPinBtn.disabled = state.gold < TOWER_TYPES.PIN.cost;
     uiElements.buyCastleBtn.disabled = state.gold < TOWER_TYPES.CASTLE.cost;
     uiElements.buySupportBtn.disabled = state.gold < TOWER_TYPES.SUPPORT.cost;
