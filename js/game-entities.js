@@ -1,4 +1,4 @@
-import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE } from './constants.js';
+import { TOWER_TYPES, ENEMY_TYPES, TILE_SIZE, GRID_COLS } from './constants.js';
 
 /**
  * This is where we define how different projectiles should look and act.
@@ -568,7 +568,7 @@ export class Enemy {
         ctx.stroke();
     }
     // This is the main update function for the enemy, called every frame.
-    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects, newlySpawnedEnemies) {
+    update(onFinish, onDeath, allEnemies, playWiggleSound, playCrackSound, deltaTime, playHitSound, effects, newlySpawnedEnemies, playExplosionSound, gameState) {
         if (this.hitTimer > 0) {
             this.hitTimer -= deltaTime;
         }
@@ -580,6 +580,30 @@ export class Enemy {
         } else {
             this.jostleX = 0;
             this.jostleY = 0;
+        }
+
+        // Reset slow multiplier and apply flood effects if active
+        this.slowMultiplier = 1;
+        if (gameState && (gameState.isFlooded || gameState.floodAnimating) && gameState.floodProgress > 0) {
+            // Check if enemy is in the flood area (center 5 columns)
+            const centerCol = Math.floor(GRID_COLS / 2);
+            const floodStartCol = centerCol - 2;
+            const floodEndCol = centerCol + 2;
+            
+            const currentCol = Math.floor(this.x / TILE_SIZE);
+            const currentRow = Math.floor(this.y / TILE_SIZE);
+            
+            // Check if enemy is in flooded columns
+            if (currentCol >= floodStartCol && currentCol <= floodEndCol) {
+                // Check if this row is actually flooded based on animation progress
+                // We need to estimate total rows and see if this enemy's row is flooded
+                const estimatedTotalRows = 15; // Approximate based on typical game grid
+                const floodedRows = Math.floor(estimatedTotalRows * gameState.floodProgress);
+                
+                if (currentRow < floodedRows) {
+                    this.slowMultiplier = 0.4; // Slow to 40% speed in flood
+                }
+            }
         }
 
         // If stunned, just sit there and take it.

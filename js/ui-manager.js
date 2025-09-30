@@ -155,7 +155,7 @@ export function updateUI(state, gameSpeed) {
     } else {
         uiElements.streakDisplay.classList.add('hidden');
     }
-    
+
     // Update pause button
     if (state.isPaused) {
         uiElements.pauseIcon.textContent = 'play_arrow';

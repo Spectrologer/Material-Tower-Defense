@@ -48,6 +48,9 @@ import { generatePath } from "./path-generator.js";
  * @property {number} perfectWaveStreak - Number of consecutive waves completed without taking health damage.
  * @property {boolean} lostHealthThisWave - Whether the player lost health during the current wave.
  * @property {number} waveStartLives - The number of lives at the start of the current wave.
+ * @property {boolean} isFlooded - Whether the flood effect is active.
+ * @property {boolean} floodAnimating - Whether the flood is currently animating in or out.
+ * @property {number} floodProgress - Animation progress from 0 to 1 (0 = no flood, 1 = fully flooded).
  * @property {boolean} isDetourOpen - Whether the detour path is open.
  * @property {Array} path - The main enemy path coordinates.
  * @property {Array} detourPath - The detour enemy path coordinates.
@@ -188,6 +191,9 @@ function getInitialGameState() {
         perfectWaveStreak: 0,
         lostHealthThisWave: false,
         waveStartLives: 20,
+        isFlooded: false,
+        floodAnimating: false,
+        floodProgress: 0,
         isDetourOpen: false,
         path: pathData.path,
         detourPath: pathData.detourPath,

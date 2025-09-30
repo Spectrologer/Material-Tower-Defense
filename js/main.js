@@ -558,6 +558,61 @@ function handleProjectileHit(projectile, hitEnemy) {
     updateUI(gameState, gameSpeed);
 }
 
+function drawFlood(ctx, canvasWidth, canvasHeight, floodProgress = 1) {
+    if (floodProgress <= 0) return; // No flood to draw
+    
+    // Calculate the middle 5 tiles of the canvas
+    const centerX = Math.floor(GRID_COLS / 2);
+    const floodWidth = 5;
+    const startX = centerX - Math.floor(floodWidth / 2);
+    
+    // Calculate how far down the flood should reach based on progress
+    const totalRows = Math.ceil(canvasHeight / TILE_SIZE);
+    const floodedRows = Math.floor(totalRows * floodProgress);
+    const floodHeight = floodedRows * TILE_SIZE;
+    
+    // Add a smooth edge effect for partial progress
+    const partialRowProgress = (totalRows * floodProgress) - floodedRows;
+    const extraHeight = partialRowProgress * TILE_SIZE;
+    
+    // Draw the flood river
+    ctx.save();
+    ctx.fillStyle = 'rgba(100, 149, 237, 0.6)'; // Semi-transparent blue
+    
+    // Fill the flood area
+    for (let x = startX; x < startX + floodWidth; x++) {
+        if (x >= 0 && x < GRID_COLS) {
+            // Draw fully flooded rows
+            ctx.fillRect(x * TILE_SIZE, 0, TILE_SIZE, floodHeight);
+            
+            // Draw partial row with fading effect
+            if (extraHeight > 0 && floodHeight < canvasHeight) {
+                const fadeOpacity = 0.6 * partialRowProgress;
+                ctx.fillStyle = `rgba(100, 149, 237, ${fadeOpacity})`;
+                ctx.fillRect(x * TILE_SIZE, floodHeight, TILE_SIZE, extraHeight);
+                ctx.fillStyle = 'rgba(100, 149, 237, 0.6)'; // Reset for next iteration
+            }
+        }
+    }
+    
+    // Add water texture with animated ripples (only on flooded areas)
+    const time = Date.now() * 0.003;
+    ctx.fillStyle = 'rgba(135, 206, 235, 0.3)'; // Lighter blue for ripples
+    
+    for (let x = startX; x < startX + floodWidth; x++) {
+        if (x >= 0 && x < GRID_COLS) {
+            for (let y = 0; y < floodHeight; y += 20) {
+                const ripple = Math.sin(time + x * 0.5 + y * 0.02) * 0.5 + 0.5;
+                if (ripple > 0.6) {
+                    ctx.fillRect(x * TILE_SIZE, y, TILE_SIZE, 4);
+                }
+            }
+        }
+    }
+    
+    ctx.restore();
+}
+
 function gameLoop(currentTime) {
     if (!lastTime) {
         lastTime = currentTime;
@@ -649,13 +704,34 @@ function gameLoop(currentTime) {
         playHitSound,
         gameState.effects,
         newlySpawnedEnemies,
-        playExplosionSound
+        playExplosionSound,
+        gameState
     ));
     // Add any newly spawned enemies (from splitters, summoners, etc.) to the main list
     gameState.enemies.push(...newlySpawnedEnemies);
 
     gameState.effects = gameState.effects.filter(effect => effect.update(effectiveDeltaTime));
     gameState.announcements = gameState.announcements.filter(announcement => announcement.update(effectiveDeltaTime));
+
+    // Update flood animation
+    if (gameState.floodAnimating) {
+        const floodAnimationSpeed = 0.8; // Animation duration in seconds
+        const progressDelta = effectiveDeltaTime / floodAnimationSpeed;
+        
+        if (gameState.isFlooded) {
+            // Flooding in
+            gameState.floodProgress = Math.min(1, gameState.floodProgress + progressDelta);
+            if (gameState.floodProgress >= 1) {
+                gameState.floodAnimating = false;
+            }
+        } else {
+            // Flooding out
+            gameState.floodProgress = Math.max(0, gameState.floodProgress - progressDelta);
+            if (gameState.floodProgress <= 0) {
+                gameState.floodAnimating = false;
+            }
+        }
+    }
 
     if (isInfiniteGold) {
         gameState.gold = 99999;
@@ -743,6 +819,11 @@ function gameLoop(currentTime) {
     }
     drawDetourPath(ctx, gameState.detourPath, effectiveDetourColor);
     drawPath(ctx, canvasWidth, gameState.path, mazeColor);
+
+    // Draw flood effect if active or animating
+    if (gameState.isFlooded || gameState.floodAnimating) {
+        drawFlood(ctx, canvasWidth, canvasHeight, gameState.floodProgress);
+    }
 
     // Draw ground target marker if one is set for the selected tower
     if (selectedTowers.length === 1) {
@@ -2267,6 +2348,26 @@ consoleCommands.debug = () => {
     }
 };
 
+consoleCommands.flood = () => {
+    if (gameState) {
+        // Don't allow triggering new animation if one is already in progress
+        if (gameState.floodAnimating) {
+            console.log("Flood animation already in progress...");
+            return;
+        }
+        
+        // Toggle flood state and start animation
+        gameState.isFlooded = !gameState.isFlooded;
+        gameState.floodAnimating = true;
+        
+        console.log(gameState.isFlooded ? 
+            "Flood summoned! Waters creep through the maze center..." : 
+            "Flood receding... Waters slowly drain away...");
+    } else {
+        console.error("Game not initialized.");
+    }
+};
+
 window.consoleCommands = consoleCommands;
 window.toggleStealthRadius = (towerId) => {
     const tower = gameState.towers.find((t) => t.id === towerId) || null;
@@ -2289,7 +2390,7 @@ uiElements.pauseBtn.addEventListener('click', () => {
         // Unpause the game
         gameState.isPaused = false;
         gameState.autoPausedOnBlur = false;
-        
+
         // Remove pause notifications
         gameState.announcements = gameState.announcements.filter(
             announcement => !announcement.text.includes("Game Paused")
@@ -2298,14 +2399,14 @@ uiElements.pauseBtn.addEventListener('click', () => {
         // Pause the game
         gameState.isPaused = true;
         gameState.autoPausedOnBlur = false; // Manual pause, not auto-pause
-        
+
         // Show pause notification
         const pauseNotification = new TextAnnouncement(
-            "Game Paused\n(Press pause to resume)", 
-            canvasWidth / 2, 
-            canvasHeight / 2, 
+            "Game Paused\n(Press pause to resume)",
+            canvasWidth / 2,
+            canvasHeight / 2,
             0, // Duration 0 means it stays until manually removed
-            '#ffeb3b', 
+            '#ffeb3b',
             canvasWidth
         );
         gameState.announcements.push(pauseNotification);
@@ -2846,14 +2947,14 @@ window.addEventListener('blur', () => {
         gameState.isPaused = true;
         gameState.autoPausedOnBlur = true;
         updateUI(gameState, gameSpeed);
-        
+
         // Show pause notification
         const pauseNotification = new TextAnnouncement(
-            "Game Paused\n(Window lost focus)", 
-            canvasWidth / 2, 
-            canvasHeight / 2, 
+            "Game Paused\n(Window lost focus)",
+            canvasWidth / 2,
+            canvasHeight / 2,
             0, // Duration 0 means it stays until manually removed
-            '#ffeb3b', 
+            '#ffeb3b',
             canvasWidth
         );
         gameState.announcements.push(pauseNotification);
@@ -2864,22 +2965,22 @@ window.addEventListener('focus', () => {
     if (gameState.autoPausedOnBlur && gameState.isPaused) {
         // Just clear the auto-pause flag but keep the game paused
         gameState.autoPausedOnBlur = false;
-        
+
         // Update the pause notification to show manual resume instructions
         gameState.announcements = gameState.announcements.filter(
             announcement => !announcement.text.includes("Game Paused")
         );
-        
+
         const pauseNotification = new TextAnnouncement(
-            "Game Paused\n(Press pause to resume)", 
-            canvasWidth / 2, 
-            canvasHeight / 2, 
+            "Game Paused\n(Press pause to resume)",
+            canvasWidth / 2,
+            canvasHeight / 2,
             0, // Duration 0 means it stays until manually removed
-            '#ffeb3b', 
+            '#ffeb3b',
             canvasWidth
         );
         gameState.announcements.push(pauseNotification);
-        
+
         updateUI(gameState, gameSpeed);
     }
 });
