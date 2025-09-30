@@ -18,6 +18,8 @@ export const uiElements = {
     livesEl: document.getElementById('lives'),
     goldEl: document.getElementById('gold'),
     waveEl: document.getElementById('wave'),
+    streakDisplay: document.getElementById('streak-display'),
+    streakCount: document.getElementById('streak-count'),
     startWaveBtn: getButton('start-wave'),
     gameTitle: document.getElementById('game-title'),
     buyPinBtn: getButton('buy-pin'),
@@ -142,6 +144,15 @@ export function updateUI(state, gameSpeed) {
     uiElements.livesEl.textContent = state.lives;
     uiElements.goldEl.textContent = state.gold;
     uiElements.waveEl.textContent = state.wave;
+    
+    // Update perfect wave streak display
+    if (state.perfectWaveStreak > 0) {
+        uiElements.streakDisplay.classList.remove('hidden');
+        uiElements.streakCount.textContent = state.perfectWaveStreak;
+    } else {
+        uiElements.streakDisplay.classList.add('hidden');
+    }
+    
     uiElements.buyPinBtn.disabled = state.gold < TOWER_TYPES.PIN.cost;
     uiElements.buyCastleBtn.disabled = state.gold < TOWER_TYPES.CASTLE.cost;
     uiElements.buySupportBtn.disabled = state.gold < TOWER_TYPES.SUPPORT.cost;

@@ -52,8 +52,8 @@ export const waveDefinitions = [
     // Wave 6: Introduce HEALERs to teach the importance of focus fire.
     {
         interleave: true,
-        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.HEALER, 2)],
-        healthMultiplier: 1.4, healthBonus: 10,
+        composition: [comp(ENEMY_TYPES.HEAVY, 8), comp(ENEMY_TYPES.HEALER, 3)],
+        healthMultiplier: 1.5, healthBonus: 40,
         detourRatio: 0,
         endOfWaveAnnouncement: { text: "Fliers incoming!\nAnti-Air required.", color: ENEMY_TYPES.FLYING.color }
     },
@@ -65,8 +65,8 @@ export const waveDefinitions = [
     },
     // Wave 8: Introduce the SPLITTER enemy.
     {
-        composition: [comp(ENEMY_TYPES.SPLITTER, 4)],
-        healthMultiplier: 1.6, healthBonus: 50,
+        composition: [comp(ENEMY_TYPES.SPLITTER, 3)],
+        healthMultiplier: 1.4, healthBonus: 30,
         endOfWaveAnnouncement: { text: "Unseen threats ahead!\nDetection required.", color: '#BDBDBD' }
     },
     // Wave 9: Introduce STEALTH enemies.
@@ -79,8 +79,8 @@ export const waveDefinitions = [
     },
     // Wave 10: Introduce TAUNT to force prioritization choices.
     {
-        composition: [comp(ENEMY_TYPES.HEAVY, 5), comp(ENEMY_TYPES.TAUNT, 1), comp(ENEMY_TYPES.HEAVY, 5)],
-        healthMultiplier: 2.0, healthBonus: 15,
+        composition: [comp(ENEMY_TYPES.HEAVY, 6), comp(ENEMY_TYPES.TAUNT, 2), comp(ENEMY_TYPES.HEAVY, 6)],
+        healthMultiplier: 2.31, healthBonus: 75,
         detourRatio: 0,
         endOfWaveAnnouncement: { text: "Warning:\nUnidentified objects\nignoring path!", color: ENEMY_TYPES.PARAGLIDING.color }
     },

@@ -185,6 +185,10 @@ function checkTrophies() {
 async function spawnWave() {
     gameState.waveInProgress = true;
     gameState.spawningEnemies = true;
+    
+    // Track wave start for perfect wave bonus system
+    gameState.lostHealthThisWave = false;
+    gameState.waveStartLives = gameState.lives;
 
     // Lock cloud storage at the start of the wave
     if (!gameState.hasPermanentCloud) {
@@ -607,7 +611,7 @@ function gameLoop(currentTime) {
     gameState.enemies = gameState.enemies.filter(enemy => enemy.update(
         (e) => { // onFinish
             if (e.type.icon === ENEMY_TYPES.BITCOIN.icon) {
-                gameState.gold = Math.max(0, gameState.gold - 1);
+                gameState.gold = gameState.gold - 1;
                 updateUI(gameState, gameSpeed);
                 const goldCounterRect = uiElements.goldEl.getBoundingClientRect();
                 const goldX = goldCounterRect.left + (goldCounterRect.width / 3);
@@ -619,6 +623,7 @@ function gameLoop(currentTime) {
 
             if (e.type.damagesLives) {
                 gameState.lives--;
+                gameState.lostHealthThisWave = true; // Track health loss for perfect wave streak
                 playLifeLostSound();
                 updateUI(gameState, gameSpeed);
                 if (gameState.lives <= 0) {
@@ -657,6 +662,55 @@ function gameLoop(currentTime) {
     if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.spawningEnemies) {
         gameState.waveInProgress = false;
         gameState.isDetourOpen = false;
+
+        // Check for perfect wave bonus (no health lost)
+        if (!gameState.lostHealthThisWave) {
+            gameState.perfectWaveStreak++;
+            
+            // Calculate bonus: 10 for first, 15 for second, 20 for third, etc.
+            const baseBonus = 5;
+            const firstWaveBonus = 10;
+            const totalBonus = firstWaveBonus + (baseBonus * (gameState.perfectWaveStreak - 1));
+            
+            gameState.gold += totalBonus;
+            
+            // Create announcement for perfect wave bonus
+            const streakText = gameState.perfectWaveStreak === 1 ? 
+                `Perfect Wave! +$${totalBonus}` : 
+                `Perfect Streak x${gameState.perfectWaveStreak}! +$${totalBonus}`;
+            
+            const announcement = new TextAnnouncement(
+                streakText, 
+                canvasWidth / 2, 
+                canvasHeight / 3, 
+                3, 
+                '#4CAF50', 
+                canvasWidth
+            );
+            
+            setTimeout(() => {
+                gameState.announcements.push(announcement);
+                gameState.announcementLog.push(announcement);
+            }, 500);
+        } else {
+            // Reset streak if health was lost
+            if (gameState.perfectWaveStreak > 0) {
+                const streakLostAnnouncement = new TextAnnouncement(
+                    `Perfect streak lost!`, 
+                    canvasWidth / 2, 
+                    canvasHeight / 3, 
+                    2, 
+                    '#ff6b6b', 
+                    canvasWidth
+                );
+                
+                setTimeout(() => {
+                    gameState.announcements.push(streakLostAnnouncement);
+                    gameState.announcementLog.push(streakLostAnnouncement);
+                }, 500);
+            }
+            gameState.perfectWaveStreak = 0;
+        }
 
         // Check for an announcement for the *next* wave from the wave that just ended.
         const completedWaveDef = waveDefinitions[gameState.wave - 1];
@@ -1734,19 +1788,19 @@ function addStartupEffects() {
     if (gameTitle) {
         // Remove the class first to reset any previous animation
         gameTitle.classList.remove('title-sheen-effect');
-        
+
         // Force a reflow to ensure the class removal takes effect
         gameTitle.offsetHeight;
-        
+
         // Add the class to trigger the animation
         gameTitle.classList.add('title-sheen-effect');
-        
+
         // Remove the class after animation completes
         setTimeout(() => {
             gameTitle.classList.remove('title-sheen-effect');
         }, 2500); // Increased to account for delay + animation duration
     }
-    
+
     // Add maze outline effect
     addMazeOutlineEffect();
 }
@@ -1762,23 +1816,23 @@ function addMazeOutlineEffect() {
     svg.style.height = "100%";
     svg.style.pointerEvents = "none";
     svg.style.zIndex = "100";
-    
+
     // Get the actual canvas element (the maze area)
     const gameCanvas = document.getElementById('gameCanvas');
     const canvasContainer = document.getElementById('canvas-container');
     if (!gameCanvas || !canvasContainer) return;
-    
+
     // Get canvas position relative to the container
     const containerRect = canvasContainer.getBoundingClientRect();
     const canvasRect = gameCanvas.getBoundingClientRect();
-    
+
     // Calculate relative position of canvas within container
     const x = canvasRect.left - containerRect.left;
     const y = canvasRect.top - containerRect.top;
     const width = canvasRect.width;
     const height = canvasRect.height;
     const radius = 6;
-    
+
     // Create the path for the orb to follow (invisible)
     const tracePath = document.createElementNS(svgNS, "path");
     const pathData = `M ${x + radius} ${y} 
@@ -1790,40 +1844,40 @@ function addMazeOutlineEffect() {
                      Q ${x} ${y + height} ${x} ${y + height - radius}
                      L ${x} ${y + radius}
                      Q ${x} ${y} ${x + radius} ${y} Z`;
-    
+
     tracePath.setAttribute("d", pathData);
     tracePath.setAttribute("fill", "none");
     tracePath.setAttribute("stroke", "none");
     tracePath.id = "trace-path";
-    
+
     // Create gradient for comet tail
     const defs = document.createElementNS(svgNS, "defs");
     const gradient = document.createElementNS(svgNS, "linearGradient");
     gradient.setAttribute("id", "cometTail");
     gradient.setAttribute("gradientUnits", "userSpaceOnUse");
-    
+
     const stop1 = document.createElementNS(svgNS, "stop");
     stop1.setAttribute("offset", "0%");
     stop1.setAttribute("stop-color", "rgba(217, 70, 239, 0)");
-    
+
     const stop2 = document.createElementNS(svgNS, "stop");
     stop2.setAttribute("offset", "30%");
     stop2.setAttribute("stop-color", "rgba(217, 70, 239, 0.2)");
-    
+
     const stop3 = document.createElementNS(svgNS, "stop");
     stop3.setAttribute("offset", "70%");
     stop3.setAttribute("stop-color", "rgba(217, 70, 239, 0.6)");
-    
+
     const stop4 = document.createElementNS(svgNS, "stop");
     stop4.setAttribute("offset", "100%");
     stop4.setAttribute("stop-color", "rgba(217, 70, 239, 1)");
-    
+
     gradient.appendChild(stop1);
     gradient.appendChild(stop2);
     gradient.appendChild(stop3);
     gradient.appendChild(stop4);
     defs.appendChild(gradient);
-    
+
     // Create the comet tail path
     const cometTail = document.createElementNS(svgNS, "path");
     cometTail.setAttribute("fill", "none");
@@ -1831,7 +1885,7 @@ function addMazeOutlineEffect() {
     cometTail.setAttribute("stroke-width", "3");
     cometTail.setAttribute("stroke-linecap", "round");
     cometTail.setAttribute("opacity", "0");
-    
+
     // Animation variables
     let pathLength = 0;
     let animationStartTime = 0;
@@ -1839,52 +1893,52 @@ function addMazeOutlineEffect() {
     const totalCycles = 2.5;
     const totalAnimationTime = animationDuration * totalCycles;
     const tailLength = 720; // Length of comet tail in pixels
-    
+
     // Calculate path length and start animation
     setTimeout(() => {
         pathLength = tracePath.getTotalLength();
         animationStartTime = Date.now() + 800; // Start after 0.8s delay
-        
+
         function updateCometTail() {
             const now = Date.now();
             const elapsed = now - animationStartTime;
-            
+
             if (elapsed < 0) {
                 // Still in delay phase
                 requestAnimationFrame(updateCometTail);
                 return;
             }
-            
+
             if (elapsed < totalAnimationTime) {
                 // Animation phase
                 const progress = (elapsed % animationDuration) / animationDuration;
                 const currentDistance = progress * pathLength;
                 const currentPoint = tracePath.getPointAtLength(currentDistance);
-                
+
                 // Calculate tail start position
                 const tailStartDistance = Math.max(0, currentDistance - tailLength);
                 const tailStartPoint = tracePath.getPointAtLength(tailStartDistance);
-                
+
                 // Update gradient coordinates to follow the motion
                 gradient.setAttribute("x1", tailStartPoint.x.toString());
                 gradient.setAttribute("y1", tailStartPoint.y.toString());
                 gradient.setAttribute("x2", currentPoint.x.toString());
                 gradient.setAttribute("y2", currentPoint.y.toString());
-                
+
                 // Create path for the tail - follow the actual path geometry
                 if (currentDistance > 0) {
                     // Calculate how much of the path to include in the tail
                     const tailStartDistance = Math.max(0, currentDistance - tailLength);
-                    
+
                     // Get the actual path data and create a subset for the tail
                     let tailPathData = '';
                     const pathLength = tracePath.getTotalLength();
-                    
+
                     if (tailStartDistance < currentDistance) {
                         // Start point of the tail
                         const startPoint = tracePath.getPointAtLength(tailStartDistance);
                         tailPathData = `M ${startPoint.x} ${startPoint.y}`;
-                        
+
                         // Add intermediate points following the exact path
                         const numSegments = Math.min(50, Math.floor((currentDistance - tailStartDistance) / 5));
                         for (let i = 1; i <= numSegments; i++) {
@@ -1892,15 +1946,15 @@ function addMazeOutlineEffect() {
                             const point = tracePath.getPointAtLength(Math.min(segmentDistance, pathLength));
                             tailPathData += ` L ${point.x} ${point.y}`;
                         }
-                        
+
                         // Ensure we end exactly at the current position
                         tailPathData += ` L ${currentPoint.x} ${currentPoint.y}`;
-                        
+
                         cometTail.setAttribute("d", tailPathData);
                         cometTail.setAttribute("opacity", "0.8");
                     }
                 }
-                
+
                 requestAnimationFrame(updateCometTail);
             } else {
                 // Fade out phase
@@ -1908,22 +1962,22 @@ function addMazeOutlineEffect() {
                 const fadeProgress = Math.min(fadeElapsed / 1500, 1); // 1.5s fade
                 const opacity = 0.8 * (1 - fadeProgress);
                 cometTail.setAttribute("opacity", opacity.toString());
-                
+
                 if (fadeProgress < 1) {
                     requestAnimationFrame(updateCometTail);
                 }
             }
         }
-        
+
         updateCometTail();
     }, 10);
-    
+
     svg.appendChild(defs);
     svg.appendChild(tracePath);
     svg.appendChild(cometTail);
-    
+
     canvasContainer.appendChild(svg);
-    
+
     // Remove the SVG after animation completes
     setTimeout(() => {
         if (svg.parentNode) {
@@ -1971,10 +2025,10 @@ function init(fromReset = false) {
     canvasHeight = canvas.height;
 
     resizeCanvas();
-    
+
     // Add startup effects on both fresh load and reset
     addStartupEffects();
-    
+
     lastTime = 0;
     requestAnimationFrame(gameLoop);
 }

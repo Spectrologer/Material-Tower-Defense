@@ -43,6 +43,9 @@ import { generatePath } from "./path-generator.js";
  * @property {boolean} isCloudUnlocked - Whether the cloud inventory feature is unlocked.
  * @property {boolean} hasPermanentCloud - Whether the player has unlocked permanent cloud access.
  * @property {Array} cloudInventory - List of towers stored in the cloud inventory.
+ * @property {number} perfectWaveStreak - Number of consecutive waves completed without taking health damage.
+ * @property {boolean} lostHealthThisWave - Whether the player lost health during the current wave.
+ * @property {number} waveStartLives - The number of lives at the start of the current wave.
  * @property {boolean} isDetourOpen - Whether the detour path is open.
  * @property {Array} path - The main enemy path coordinates.
  * @property {Array} detourPath - The detour enemy path coordinates.
@@ -178,6 +181,9 @@ function getInitialGameState() {
         isCloudUnlocked: false,
         hasPermanentCloud: false,
         cloudInventory: [],
+        perfectWaveStreak: 0,
+        lostHealthThisWave: false,
+        waveStartLives: 20,
         isDetourOpen: false,
         path: pathData.path,
         detourPath: pathData.detourPath,
