@@ -1,0 +1,408 @@
+/*
+ * Iconic Defense - Main Stylesheet
+ * 
+ * This file contains the core styling for the Iconic Defense tower defense game.
+ * 
+ * Structure:
+ * 1. Base styles (body, html, canvas)
+ * 2. UI panels and containers
+ * 3. Button styles and variants
+ * 4. Interactive elements (toggles, tooltips)
+ * 5. Component-specific styles
+ * 6. Animation keyframes
+ * 
+ * Dependencies:
+ * - utilities.css: CSS custom properties and utility classes
+ * - responsive.css: Media queries and responsive adjustments
+ * 
+ * External dependencies:
+ * - TailwindCSS: Layout and spacing utilities
+ * - Google Fonts: Roboto font family
+ * - Material Icons: Icon fonts
+ * - Font Awesome: Additional icons
+ */
+
+/* Basic look for the whole page */
+body,
+html {
+    font-family: 'Roboto', 'Open Sans', sans-serif;
+    font-weight: 600;
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    text-shadow: var(--text-shadow);
+    overflow: hidden;
+    height: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Change the cursor when you're dragging something */
+body.is-dragging {
+    cursor: grabbing !important;
+}
+
+/* The game's main drawing area */
+canvas {
+    background: var(--canvas-bg);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        0 4px 16px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    position: absolute;
+    cursor: grab;
+}
+
+/* The glassy look for all our UI panels */
+.game-ui-panel,
+.game-over-modal,
+.game-stats-panel {
+    background: var(--panel-bg);
+    backdrop-filter: blur(24px) saturate(1.8);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8);
+    border-radius: var(--radius-lg);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Our standard button style */
+.pixel-button {
+    background-color: var(--button-bg);
+    color: var(--text-primary);
+    font-weight: 900;
+    text-shadow: none;
+    border: 1px solid var(--button-border);
+    padding: 14px 15px;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+    transition: all var(--transition-fast);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 4px 0 rgba(0, 0, 0, 0.4),
+        0 6px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    /* A subtle crystal glass texture */
+    background-image:
+        linear-gradient(30deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
+        linear-gradient(150deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
+        linear-gradient(30deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
+        linear-gradient(150deg, rgba(255, 255, 255, 0.01) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.01) 87.5%, rgba(255, 255, 255, 0.01)),
+        linear-gradient(60deg, rgba(255, 255, 255, 0.015) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.015) 75%, rgba(255, 255, 255, 0.015)),
+        linear-gradient(60deg, rgba(255, 255, 255, 0.015) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.015) 75%, rgba(255, 255, 255, 0.015));
+    background-size: 50px 90px;
+    background-position: 0 0, 0 0, 25px 45px, 25px 45px, 0 0, 25px 45px;
+}
+
+.pixel-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent);
+    transition: left var(--transition-slow);
+}
+
+/* Make buttons pop a bit on hover */
+.pixel-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        0 6px 0 rgba(0, 0, 0, 0.4),
+        0 8px 16px rgba(0, 0, 0, 0.4);
+    border-color: var(--button-hover-border);
+    background-size: 200% 100%;
+    background-image: linear-gradient(to right, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
+    animation: hover-shine 0.5s forwards;
+}
+
+.pixel-button:hover:not(:disabled)::before {
+    left: 100%;
+}
+
+/* The "pressed down" look for buttons */
+.pixel-button:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow:
+        inset 0 1px 0 rgba(0, 0, 0, 0.2),
+        0 1px 0 rgba(0, 0, 0, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Style for programmatically depressed buttons */
+.pixel-button.depressed {
+    transform: translateY(2px);
+    box-shadow:
+        inset 0 1px 0 rgba(0, 0, 0, 0.2),
+        0 1px 0 rgba(0, 0, 0, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Grayed-out style for disabled buttons */
+.pixel-button:disabled {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #888;
+    text-shadow: none;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.03),
+        0 2px 0 rgba(0, 0, 0, 0.2),
+        0 3px 6px rgba(0, 0, 0, 0.2);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Highlights the tower button you've selected to place */
+.tower-button.selected,
+#cloud-inventory-slots .pixel-button.selected {
+    background-color: #ffffff;
+    color: #111;
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 0px 0px #8b5cf6, 0 0 12px #c084fc;
+    transform: translateY(0);
+}
+
+@keyframes hover-shine {
+    to {
+        background-position: -100% 0;
+    }
+}
+
+/* Give the main tower buttons a color-coded shadow */
+#buy-pin {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 6px 0 #b3b3b3, 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+#buy-castle {
+    box-shadow: inset 0 1px 0 rgba(255, 153, 0, 0.1),
+        0 6px 0 #9a6800, 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 153, 0, 0.2);
+    background-color: rgba(255, 153, 0, 0.05);
+}
+
+#buy-support {
+    box-shadow: inset 0 1px 0 rgba(248, 112, 255, 0.1),
+        0 6px 0 #b91c1c, 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(248, 112, 255, 0.2);
+    background-color: rgba(248, 112, 255, 0.05);
+}
+
+#start-wave {
+    box-shadow: inset 0 1px 0 rgba(74, 222, 128, 0.1), 0 6px 0 #16a34a, 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(74, 222, 128, 0.2);
+    background-color: rgba(74, 222, 128, 0.05);
+}
+
+#speed-toggle {
+    box-shadow: inset 0 1px 0 rgba(96, 165, 250, 0.1), 0 6px 0 #2563eb, 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(96, 165, 250, 0.2);
+    background: rgba(96, 165, 250, 0.05);
+}
+
+#cloud-button {
+    box-shadow: inset 0 1px 0 rgba(209, 213, 219, 0.1), 0 6px 0 #9ca3af, 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(209, 213, 219, 0.2);
+    background-color: rgba(209, 213, 219, 0.05);
+}
+
+#cloud-button.active {
+    box-shadow: inset 0 1px 0 rgba(56, 189, 248, 0.1), 0 6px 0 #0284c7, 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(96, 165, 250, 0.5);
+    background-color: rgba(96, 165, 250, 0.2);
+}
+
+#cloud-button.active #cloud-icon {
+    font-size: 2rem !important;
+    color: #93c5fd;
+}
+
+#set-ground-target-btn.active {
+    background-color: #f59e0b;
+    border-color: rgba(253, 224, 71, 0.8);
+    color: #1a1a1a;
+    box-shadow: 0 4px 0 #b45309;
+}
+
+/* Make sure our icons actually use the icon fonts, not the main game font. */
+.material-icons {
+    font-family: 'Material Icons';
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+.fa-solid {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+}
+
+/* Special style for the debug button */
+#infinite-gold {
+    background-color: rgba(220, 38, 38, 0.7);
+    border-color: rgba(220, 38, 38, 0.9);
+    color: #fde047;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#infinite-gold:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+#infinite-gold:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* The little pop-up tooltips */
+.tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 8px 8px 16px;
+    font-size: 14px;
+    font-family: 'Roboto', 'Open Sans';
+    text-align: center;
+    white-space: nowrap;
+    z-index: var(--z-tooltip);
+    pointer-events: none;
+    border-radius: var(--radius-sm);
+}
+
+.options-menu {
+    position: absolute;
+    top: var(--spacing-md);
+    left: var(--spacing-md);
+    z-index: var(--z-options);
+    width: 200px;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.options-menu.hidden {
+    display: none;
+}
+
+/* Highlight the selected maze color button */
+.color-option.selected {
+    border-color: #00ff88;
+    box-shadow: 0 0 8px #00ff88;
+}
+
+/* The little on/off toggle switches */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+    border: 2px solid #888;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #e0e0e0;
+    transition: .4s;
+}
+
+input:checked+.slider {
+    background-color: #c084fc;
+    border-color: #a855f7;
+}
+
+input:checked+.slider:before {
+    transform: translateX(20px);
+    background-color: #1a1a1a;
+}
+
+.toggle-btn:disabled {
+    opacity: 0.3;
+}
+
+/* Stop icons inside buttons from stealing clicks. */
+.pixel-button span,
+.pixel-button i {
+    pointer-events: none;
+}
+
+/* Some buttons in the options menu don't need the crystal texture. */
+#toggle-merge-confirm-btn,
+#reset-game-btn {
+    background-image: none;
+}
+
+/* Styles for the bottom panel that can be retracted */
+#bottom-panel-container {
+    transition: transform var(--transition-medium), box-shadow var(--transition-medium);
+}
+
+#bottom-panel-container.retracted {
+    transform: translateY(calc(100% - 40px));
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* A darker texture for the "weakest" targeting button */
+.target-weakest-btn {
+    background-image:
+        linear-gradient(30deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+        linear-gradient(150deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+        linear-gradient(30deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+        linear-gradient(150deg, rgba(0, 0, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 0, 0, 0.05) 87.5%, rgba(0, 0, 0, 0.05)),
+        linear-gradient(60deg, rgba(0, 0, 0, 0.07) 25%, transparent 25.5%, transparent 75%, rgba(0, 0, 0, 0.07) 75%, rgba(0, 0, 0, 0.07)),
+        linear-gradient(60deg, rgba(0, 0, 0, 0.07) 25%, transparent 25.5%, transparent 75%, rgba(0, 0, 0, 0.07) 75%, rgba(0, 0, 0, 0.07));
+}
+
+/* A lighter texture for the sell and cloud buttons */
+.sell-cloud-btn {
+    background-image:
+        linear-gradient(30deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+        linear-gradient(150deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+        linear-gradient(30deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+        linear-gradient(150deg, rgba(255, 255, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.02) 87.5%, rgba(255, 255, 255, 0.02)),
+        linear-gradient(60deg, rgba(255, 255, 255, 0.03) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.03) 75%, rgba(255, 255, 255, 0.03)),
+        linear-gradient(60deg, rgba(255, 255, 255, 0.03) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.03) 75%, rgba(255, 255, 255, 0.03));
+}

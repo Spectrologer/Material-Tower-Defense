@@ -1,0 +1,76 @@
+/* Responsive Design and Layout Utilities */
+
+/* Mobile-first responsive adjustments */
+@media (max-width: 640px) {
+    .pixel-button {
+        font-size: 1rem;
+        padding: 12px 13px;
+    }
+    
+    .options-menu {
+        width: 180px;
+    }
+    
+    .tooltip {
+        font-size: 12px;
+        padding: 6px 6px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pixel-button {
+        font-size: 0.9rem;
+        padding: 10px 11px;
+    }
+    
+    .options-menu {
+        width: 160px;
+        padding: 0.75rem;
+    }
+}
+
+/* Dark mode support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+    /* Already using dark theme, but can add specific dark mode adjustments here */
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .pixel-button {
+        border-width: 2px;
+        border-color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .tooltip {
+        border-width: 2px;
+        background-color: rgba(0, 0, 0, 0.9);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .pixel-button,
+    .pixel-button::before,
+    .slider,
+    .slider:before,
+    #bottom-panel-container {
+        transition: none;
+        animation: none;
+    }
+    
+    @keyframes hover-shine {
+        to {
+            background-position: 0 0;
+        }
+    }
+}
+
+/* Print styles (hide interactive elements) */
+@media print {
+    .pixel-button,
+    .options-menu,
+    .tooltip,
+    canvas {
+        display: none;
+    }
+}
