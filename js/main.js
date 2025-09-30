@@ -1728,6 +1728,210 @@ function reset(hardReset = false) {
     init(true);
 }
 
+function addStartupEffects() {
+    // Add sheen effect to the title
+    const gameTitle = document.getElementById('game-title');
+    if (gameTitle) {
+        // Remove the class first to reset any previous animation
+        gameTitle.classList.remove('title-sheen-effect');
+        
+        // Force a reflow to ensure the class removal takes effect
+        gameTitle.offsetHeight;
+        
+        // Add the class to trigger the animation
+        gameTitle.classList.add('title-sheen-effect');
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+            gameTitle.classList.remove('title-sheen-effect');
+        }, 2500); // Increased to account for delay + animation duration
+    }
+    
+    // Add maze outline effect
+    addMazeOutlineEffect();
+}
+
+function addMazeOutlineEffect() {
+    // Create an SVG element for the orb tracing effect
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.style.position = "absolute";
+    svg.style.top = "0";
+    svg.style.left = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    svg.style.zIndex = "100";
+    
+    // Get the actual canvas element (the maze area)
+    const gameCanvas = document.getElementById('gameCanvas');
+    const canvasContainer = document.getElementById('canvas-container');
+    if (!gameCanvas || !canvasContainer) return;
+    
+    // Get canvas position relative to the container
+    const containerRect = canvasContainer.getBoundingClientRect();
+    const canvasRect = gameCanvas.getBoundingClientRect();
+    
+    // Calculate relative position of canvas within container
+    const x = canvasRect.left - containerRect.left;
+    const y = canvasRect.top - containerRect.top;
+    const width = canvasRect.width;
+    const height = canvasRect.height;
+    const radius = 6;
+    
+    // Create the path for the orb to follow (invisible)
+    const tracePath = document.createElementNS(svgNS, "path");
+    const pathData = `M ${x + radius} ${y} 
+                     L ${x + width - radius} ${y} 
+                     Q ${x + width} ${y} ${x + width} ${y + radius}
+                     L ${x + width} ${y + height - radius}
+                     Q ${x + width} ${y + height} ${x + width - radius} ${y + height}
+                     L ${x + radius} ${y + height}
+                     Q ${x} ${y + height} ${x} ${y + height - radius}
+                     L ${x} ${y + radius}
+                     Q ${x} ${y} ${x + radius} ${y} Z`;
+    
+    tracePath.setAttribute("d", pathData);
+    tracePath.setAttribute("fill", "none");
+    tracePath.setAttribute("stroke", "none");
+    tracePath.id = "trace-path";
+    
+    // Create gradient for comet tail
+    const defs = document.createElementNS(svgNS, "defs");
+    const gradient = document.createElementNS(svgNS, "linearGradient");
+    gradient.setAttribute("id", "cometTail");
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
+    
+    const stop1 = document.createElementNS(svgNS, "stop");
+    stop1.setAttribute("offset", "0%");
+    stop1.setAttribute("stop-color", "rgba(217, 70, 239, 0)");
+    
+    const stop2 = document.createElementNS(svgNS, "stop");
+    stop2.setAttribute("offset", "30%");
+    stop2.setAttribute("stop-color", "rgba(217, 70, 239, 0.2)");
+    
+    const stop3 = document.createElementNS(svgNS, "stop");
+    stop3.setAttribute("offset", "70%");
+    stop3.setAttribute("stop-color", "rgba(217, 70, 239, 0.6)");
+    
+    const stop4 = document.createElementNS(svgNS, "stop");
+    stop4.setAttribute("offset", "100%");
+    stop4.setAttribute("stop-color", "rgba(217, 70, 239, 1)");
+    
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    gradient.appendChild(stop4);
+    defs.appendChild(gradient);
+    
+    // Create the comet tail path
+    const cometTail = document.createElementNS(svgNS, "path");
+    cometTail.setAttribute("fill", "none");
+    cometTail.setAttribute("stroke", "url(#cometTail)");
+    cometTail.setAttribute("stroke-width", "3");
+    cometTail.setAttribute("stroke-linecap", "round");
+    cometTail.setAttribute("opacity", "0");
+    
+    // Animation variables
+    let pathLength = 0;
+    let animationStartTime = 0;
+    const animationDuration = 1200; // 1.2s per loop
+    const totalCycles = 2.5;
+    const totalAnimationTime = animationDuration * totalCycles;
+    const tailLength = 720; // Length of comet tail in pixels
+    
+    // Calculate path length and start animation
+    setTimeout(() => {
+        pathLength = tracePath.getTotalLength();
+        animationStartTime = Date.now() + 800; // Start after 0.8s delay
+        
+        function updateCometTail() {
+            const now = Date.now();
+            const elapsed = now - animationStartTime;
+            
+            if (elapsed < 0) {
+                // Still in delay phase
+                requestAnimationFrame(updateCometTail);
+                return;
+            }
+            
+            if (elapsed < totalAnimationTime) {
+                // Animation phase
+                const progress = (elapsed % animationDuration) / animationDuration;
+                const currentDistance = progress * pathLength;
+                const currentPoint = tracePath.getPointAtLength(currentDistance);
+                
+                // Calculate tail start position
+                const tailStartDistance = Math.max(0, currentDistance - tailLength);
+                const tailStartPoint = tracePath.getPointAtLength(tailStartDistance);
+                
+                // Update gradient coordinates to follow the motion
+                gradient.setAttribute("x1", tailStartPoint.x.toString());
+                gradient.setAttribute("y1", tailStartPoint.y.toString());
+                gradient.setAttribute("x2", currentPoint.x.toString());
+                gradient.setAttribute("y2", currentPoint.y.toString());
+                
+                // Create path for the tail - follow the actual path geometry
+                if (currentDistance > 0) {
+                    // Calculate how much of the path to include in the tail
+                    const tailStartDistance = Math.max(0, currentDistance - tailLength);
+                    
+                    // Get the actual path data and create a subset for the tail
+                    let tailPathData = '';
+                    const pathLength = tracePath.getTotalLength();
+                    
+                    if (tailStartDistance < currentDistance) {
+                        // Start point of the tail
+                        const startPoint = tracePath.getPointAtLength(tailStartDistance);
+                        tailPathData = `M ${startPoint.x} ${startPoint.y}`;
+                        
+                        // Add intermediate points following the exact path
+                        const numSegments = Math.min(50, Math.floor((currentDistance - tailStartDistance) / 5));
+                        for (let i = 1; i <= numSegments; i++) {
+                            const segmentDistance = tailStartDistance + (i / numSegments) * (currentDistance - tailStartDistance);
+                            const point = tracePath.getPointAtLength(Math.min(segmentDistance, pathLength));
+                            tailPathData += ` L ${point.x} ${point.y}`;
+                        }
+                        
+                        // Ensure we end exactly at the current position
+                        tailPathData += ` L ${currentPoint.x} ${currentPoint.y}`;
+                        
+                        cometTail.setAttribute("d", tailPathData);
+                        cometTail.setAttribute("opacity", "0.8");
+                    }
+                }
+                
+                requestAnimationFrame(updateCometTail);
+            } else {
+                // Fade out phase
+                const fadeElapsed = elapsed - totalAnimationTime;
+                const fadeProgress = Math.min(fadeElapsed / 1500, 1); // 1.5s fade
+                const opacity = 0.8 * (1 - fadeProgress);
+                cometTail.setAttribute("opacity", opacity.toString());
+                
+                if (fadeProgress < 1) {
+                    requestAnimationFrame(updateCometTail);
+                }
+            }
+        }
+        
+        updateCometTail();
+    }, 10);
+    
+    svg.appendChild(defs);
+    svg.appendChild(tracePath);
+    svg.appendChild(cometTail);
+    
+    canvasContainer.appendChild(svg);
+    
+    // Remove the SVG after animation completes
+    setTimeout(() => {
+        if (svg.parentNode) {
+            svg.parentNode.removeChild(svg);
+        }
+    }, 5000);
+}
+
 function init(fromReset = false) {
     loadGameStateFromStorage();
 
@@ -1767,6 +1971,10 @@ function init(fromReset = false) {
     canvasHeight = canvas.height;
 
     resizeCanvas();
+    
+    // Add startup effects on both fresh load and reset
+    addStartupEffects();
+    
     lastTime = 0;
     requestAnimationFrame(gameLoop);
 }

@@ -200,6 +200,60 @@ canvas {
     }
 }
 
+/* Startup animations */
+@keyframes title-sheen {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes maze-outline {
+    0% {
+        stroke-dashoffset: 1000;
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 0;
+    }
+}
+
+@keyframes orb-trace {
+    0% {
+        offset-distance: 0%;
+        opacity: 1;
+    }
+    100% {
+        offset-distance: 100%;
+        opacity: 1;
+    }
+}
+
+@keyframes trail-fade {
+    0% {
+        opacity: 0.8;
+        r: 3;
+    }
+    100% {
+        opacity: 0;
+        r: 8;
+    }
+}
+
+.title-sheen-effect {
+    background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.8) 50%, transparent 60%);
+    background-size: 200% 100%;
+    animation: title-sheen 1.5s ease-in-out 0.5s forwards;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
 /* Give the main tower buttons a color-coded shadow */
 #buy-pin {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
