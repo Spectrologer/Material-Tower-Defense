@@ -23,6 +23,23 @@
  */
 
 /* Basic look for the whole page */
+*,
+*::before,
+*::after {
+    font-family: 'Roboto', 'Open Sans', sans-serif;
+}
+
+/* Explicit font declarations for common elements that might use browser defaults */
+button,
+input,
+textarea,
+select,
+h1, h2, h3, h4, h5, h6,
+p, div, span, a,
+.tooltip {
+    font-family: 'Roboto', 'Open Sans', sans-serif;
+}
+
 body,
 html {
     font-family: 'Roboto', 'Open Sans', sans-serif;
@@ -282,7 +299,7 @@ canvas {
     border: 1px solid rgba(255, 255, 255, 0.5);
     padding: 8px 8px 16px;
     font-size: 14px;
-    font-family: 'Roboto', 'Open Sans';
+    font-family: 'Roboto', 'Open Sans', sans-serif;
     text-align: center;
     white-space: nowrap;
     z-index: var(--z-tooltip);

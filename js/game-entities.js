@@ -1708,6 +1708,7 @@ export class Tower {
 export class Effect {
     constructor(x, y, icon, size, color, duration, extraData = {}) {
         this.x = x; this.y = y; this.size = size; this.color = color; this.life = duration; this.maxLife = duration; this.extraData = extraData;
+        this.isBackground = extraData.background || false; // Flag for background effects
 
         // If we're given a list of icons, pick one at random.
         if (Array.isArray(icon)) {
@@ -1776,6 +1777,34 @@ export class Effect {
                 const angle = (i / numSparkles) * Math.PI * 2 + (progress * Math.PI); // Rotate the aura
                 ctx.fillText(this.icon, this.x + Math.cos(angle) * (currentSize * 0.75), this.y + Math.sin(angle) * (currentSize * 0.75));
             }
+            ctx.restore();
+            return;
+        }
+
+        // Special handling for dust cloud effects around tile perimeter
+        if (this.icon === 'cloud' && this.isBackground) {
+            ctx.save();
+            ctx.globalAlpha = opacity * 0.6; // Slightly more visible since it's not overlapping
+            
+            // Draw dust particles around the perimeter of the tile
+            const particleCount = 8;
+            const tileSize = 40; // TILE_SIZE equivalent
+            const baseSize = 4 + progress * 6; // Start small, grow bigger
+            
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (i / particleCount) * Math.PI * 2;
+                // Start very close to center, then push outward more aggressively
+                const distance = (tileSize * 0.35) + (progress * tileSize * 0.4); // Start closer, expand more
+                const particleX = this.x + Math.cos(angle) * distance;
+                const particleY = this.y + Math.sin(angle) * distance;
+                const particleSize = baseSize * (0.7 + Math.random() * 0.6);
+                
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
             ctx.restore();
             return;
         }

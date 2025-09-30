@@ -301,3 +301,55 @@ export function playLifeLostSound() {
     osc.start(now);
     osc.stop(now + duration);
 }
+
+export function playTowerPlaceSound() {
+    if (!isSoundEnabled) return;
+    const now = audioContext.currentTime;
+    const duration = 0.25;
+    
+    // Create a deep, resounding thud with multiple bass layers
+    const osc1 = audioContext.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(80, now);
+    osc1.frequency.exponentialRampToValueAtTime(40, now + duration);
+    
+    const osc2 = audioContext.createOscillator();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(60, now);
+    osc2.frequency.exponentialRampToValueAtTime(30, now + duration);
+    
+    // Add a brief high-frequency click for the initial impact
+    const clickOsc = audioContext.createOscillator();
+    clickOsc.type = 'square';
+    clickOsc.frequency.setValueAtTime(200, now);
+    clickOsc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+    
+    const gainNode1 = audioContext.createGain();
+    gainNode1.gain.setValueAtTime(0, now);
+    gainNode1.gain.linearRampToValueAtTime(0.15, now + 0.01);
+    gainNode1.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    const gainNode2 = audioContext.createGain();
+    gainNode2.gain.setValueAtTime(0, now);
+    gainNode2.gain.linearRampToValueAtTime(0.12, now + 0.02);
+    gainNode2.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    const clickGain = audioContext.createGain();
+    clickGain.gain.setValueAtTime(0, now);
+    clickGain.gain.linearRampToValueAtTime(0.06, now + 0.005);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    
+    osc1.connect(gainNode1);
+    osc2.connect(gainNode2);
+    clickOsc.connect(clickGain);
+    gainNode1.connect(audioContext.destination);
+    gainNode2.connect(audioContext.destination);
+    clickGain.connect(audioContext.destination);
+    
+    osc1.start(now);
+    osc2.start(now);
+    clickOsc.start(now);
+    osc1.stop(now + duration);
+    osc2.stop(now + duration);
+    clickOsc.stop(now + 0.05);
+}
