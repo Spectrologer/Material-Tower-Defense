@@ -1,0 +1,26 @@
+Iconic Defense - Software License
+
+Copyright (c) 2024 Spectrologer. All rights reserved.
+
+This software, "Iconic Defense," is provided under the following terms:
+
+1.  **Non-Commercial Use for Others:** You are free to use, modify, and distribute this software for personal, 
+educational, or other non-commercial purposes. This includes, but is not limited to, playing the game, learning from its code, 
+and sharing it with others, provided no monetary compensation or commercial advantage is gained from such activities.
+
+2.  **Commercial Use by Spectrologer:** Notwithstanding the non-commercial restriction for others, Spectrologer 
+(the original author) retains the right to use, modify, and distribute this software, in whole or in part, for any 
+commercial purpose without restriction.
+
+3.  **Attribution:** Any use, modification, or distribution of this software must include clear 
+and conspicuous attribution to Spectrologer as the original author. This attribution should be 
+maintained in all copies or substantial portions of the software.
+
+4.  **No Warranty:** This software is provided "as is," without warranty of any kind, 
+express or implied, including but not limited to the warranties of merchantability, 
+fitness for a particular purpose, and non-infringement. In no event shall Spectrologer 
+be liable for any claim, damages, or other liability, whether in an action of contract, 
+tort, or otherwise, arising from, out of, or in connection with the software or 
+the use or other dealings in the software.
+
+By using, modifying, or distributing this software, you agree to these terms.
